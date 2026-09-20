@@ -62,12 +62,14 @@ export function MessageInput({ teamId }: IAppPops) {
     orpc.team.members.list.queryOptions({ input: { teamId } })
   );
 
-  const members = membersData.members.map((member) => ({
-    id: member.id,
-    name: member.name,
-    email: member.email,
-    image: member.image ?? undefined,
-  }));
+  const members = membersData.members
+    .filter((member) => member.id !== currentUser.id)
+    .map((member) => ({
+      id: member.id,
+      name: member.name,
+      email: member.email,
+      image: member.image ?? undefined,
+    }));
 
   const createMessageMutation = useMutation(
     orpc.message.create.mutationOptions({
