@@ -35,7 +35,7 @@ export function Editor({ field, sendButton, footerLeft }: iAppProps) {
     editorProps: {
       attributes: {
         class:
-          "max-w-none sm:min-h-[125px] min-h-[70px] focus:outline-none prose prose-sm sm:prose lg:prose-lg marker:text-primary dark:prose-invert",
+          "max-w-none sm:min-h-[125px] max-sm:h-[70px] focus:h-[100px] focus:outline-none prose prose-sm sm:prose lg:prose-lg marker:text-primary dark:prose-invert",
       },
     },
     immediatelyRender: false,
