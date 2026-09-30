@@ -106,6 +106,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      cn:
+        specifier: ^0.4.0
+        version: 0.4.0
       dompurify:
         specifier: ^3.4.5
         version: 3.4.5
@@ -4917,6 +4920,14 @@ packages:
         integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==,
       }
     engines: { node: ">=6" }
+
+  cn@0.4.0:
+    resolution:
+      {
+        integrity: sha512-qOAeUhPwPzBxx6jaeQdo646XIKliKHc2j1ZF7Ngb1o0pJZKH5gq8FkA0aVdUdPFUDXNXyUCXpCtoJISo6dhizg==,
+      }
+    engines: { node: ">=20" }
+    hasBin: true
 
   code-block-writer@13.0.3:
     resolution:
@@ -13552,6 +13563,8 @@ snapshots:
       wrap-ansi: 7.0.0
 
   clsx@2.1.1: {}
+
+  cn@0.4.0: {}
 
   code-block-writer@13.0.3: {}
 
