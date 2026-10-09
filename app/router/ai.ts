@@ -1,14 +1,14 @@
+import { streamToEventIterator } from "@orpc/server";
+import { streamText } from "ai";
 import z from "zod/v3";
+import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
+import { model, openrouter } from "@/lib/open-router";
+import { prisma } from "@/lib/prisma";
+import { formatLocalDateTime, jsonToMarkdown } from "@/lib/utils";
+import { aiMiddleware } from "../middlewares/ai-aj";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
 import { requireOrganizationMiddleware } from "../middlewares/organization";
-import { prisma } from "@/lib/prisma";
-import { formatLocalDateTime, jsonToMarkdown } from "@/lib/utils";
-import { streamText } from "ai";
-import { model, openrouter } from "@/lib/open-router";
-import { streamToEventIterator } from "@orpc/server";
-import { aiMiddleware } from "../middlewares/ai-aj";
-import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
 
 export const generateThreadSummary = base
   .use(requireAuthMiddleware)

@@ -1,6 +1,12 @@
 "use client";
 
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronsUpDown } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { CreateOrganizationDialog } from "@/app/(organization)/organizations/_components/create-organization-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,17 +21,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { CreateOrganizationDialog } from "@/app/(organization)/organizations/_components/create-organization-dialog";
-import { Button } from "./ui/button";
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import Image from "next/image";
-import { cn, createAvatarUrl } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { orpc } from "@/lib/orpc";
+import { cn, createAvatarUrl } from "@/lib/utils";
 import { Badge } from "./ui/badge";
-import { useState } from "react";
+import { Button } from "./ui/button";
 
 export function OrganizationSwitcher() {
   const queryClient = useQueryClient();

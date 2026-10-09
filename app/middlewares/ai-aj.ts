@@ -1,7 +1,7 @@
-import arcjet, { detectBot, slidingWindow, shield } from "@/lib/arcjet";
-import { User } from "@/lib/auth";
+import type { ArcjetNextRequest } from "@arcjet/next";
+import arcjet, { detectBot, shield, slidingWindow } from "@/lib/arcjet";
+import type { User } from "@/lib/auth";
 import { formatLocalDateTime } from "@/lib/utils";
-import { ArcjetNextRequest } from "@arcjet/next";
 import { base } from "./bast";
 
 const aiAj = () =>

@@ -1,8 +1,12 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { toast } from "sonner";
+import { GitHub, Google } from "@/components/general/tech";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,11 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
-import { GitHub, Google } from "@/components/general/tech";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export function LoginForm({
   className,

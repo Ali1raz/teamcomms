@@ -1,5 +1,11 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,13 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Controller, useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-
-import { createOrganizationSchema, CreateOrganizationType } from "../schema";
-import { toast } from "sonner";
-import { ReactNode, useState } from "react";
-import { createSlug } from "@/lib/utils";
 import {
   Field,
   FieldError,
@@ -23,9 +22,12 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/lib/orpc";
+import { createSlug } from "@/lib/utils";
+import {
+  type CreateOrganizationType,
+  createOrganizationSchema,
+} from "../schema";
 
 export function CreateOrganizationDialog({
   children,

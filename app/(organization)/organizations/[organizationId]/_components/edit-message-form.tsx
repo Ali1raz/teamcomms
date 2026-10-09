@@ -1,23 +1,26 @@
 "use client";
 
-import { AttachmentChip } from "./attachment-chip";
-import { Field, FieldGroup } from "@/components/ui/field";
-import { Controller, useForm } from "react-hook-form";
-import { updateMessageSchema, UpdateMessageSchemaType } from "../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Editor } from "@/components/editor/editor";
-import { Button } from "@/components/ui/button";
-import { messageType } from "./message-item";
-import { orpc } from "@/lib/orpc";
-import { ImageUploadDialog } from "./image-dialog";
 import {
-  InfiniteData,
+  type InfiniteData,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { Editor } from "@/components/editor/editor";
 import { useRealtimeTeam } from "@/components/team-realtime-provider";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { orpc } from "@/lib/orpc";
+import {
+  type UpdateMessageSchemaType,
+  updateMessageSchema,
+} from "../../schema";
+import { AttachmentChip } from "./attachment-chip";
+import { ImageUploadDialog } from "./image-dialog";
+import type { messageType } from "./message-item";
 
 interface EditMessageFormProps {
   message: messageType;

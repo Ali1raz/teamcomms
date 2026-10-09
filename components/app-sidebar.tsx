@@ -1,7 +1,12 @@
 "use client";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { ChevronRight, Hash, MoreVertical } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useMemo } from "react";
-
+import { InviteOrganizationDialog } from "@/app/(organization)/organizations/_components/invite-organization-dialog";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
+import { RemoveMemberDialog } from "@/components/remove-member-dialog";
 import {
   Sidebar,
   SidebarContent,
@@ -15,21 +20,22 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { UpdateMemberRoleDialog } from "@/components/update-member-role-dialog";
+import { usePresence } from "@/hooks/use-presence";
+import type { ClientOutputs } from "@/lib/orpc";
+import { orpc } from "@/lib/orpc";
+import { cn } from "@/lib/utils";
+import { AddMemberToTeam } from "./add-member-to-team";
+import { CreateTeamDialog } from "./create-tem-dialog";
+import { DeleteTeamDialog } from "./delete-team-dialog";
+import { MemberRoleBadge } from "./general/member-role-badge";
+import { UserImage } from "./general/user-avatar";
+import { Button } from "./ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "./ui/collapsible";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { ChevronRight, Hash, MoreVertical } from "lucide-react";
-import { UserImage } from "./general/user-avatar";
-import Link from "next/link";
-import { ScrollArea } from "./ui/scroll-area";
-import { useParams } from "next/navigation";
-import { CreateTeamDialog } from "./create-tem-dialog";
-import { Button } from "./ui/button";
-import { InviteOrganizationDialog } from "@/app/(organization)/organizations/_components/invite-organization-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,16 +43,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { ScrollArea } from "./ui/scroll-area";
 import { UpdateTeamDialog } from "./update-team-dialog";
-import { usePresence } from "@/hooks/use-presence";
-import { UpdateMemberRoleDialog } from "@/components/update-member-role-dialog";
-import { RemoveMemberDialog } from "@/components/remove-member-dialog";
-
-import type { ClientOutputs } from "@/lib/orpc";
-import { MemberRoleBadge } from "./general/member-role-badge";
-import { cn } from "@/lib/utils";
-import { AddMemberToTeam } from "./add-member-to-team";
-import { DeleteTeamDialog } from "./delete-team-dialog";
 
 type MembersListOutput = ClientOutputs["organization"]["members"]["list"];
 type MemberType = MembersListOutput["members"][number];
@@ -131,79 +129,78 @@ export function AppSidebar({
                   <CollapsibleContent className="h-full overflow-hidden">
                     <ScrollArea className="h-full">
                       <SidebarMenuSub>
-                        {teams &&
-                          teams.map((ch) => (
-                            <SidebarMenuSubItem
-                              key={ch.id}
-                              className="flex items-center justify-center flex-row"
+                        {teams?.map((ch) => (
+                          <SidebarMenuSubItem
+                            key={ch.id}
+                            className="flex items-center justify-center flex-row"
+                          >
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={teamId === ch.id}
+                              className="text-muted-foreground flex-1"
                             >
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={teamId === ch.id}
-                                className="text-muted-foreground flex-1"
+                              <Link
+                                href={`/organizations/${organizationId}/team/${ch.id}`}
+                                title={ch.name}
                               >
-                                <Link
-                                  href={`/organizations/${organizationId}/team/${ch.id}`}
-                                  title={ch.name}
-                                >
-                                  <Hash className="size-4 shrink-0" />
-                                  <span className="truncate max-w-[12ch]">
-                                    {ch.name}
-                                  </span>
-                                </Link>
-                              </SidebarMenuSubButton>
+                                <Hash className="size-4 shrink-0" />
+                                <span className="truncate max-w-[12ch]">
+                                  {ch.name}
+                                </span>
+                              </Link>
+                            </SidebarMenuSubButton>
 
-                              {canManageOrganization && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="p-1"
+                            {canManageOrganization && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="p-1"
+                                  >
+                                    <MoreVertical />
+                                    <span className="sr-only">More</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-48">
+                                  <UpdateTeamDialog team={ch}>
+                                    <DropdownMenuItem
+                                      onSelect={(e) => e.preventDefault()}
                                     >
-                                      <MoreVertical />
-                                      <span className="sr-only">More</span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="w-48">
-                                    <UpdateTeamDialog team={ch}>
-                                      <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()}
-                                      >
-                                        Edit
-                                      </DropdownMenuItem>
-                                    </UpdateTeamDialog>
-                                    <AddMemberToTeam
-                                      organizationId={organizationId}
-                                      teamId={ch.id}
-                                    >
-                                      <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()}
-                                      >
-                                        Add Member
-                                      </DropdownMenuItem>
-                                    </AddMemberToTeam>
-                                    <DropdownMenuItem asChild>
-                                      <Link
-                                        href={`/organizations/${organizationId}/team/${ch.id}/members`}
-                                      >
-                                        Manage Members
-                                      </Link>
+                                      Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DeleteTeamDialog team={ch}>
-                                      <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()}
-                                        variant="destructive"
-                                      >
-                                        Delete team
-                                      </DropdownMenuItem>
-                                    </DeleteTeamDialog>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
-                            </SidebarMenuSubItem>
-                          ))}
+                                  </UpdateTeamDialog>
+                                  <AddMemberToTeam
+                                    organizationId={organizationId}
+                                    teamId={ch.id}
+                                  >
+                                    <DropdownMenuItem
+                                      onSelect={(e) => e.preventDefault()}
+                                    >
+                                      Add Member
+                                    </DropdownMenuItem>
+                                  </AddMemberToTeam>
+                                  <DropdownMenuItem asChild>
+                                    <Link
+                                      href={`/organizations/${organizationId}/team/${ch.id}/members`}
+                                    >
+                                      Manage Members
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DeleteTeamDialog team={ch}>
+                                    <DropdownMenuItem
+                                      onSelect={(e) => e.preventDefault()}
+                                      variant="destructive"
+                                    >
+                                      Delete team
+                                    </DropdownMenuItem>
+                                  </DeleteTeamDialog>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </SidebarMenuSubItem>
+                        ))}
                       </SidebarMenuSub>
                     </ScrollArea>
                   </CollapsibleContent>

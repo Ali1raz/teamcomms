@@ -1,28 +1,27 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useConfetti } from "@/hooks/use-confetti";
-import { authClient } from "@/lib/auth-client";
-import { orpc } from "@/lib/orpc";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
+import ErrorComponent from "@/app/error";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { notFound } from "next/navigation";
-import Logo from "@/public/team-comms.png";
-import Image from "next/image";
-import Link from "next/link";
+import { useConfetti } from "@/hooks/use-confetti";
+import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/lib/orpc";
 import { formatLocalDateTime } from "@/lib/utils";
-import Error from "@/app/error";
-import { Loader2 } from "lucide-react";
+import Logo from "@/public/team-comms.png";
 
 export default function AcceptInvitePage() {
   const { id } = useParams<{ id: string }>();
@@ -88,7 +87,7 @@ export default function AcceptInvitePage() {
       </div>
     );
 
-  if (error) return <Error error={error} />;
+  if (error) return <ErrorComponent error={error} />;
 
   if (!inv) return notFound();
 

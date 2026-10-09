@@ -1,12 +1,12 @@
 "use client";
 
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import { ThemeToggle } from "@/components/general/theme-toggle";
 import UserAvatarDropdown from "@/components/general/user-avatar-dropdown";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { orpc } from "@/lib/orpc";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
 import { InviteOrganizationDialog } from "../../_components/invite-organization-dialog";
 
 export function OrganizationHeader() {

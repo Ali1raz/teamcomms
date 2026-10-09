@@ -1,10 +1,10 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { ApiResponseType } from "@/lib/types";
-import { updateProfileSchema, UpdateProfileType } from "./schema";
+import { auth } from "@/lib/auth";
+import type { ApiResponseType } from "@/lib/types";
 import { requireSession } from "./data/require-session";
+import { type UpdateProfileType, updateProfileSchema } from "./schema";
 
 export async function updateProfileAction(
   values: UpdateProfileType,

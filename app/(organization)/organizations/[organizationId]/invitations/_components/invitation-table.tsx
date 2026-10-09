@@ -1,9 +1,11 @@
 "use client";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { Button } from "@/components/ui/button";
 import { Ban, Loader2, RefreshCcw } from "lucide-react";
+import { MemberRoleBadge } from "@/components/general/member-role-badge";
+import { UserImage } from "@/components/general/user-avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -20,12 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { InvitationTableActionsDropdown } from "./invitation-table-actions-dropdown";
-import { UserImage } from "@/components/general/user-avatar";
-import { MemberRoleBadge } from "@/components/general/member-role-badge";
+import { orpc } from "@/lib/orpc";
 import { formatLocalDateTime } from "@/lib/utils";
 import { InviteOrganizationDialog } from "../../../_components/invite-organization-dialog";
+import { InvitationTableActionsDropdown } from "./invitation-table-actions-dropdown";
 
 const statusVariant: Record<
   string,

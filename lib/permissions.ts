@@ -1,10 +1,10 @@
-import { MembershipRole } from "@/generated/prisma/enums";
 import { createAccessControl } from "better-auth/plugins/access";
 import {
-  defaultStatements,
   adminAc,
   defaultRoles,
+  defaultStatements,
 } from "better-auth/plugins/organization/access";
+import type { MembershipRole } from "@/generated/prisma/enums";
 
 export const statement = {
   //   project: ["create", "share", "update", "delete"],

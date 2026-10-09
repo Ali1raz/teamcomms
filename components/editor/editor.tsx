@@ -1,9 +1,9 @@
 "use client";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
+import { type ReactNode, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { baseExtensions } from "./extensions";
 import { Menubar } from "./menubar";
-import { ReactNode, useEffect } from "react";
-import { cn } from "@/lib/utils";
 
 interface iAppProps {
   field: {

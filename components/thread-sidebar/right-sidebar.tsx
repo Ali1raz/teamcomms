@@ -1,12 +1,25 @@
 "use client";
 
 import {
-  ComponentProps,
-  CSSProperties,
+  type InfiniteData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { X } from "lucide-react";
+import Image from "next/image";
+import { useParams } from "next/navigation";
+import {
+  type ComponentProps,
+  type CSSProperties,
   Suspense,
   useMemo,
   useState,
 } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -15,33 +28,21 @@ import {
   SidebarRail,
   useSidebarWithSide,
 } from "@/components/ui/sidebar";
-import { ThreadsForm } from "./threads-form";
-import { useThread } from "./thread-context";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import {
-  InfiniteData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { client, orpc } from "@/lib/orpc";
-import Image from "next/image";
-import { formatRelativeTime } from "@/lib/utils";
-import { Card, CardAction, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { UserImage } from "../general/user-avatar";
+import { usePresence } from "@/hooks/use-presence";
+import { type client, orpc } from "@/lib/orpc";
+import { cn, formatRelativeTime } from "@/lib/utils";
+import type { RealtimeUserSchemaType } from "@/realtime/schema";
 import { RenderJSONtoHTML } from "../editor/render-content";
+import { UserImage } from "../general/user-avatar";
+import {
+  RealtimeThreadPRovider,
+  useRealtimeThread,
+} from "../realtime-thread-provider";
+import { useRealtimeTeam } from "../team-realtime-provider";
 import { SummarizeThreadPopover } from "./summarize-thread-popover";
 import { ThreadActionsDropdown } from "./thread-actions-dropdown";
-import { useParams } from "next/navigation";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { usePresence } from "@/hooks/use-presence";
-import { RealtimeUserSchemaType } from "@/realtime/schema";
-import { RealtimeThreadPRovider } from "../realtime-thread-provider";
-import { useRealtimeTeam } from "../team-realtime-provider";
-import { useRealtimeThread } from "../realtime-thread-provider";
+import { useThread } from "./thread-context";
+import { ThreadsForm } from "./threads-form";
 
 type ThreadsData = Awaited<ReturnType<typeof client.message.threads.list>>;
 type MessageListPage = {
@@ -149,7 +150,7 @@ function ThreadItem({
 
         return { prevThreadData, prevMessageListData };
       },
-      onSuccess: (data, variables) => {
+      onSuccess: (_data, variables) => {
         sendThread({
           type: "reply:deleted",
           payload: { replyId: variables.messageId },
@@ -296,7 +297,7 @@ export function RightSidebar({
   if (!threadId) return null;
 
   return (
-    <RealtimeThreadPRovider threadId={threadId!}>
+    <RealtimeThreadPRovider threadId={threadId}>
       <Sidebar
         {...props}
         style={{ "--sidebar-width": width } as CSSProperties}
@@ -307,7 +308,7 @@ export function RightSidebar({
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-semibold">Replies</h1>
             <div className="flex items-center gap-2">
-              <SummarizeThreadPopover threadId={threadId!} />
+              <SummarizeThreadPopover threadId={threadId} />
               <Button
                 variant="outline"
                 size="icon"
@@ -389,7 +390,7 @@ export function RightSidebar({
                   <ThreadItem
                     key={thread.id}
                     thread={thread}
-                    threadId={threadId!}
+                    threadId={threadId}
                     editingThreadId={editingThreadId}
                     setEditingThreadId={setEditingThreadId}
                     deletingThreadId={deletingThreadId}

@@ -1,5 +1,7 @@
 "use client";
 
+import { Edit2, MoreVertical, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,8 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit2, MoreVertical, Trash2 } from "lucide-react";
-import { useState } from "react";
 
 interface ThreadActionsDropdownProps {
   canEdit: boolean;

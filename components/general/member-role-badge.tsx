@@ -1,4 +1,4 @@
-import { MembershipRole } from "@/generated/prisma/enums";
+import type { MembershipRole } from "@/generated/prisma/enums";
 import { Badge } from "../ui/badge";
 
 export function MemberRoleBadge({ role }: { role: MembershipRole }) {

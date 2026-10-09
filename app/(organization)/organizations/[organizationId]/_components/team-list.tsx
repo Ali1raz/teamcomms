@@ -1,7 +1,9 @@
 "use client";
 
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
+import { FolderCode, Loader2, RefreshCcw } from "lucide-react";
+import { CreateTeamDialog } from "@/components/create-tem-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyContent,
@@ -10,12 +12,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { FolderCode, Loader2, RefreshCcw } from "lucide-react";
-import { CreateTeamDialog } from "@/components/create-tem-dialog";
-import { TeamCard } from "./team-card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { orpc } from "@/lib/orpc";
 import { LeaveOrganizationDialog } from "./leave-organization-dialog";
+import { TeamCard } from "./team-card";
 
 export function TeamList({ organizationId }: { organizationId: string }) {
   const {

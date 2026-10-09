@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import {
   Empty,
   EmptyDescription,
@@ -5,7 +6,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Loader2 } from "lucide-react";
 
 export default function Loading() {
   return (

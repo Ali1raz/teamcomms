@@ -1,4 +1,4 @@
-import { ArcjetNextRequest } from "@arcjet/next";
+import type { ArcjetNextRequest } from "@arcjet/next";
 import { os } from "@orpc/server";
 
 export const base = os

@@ -1,8 +1,22 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus } from "lucide-react";
+import { useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { type client, orpc } from "@/lib/orpc";
+import { type UpdateTeamType, updateTeamSchema } from "@/lib/schema";
+import { cn, createSlug } from "@/lib/utils";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,22 +25,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import { toast } from "sonner";
-import { useState } from "react";
-import { cn, createSlug } from "@/lib/utils";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
-import { Button } from "./ui/button";
-
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { client, orpc } from "@/lib/orpc";
-import { UpdateTeamType, updateTeamSchema } from "@/lib/schema";
 
 export type teamType = Awaited<
   ReturnType<typeof client.team.list>

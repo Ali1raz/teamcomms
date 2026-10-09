@@ -1,11 +1,11 @@
-import { LoginForm } from "../_components/login-form";
-import Logo from "@/public/team-comms.png";
+import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Metadata } from "next";
+import { auth } from "@/lib/auth";
+import Logo from "@/public/team-comms.png";
+import { LoginForm } from "../_components/login-form";
 
 export const metadata: Metadata = {
   title: "Login",

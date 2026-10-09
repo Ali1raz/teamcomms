@@ -1,14 +1,4 @@
 import { generateCompose, generateThreadSummary } from "./ai";
-import {
-  addMembersToTeam,
-  createTeam,
-  deleteTeam,
-  getTeam,
-  listTeamMembers,
-  listTeams,
-  removeMemberFromTeam,
-  updateTeam,
-} from "./team";
 import { getInvitionDEtails } from "./invitations";
 import { inviteMember } from "./members";
 import {
@@ -18,7 +8,6 @@ import {
   listThreads,
   updateMessage,
 } from "./message";
-import { getCurrentUser } from "./user";
 import {
   cancelOrganizationInvitation,
   createOrganization,
@@ -30,6 +19,17 @@ import {
   updateOrganization,
   updateOrganizationMemberRole,
 } from "./organization";
+import {
+  addMembersToTeam,
+  createTeam,
+  deleteTeam,
+  getTeam,
+  listTeamMembers,
+  listTeams,
+  removeMemberFromTeam,
+  updateTeam,
+} from "./team";
+import { getCurrentUser } from "./user";
 
 export const router = {
   user: {

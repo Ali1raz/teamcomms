@@ -1,5 +1,8 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { MoreHorizontal } from "lucide-react";
+import Link from "next/link";
 import { AddMemberToTeam } from "@/components/add-member-to-team";
 import { DeleteTeamDialog } from "@/components/delete-team-dialog";
 import { Button } from "@/components/ui/button";
@@ -17,11 +20,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { teamType, UpdateTeamDialog } from "@/components/update-team-dialog";
+import {
+  type teamType,
+  UpdateTeamDialog,
+} from "@/components/update-team-dialog";
 import { orpc } from "@/lib/orpc";
-import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal } from "lucide-react";
-import Link from "next/link";
 
 export function TeamCard({
   team,

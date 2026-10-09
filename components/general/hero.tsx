@@ -1,12 +1,12 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
-import Image from "next/image";
 import { motion } from "motion/react";
+import Image from "next/image";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
 import DashboardImage from "@/public/image.png";
 import DashboardImageLight from "@/public/image-light.png";
-import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
 import { Skeleton } from "../ui/skeleton";
 
 const Hero = () => {

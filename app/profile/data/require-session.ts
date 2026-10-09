@@ -1,8 +1,8 @@
-import { auth } from "@/lib/auth";
+import type { Route } from "next";
 import { headers } from "next/headers";
-import { cache } from "react";
 import { redirect } from "next/navigation";
-import { Route } from "next";
+import { cache } from "react";
+import { auth } from "@/lib/auth";
 
 export const requireSession = cache(async (currentPath?: string) => {
   const session = await auth.api.getSession({

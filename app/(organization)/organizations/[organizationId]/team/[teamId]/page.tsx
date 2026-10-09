@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { client } from "@/lib/orpc";
-import { MessageInput } from "../../_components/messaeg-input";
 import { MessageList } from "../../_components/MessageList";
+import { MessageInput } from "../../_components/messaeg-input";
 
 export async function generateMetadata(
   props: PageProps<"/organizations/[organizationId]/team/[teamId]">

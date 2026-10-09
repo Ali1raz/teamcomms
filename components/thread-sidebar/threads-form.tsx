@@ -1,26 +1,26 @@
 "use client";
 
-import { Messagecomponser } from "@/app/(organization)/organizations/[organizationId]/_components/message-omposer";
-import {
-  createMessageSchema,
-  CreateMessageType,
-} from "@/app/(organization)/organizations/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { client, orpc } from "@/lib/orpc";
-import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import type { InfiniteMessages } from "@/app/(organization)/organizations/[organizationId]/_components/message-item";
+import { Messagecomponser } from "@/app/(organization)/organizations/[organizationId]/_components/message-omposer";
+import {
+  type CreateMessageType,
+  createMessageSchema,
+} from "@/app/(organization)/organizations/schema";
+import { type client, orpc } from "@/lib/orpc";
+import { useRealtimeThread } from "../realtime-thread-provider";
+import { useRealtimeTeam } from "../team-realtime-provider";
 import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup } from "../ui/field";
-import { InfiniteMessages } from "@/app/(organization)/organizations/[organizationId]/_components/message-item";
-import { useRealtimeTeam } from "../team-realtime-provider";
-import { useRealtimeThread } from "../realtime-thread-provider";
 
 type ThreadsData = Awaited<ReturnType<typeof client.message.threads.list>>;
 type ThreadItem = ThreadsData["threads"][number];
@@ -246,7 +246,7 @@ export function ThreadsForm({
               content: data.message.content,
               imageUrl: data.message.imageUrl,
               createdAt: data.message.createdAt,
-              user: editingThread!.user,
+              user: editingThread?.user,
             },
           },
         });

@@ -1,7 +1,7 @@
-import { auth, User } from "@/lib/auth";
-import { base } from "./bast";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { auth, type User } from "@/lib/auth";
+import { base } from "./bast";
 
 type SessionOnly = typeof auth.$Infer.Session.session;
 

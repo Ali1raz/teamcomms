@@ -1,5 +1,11 @@
 "use client";
 
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { Loader2, MoreHorizontal, RefreshCcw } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useMemo } from "react";
+import { AddMemberToTeam } from "@/components/add-member-to-team";
+import { MemberRoleBadge } from "@/components/general/member-role-badge";
 import { UserImage } from "@/components/general/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,17 +21,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { orpc } from "@/lib/orpc";
-import { Loader2, MoreHorizontal, RefreshCcw } from "lucide-react";
-import { RemoveMemberDialog } from "./_components/remov-member-dialog";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
-import { AddMemberToTeam } from "@/components/add-member-to-team";
-import { usePresence } from "@/hooks/use-presence";
-import { RealtimeUserSchemaType } from "@/realtime/schema";
-import { useMemo } from "react";
-import { MemberRoleBadge } from "@/components/general/member-role-badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePresence } from "@/hooks/use-presence";
+import { orpc } from "@/lib/orpc";
+import type { RealtimeUserSchemaType } from "@/realtime/schema";
+import { RemoveMemberDialog } from "./_components/remov-member-dialog";
 
 export default function TeamMembersPage() {
   const { teamId, organizationId } = useParams<{

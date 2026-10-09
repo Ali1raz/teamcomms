@@ -1,19 +1,18 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { PanelLeftIcon } from "lucide-react";
 import {
-  ComponentProps,
+  type ComponentProps,
+  type CSSProperties,
   createContext,
-  CSSProperties,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva, VariantProps } from "class-variance-authority";
-import { PanelLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -31,8 +30,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -183,30 +182,32 @@ function SidebarProvider({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleSidebarLeft, toggleSidebarRight]);
 
-  const leftState: SidebarState = {
-    state: openLeft ? "expanded" : "collapsed",
-    open: openLeft,
-    setOpen: setOpenLeft,
-    openMobile: openMobileLeft,
-    setOpenMobile: setOpenMobileLeft,
-    toggleSidebar: toggleSidebarLeft,
-  };
+  const leftState = useMemo<SidebarState>(
+    () => ({
+      state: openLeft ? "expanded" : "collapsed",
+      open: openLeft,
+      setOpen: setOpenLeft,
+      openMobile: openMobileLeft,
+      setOpenMobile: setOpenMobileLeft,
+      toggleSidebar: toggleSidebarLeft,
+    }),
+    [openLeft, openMobileLeft, setOpenLeft, toggleSidebarLeft]
+  );
 
-  const rightState: SidebarState = {
-    state: openRight ? "expanded" : "collapsed",
-    open: openRight,
-    setOpen: setOpenRight,
-    openMobile: openMobileRight,
-    setOpenMobile: setOpenMobileRight,
-    toggleSidebar: toggleSidebarRight,
-  };
+  const rightState = useMemo<SidebarState>(
+    () => ({
+      state: openRight ? "expanded" : "collapsed",
+      open: openRight,
+      setOpen: setOpenRight,
+      openMobile: openMobileRight,
+      setOpenMobile: setOpenMobileRight,
+      toggleSidebar: toggleSidebarRight,
+    }),
+    [openRight, openMobileRight, setOpenRight, toggleSidebarRight]
+  );
 
   const contextValue = useMemo<SidebarContextProps>(
-    () => ({
-      left: leftState,
-      right: rightState,
-      isMobile,
-    }),
+    () => ({ left: leftState, right: rightState, isMobile }),
     [leftState, rightState, isMobile]
   );
 

@@ -1,9 +1,9 @@
-import { useState } from "react";
 import usePartySocket from "partysocket/react";
+import { useState } from "react";
 import {
   RealtimePresenceSchema,
-  RealtimePresenceSchemaType,
-  RealtimeUserSchemaType,
+  type RealtimePresenceSchemaType,
+  type RealtimeUserSchemaType,
 } from "@/realtime/schema";
 
 interface iAppProps {

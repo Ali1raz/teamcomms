@@ -1,12 +1,12 @@
-import { Connection, routePartykitRequest, Server } from "partyserver";
+import { type Connection, routePartykitRequest, Server } from "partyserver";
+import { z } from "zod";
 import {
-  RealtimeTeamEventSchema,
   RealtimePresenceSchema,
-  RealtimePresenceSchemaType,
+  type RealtimePresenceSchemaType,
   RealtimeReplyEventSchema,
+  RealtimeTeamEventSchema,
   RealtimeUserSchema,
 } from "./schema";
-import { z } from "zod";
 
 const ConnectionStateSchema = z
   .object({

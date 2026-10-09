@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
-import { PermissionMap } from "@/lib/permissions";
 import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import type { PermissionMap } from "@/lib/permissions";
 
 /// for server components
 /// checks if the current user has the specified permissions

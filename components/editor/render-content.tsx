@@ -1,8 +1,8 @@
-import { generateHTML, JSONContent } from "@tiptap/react";
-import { baseExtensions } from "./extensions";
+import { generateHTML, type JSONContent } from "@tiptap/react";
 import Dompurify from "dompurify";
 import parse from "html-react-parser";
 import { cn } from "@/lib/utils";
+import { baseExtensions } from "./extensions";
 
 interface iAppProps {
   content: JSONContent;
