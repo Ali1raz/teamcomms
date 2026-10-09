@@ -31,11 +31,11 @@ const Hero = () => {
           </p>
 
           {isPending ? (
-            <Skeleton className="w-24 h-10 bg-muted rounded-sm" />
+            <Skeleton className="w-24 h-10 bg-muted" />
           ) : data ? (
             <Link
               className={buttonVariants({
-                className: "rounded-sm w-fit",
+                className: "w-fit",
               })}
               href="/organizations"
             >
@@ -44,7 +44,7 @@ const Hero = () => {
           ) : (
             <Link
               className={buttonVariants({
-                className: "rounded-sm w-fit",
+                className: "w-fit",
               })}
               href="/login"
             >
@@ -59,7 +59,7 @@ const Hero = () => {
           alt="Hero"
           width={1200}
           height={800}
-          className="w-auto h-auto max-w-7xl aspect-video object-fill object-top-left rounded-x dark:flex hidden"
+          className="h-75 w-full object-cover object-top-left md:h-auto md:max-w-7xl md:mx-auto rounded-x md:object-contain dark:flex hidden"
           priority
           // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
         />
@@ -68,7 +68,7 @@ const Hero = () => {
           alt="Hero"
           width={1200}
           height={800}
-          className="w-auto h-auto max-w-7xl aspect-video object-fill object-top-left rounded-x flex dark:hidden"
+          className="h-75 w-full object-cover object-top-left md:h-auto md:max-w-7xl md:mx-auto rounded-x md:object-contain flex dark:hidden"
           priority
           // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
         />
