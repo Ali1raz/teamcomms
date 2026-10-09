@@ -1,5 +1,5 @@
 import { FolderCode, Home } from "lucide-react";
-
+import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Empty,
@@ -9,7 +9,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import Link from "next/link";
 
 export default function NotFound() {
   return (

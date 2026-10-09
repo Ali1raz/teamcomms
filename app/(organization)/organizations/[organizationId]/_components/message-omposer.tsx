@@ -1,8 +1,8 @@
+import { ImageIcon, Send } from "lucide-react";
 import { Editor } from "@/components/editor/editor";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Send } from "lucide-react";
-import { ImageUploadDialog } from "./image-dialog";
 import { AttachmentChip } from "./attachment-chip";
+import { ImageUploadDialog } from "./image-dialog";
 
 interface iAppProps {
   field: {

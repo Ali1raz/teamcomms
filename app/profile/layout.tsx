@@ -1,6 +1,6 @@
-import { Metadata } from "next";
-import { OrganizationHeader } from "../(organization)/organizations/_components/header";
+import type { Metadata } from "next";
 import { SITE } from "@/lib/app/site";
+import { OrganizationHeader } from "../(organization)/organizations/_components/header";
 
 export const metadata: Metadata = {
   title: {

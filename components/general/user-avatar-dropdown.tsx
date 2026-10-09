@@ -7,9 +7,8 @@ import {
   User,
   UserCircle,
 } from "lucide-react";
-
-import { useSignOut } from "@/hooks/use-signout";
 import Link from "next/link";
+import { useSignOut } from "@/hooks/use-signout";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,

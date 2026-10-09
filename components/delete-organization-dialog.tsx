@@ -1,5 +1,13 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { Loader2, Trash2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/lib/orpc";
+import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogClose,
@@ -10,16 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import { toast } from "sonner";
-import { useState, useTransition } from "react";
-import { cn } from "@/lib/utils";
-
-import { Loader2, Trash2 } from "lucide-react";
-import { Button } from "./ui/button";
-
-import { useQueryClient } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { authClient } from "@/lib/auth-client";
 
 export function DeleteOrganizationDialog({
   className,

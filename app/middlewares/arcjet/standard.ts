@@ -1,7 +1,7 @@
+import type { ArcjetNextRequest } from "@arcjet/next";
 import arcjet, { detectBot, shield } from "@/lib/arcjet";
+import type { User } from "@/lib/auth";
 import { base } from "../bast";
-import { User } from "@/lib/auth";
-import { ArcjetNextRequest } from "@arcjet/next";
 
 const standardAj = () =>
   arcjet

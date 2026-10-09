@@ -1,11 +1,11 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { COLOR_COMBOS } from "./app/data";
-import { renderToMarkdown } from "@tiptap/static-renderer/pm/markdown";
-import { baseExtensions } from "@/components/editor/extensions";
-import MarkdownIt from "markdown-it";
-import Dompurify from "dompurify";
 import { generateJSON } from "@tiptap/react";
+import { renderToMarkdown } from "@tiptap/static-renderer/pm/markdown";
+import { type ClassValue, clsx } from "clsx";
+import Dompurify from "dompurify";
+import MarkdownIt from "markdown-it";
+import { twMerge } from "tailwind-merge";
+import { baseExtensions } from "@/components/editor/extensions";
+import { COLOR_COMBOS } from "./app/data";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -91,7 +91,7 @@ function normalizeWhitespace(text: string) {
  * see https://tiptap.dev/docs/editor/api/utilities/static-renderer
  */
 export async function jsonToMarkdown(json: string) {
-  let content;
+  let content: unknown;
   try {
     content = JSON.parse(json);
   } catch {

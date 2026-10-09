@@ -1,14 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon, Loader2, X } from "lucide-react";
 import Image from "next/image";
@@ -16,11 +7,20 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Session } from "@/lib/auth";
-import { UpdateProfileType, updateProfileSchema } from "../schema";
-import { updateProfileAction } from "../actions";
-import { tryCatch } from "@/lib/try-catch";
 import { ImageUploadDialog } from "@/app/(organization)/organizations/[organizationId]/_components/image-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import type { Session } from "@/lib/auth";
+import { tryCatch } from "@/lib/try-catch";
+import { updateProfileAction } from "../actions";
+import { type UpdateProfileType, updateProfileSchema } from "../schema";
 
 export function UpdateProfileForm({ session }: { session: Session }) {
   const [isPending, startTransition] = useTransition();

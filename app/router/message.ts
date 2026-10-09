@@ -1,17 +1,17 @@
 import z from "zod";
-import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
-import { writesecurityMiddleware } from "../middlewares/arcjet/write";
-import { requireAuthMiddleware } from "../middlewares/auth";
-import { base } from "../middlewares/bast";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
+import type { Message } from "@/generated/prisma/client";
+import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
 import { prisma } from "@/lib/prisma";
 import {
   createMessageSchema,
   updateMessageSchema,
 } from "../(organization)/organizations/schema";
-import { Message } from "@/generated/prisma/client";
 import { readsecurityMiddleware } from "../middlewares/arcjet/read";
-import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
+import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
+import { writesecurityMiddleware } from "../middlewares/arcjet/write";
+import { requireAuthMiddleware } from "../middlewares/auth";
+import { base } from "../middlewares/bast";
+import { requireOrganizationMiddleware } from "../middlewares/organization";
 
 export const createMessage = base
   .use(requireAuthMiddleware)

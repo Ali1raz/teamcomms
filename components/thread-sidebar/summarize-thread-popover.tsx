@@ -1,10 +1,11 @@
 "use client";
 
-import { client } from "@/lib/orpc";
 import { useChat } from "@ai-sdk/react";
 import { eventIteratorToStream } from "@orpc/client";
 import { SparklesIcon } from "lucide-react";
 import { useState } from "react";
+import { client } from "@/lib/orpc";
+import { MessageResponse } from "../ai-elements/message";
 import { Button } from "../ui/button";
 import {
   Popover,
@@ -16,7 +17,6 @@ import {
 } from "../ui/popover";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";
-import { MessageResponse } from "../ai-elements/message";
 
 export function SummarizeThreadPopover({ threadId }: { threadId: string }) {
   const [open, setOpen] = useState(false);

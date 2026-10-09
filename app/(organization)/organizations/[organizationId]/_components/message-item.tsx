@@ -1,9 +1,12 @@
 "use client";
 
-import { cn, formatRelativeTime } from "@/lib/utils";
+import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
+import { Edit2, MessagesSquare, MoreVertical, Trash2 } from "lucide-react";
 import Image from "next/image";
+import { useCallback, useState } from "react";
 import { RenderJSONtoHTML } from "@/components/editor/render-content";
-import { Edit2, MessagesSquare, Trash2, MoreVertical } from "lucide-react";
+import { UserImage } from "@/components/general/user-avatar";
+import { useThread } from "@/components/thread-sidebar/thread-context";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,14 +14,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { EditMessageForm } from "./edit-message-form";
-import { useCallback, useState } from "react";
-import { DeleteMessageDialog } from "./delete-message-dialog";
-import { client, orpc } from "@/lib/orpc";
 import { useSidebarWithSide } from "@/components/ui/sidebar";
-import { useThread } from "@/components/thread-sidebar/thread-context";
-import { InfiniteData, useQueryClient } from "@tanstack/react-query";
-import { UserImage } from "@/components/general/user-avatar";
+import { type client, orpc } from "@/lib/orpc";
+import { cn, formatRelativeTime } from "@/lib/utils";
+import { DeleteMessageDialog } from "./delete-message-dialog";
+import { EditMessageForm } from "./edit-message-form";
 
 export type messageType = Awaited<
   ReturnType<typeof client.message.list>

@@ -1,6 +1,35 @@
 "use client";
 
+import {
+  Apple,
+  Calendar,
+  Clock,
+  Globe,
+  LogOut,
+  MapPin,
+  Monitor,
+  ShieldAlert,
+  Smartphone,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import {
+  Android,
+  Chrome,
+  Edge,
+  Firefox,
+  Windows,
+} from "@/components/general/tech";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -10,41 +39,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
-import { cn, formatLocalDateTime } from "@/lib/utils";
-import { ApiResponseType } from "@/lib/types";
-import {
-  Monitor,
-  Smartphone,
-  Globe,
-  Clock,
-  Calendar,
-  MapPin,
-  LogOut,
-  ShieldAlert,
-  Apple,
-} from "lucide-react";
 import { errorMessage } from "@/lib/error-message";
-import {
-  Android,
-  Chrome,
-  Edge,
-  Firefox,
-  Windows,
-} from "@/components/general/tech";
-import { UserGetAllSessions } from "../data/user-get-all-sessions";
 import { tryCatch } from "@/lib/try-catch";
+import type { ApiResponseType } from "@/lib/types";
+import { cn, formatLocalDateTime } from "@/lib/utils";
+import type { UserGetAllSessions } from "../data/user-get-all-sessions";
 
 export function UserSessionsCard({
   sessions,

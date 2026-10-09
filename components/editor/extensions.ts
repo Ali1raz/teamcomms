@@ -1,14 +1,14 @@
-import { StarterKit } from "@tiptap/starter-kit";
-import TextAlign from "@tiptap/extension-text-align";
-import { all, createLowlight } from "lowlight";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import { Placeholder } from "@tiptap/extensions";
 import Blockquote from "@tiptap/extension-blockquote";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import {
   Details,
   DetailsContent,
   DetailsSummary,
 } from "@tiptap/extension-details";
+import TextAlign from "@tiptap/extension-text-align";
+import { Placeholder } from "@tiptap/extensions";
+import { StarterKit } from "@tiptap/starter-kit";
+import { all, createLowlight } from "lowlight";
 
 const lowlight = createLowlight(all);
 

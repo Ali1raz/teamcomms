@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { InvitationList } from "./_components/invitation-table";
 
 export const metadata: Metadata = {

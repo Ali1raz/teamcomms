@@ -1,10 +1,10 @@
 "use client";
 
 import { useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { MessageItem } from "./message-item";
-import { orpc } from "@/lib/orpc";
-import { useParams } from "next/navigation";
 import { Ban, ChevronDownIcon, ChevronsDownIcon } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -12,11 +12,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RealtimeUserSchemaType } from "@/realtime/schema";
 import { usePresence } from "@/hooks/use-presence";
+import { orpc } from "@/lib/orpc";
+import type { RealtimeUserSchemaType } from "@/realtime/schema";
+import { MessageItem } from "./message-item";
 
 export function MessageList() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -64,8 +64,11 @@ export function MessageList() {
     data: { user },
   } = useSuspenseQuery(orpc.organization.list.queryOptions());
 
-  const isNearBottom = (el: HTMLDivElement) =>
-    el.scrollHeight - el.scrollTop - el.clientHeight <= 80;
+  const isNearBottom = useCallback(
+    (el: HTMLDivElement) =>
+      el.scrollHeight - el.scrollTop - el.clientHeight <= 80,
+    []
+  );
 
   const handleScroll = () => {
     const el = ref.current;
@@ -168,7 +171,7 @@ export function MessageList() {
       }
     }
     lastItemRef.current = lastId;
-  }, [messages]);
+  }, [messages, isNearBottom]);
 
   const scrollToBottom = () => {
     const el = ref.current;
@@ -223,7 +226,10 @@ export function MessageList() {
     return (
       <div className="flex flex-col gap-6 w-full h-full">
         {[...Array(10)].map((_, i) => (
-          <div key={i} className="flex px-4 items-start gap-2 w-full">
+          <div
+            key={`skeleton-${i}`}
+            className="flex px-4 items-start gap-2 w-full"
+          >
             <Skeleton className="rounded-full size-10" />
             <div className="flex flex-col gap-2 w-full">
               <div className="flex mb-4 items-center gap-4">

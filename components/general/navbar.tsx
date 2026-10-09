@@ -1,6 +1,5 @@
 "use client";
 
-import { Button, buttonVariants } from "@/components/ui/button";
 import { LogOut, Menu, X } from "lucide-react";
 import {
   AnimatePresence,
@@ -11,11 +10,12 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ThemeToggle } from "./theme-toggle";
-import Logo from "@/public/team-comms.png";
-import { authClient } from "@/lib/auth-client";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useSignOut } from "@/hooks/use-signout";
+import { authClient } from "@/lib/auth-client";
+import Logo from "@/public/team-comms.png";
 import { Skeleton } from "../ui/skeleton";
+import { ThemeToggle } from "./theme-toggle";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -169,14 +169,12 @@ const Navbar = () => {
                   {isPending ? (
                     <Skeleton className="w-full h-10 bg-muted rounded-sm" />
                   ) : data?.session ? (
-                    <>
-                      <Link
-                        href={"/organizations"}
-                        className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
-                      >
-                        Dasboard
-                      </Link>
-                    </>
+                    <Link
+                      href={"/organizations"}
+                      className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
+                    >
+                      Dasboard
+                    </Link>
                   ) : (
                     <Link
                       className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"

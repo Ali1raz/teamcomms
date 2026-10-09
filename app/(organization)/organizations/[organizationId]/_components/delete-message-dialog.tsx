@@ -1,5 +1,11 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useRealtimeTeam } from "@/components/team-realtime-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,13 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { orpc } from "@/lib/orpc";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
-import { Loader2 } from "lucide-react";
-import { useParams } from "next/navigation";
-import { toast } from "sonner";
-import { useState } from "react";
-import { InfiniteMessages } from "./message-item";
+import type { InfiniteMessages } from "./message-item";
 
 interface DeleteMessageDialogProps {
   messageId: string;
@@ -64,7 +64,7 @@ export function DeleteMessageDialog({
         return { prevData };
       },
 
-      onSuccess: (data, variables) => {
+      onSuccess: (_data, variables) => {
         send({
           type: "message:deleted",
           payload: { messageId: variables.messageId },

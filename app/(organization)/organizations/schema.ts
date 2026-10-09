@@ -1,5 +1,5 @@
-import { MembershipRole } from "@/generated/prisma/enums";
 import z from "zod";
+import { MembershipRole } from "@/generated/prisma/enums";
 
 export const createOrganizationSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required"),

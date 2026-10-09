@@ -1,5 +1,5 @@
 import { UserImage } from "@/components/general/user-avatar";
-import { User } from "@/lib/auth";
+import type { User } from "@/lib/auth";
 import { formatLocalDateTime } from "@/lib/utils";
 
 interface iAppProps {
@@ -31,8 +31,8 @@ export function UserDetailsSection({ user, details }: iAppProps) {
         {[
           { label: "Joined", value: formatLocalDateTime(user.createdAt) },
           ...(details || []),
-        ].map((item, i) => (
-          <div key={i}>
+        ].map((item) => (
+          <div key={item.label}>
             <span className="text-muted-foreground/80 ">{item.label}: </span>
             <span>{item.value}</span>
           </div>

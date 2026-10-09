@@ -1,9 +1,4 @@
-import { Editor } from "@tiptap/react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { Toggle } from "../ui/toggle";
-import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Input } from "../ui/input";
+import { type Editor, useEditorState } from "@tiptap/react";
 import {
   Bold,
   ChevronsUpDown,
@@ -16,11 +11,15 @@ import {
   Strikethrough,
   Undo2,
 } from "lucide-react";
-import { useEditorState } from "@tiptap/react";
-import { Separator } from "../ui/separator";
-import { Button } from "../ui/button";
-import { ComposeButton } from "./compose-button";
+import { useState } from "react";
 import { markdownToJson } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Separator } from "../ui/separator";
+import { Toggle } from "../ui/toggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { ComposeButton } from "./compose-button";
 
 interface iAppProps {
   editor: Editor | null;

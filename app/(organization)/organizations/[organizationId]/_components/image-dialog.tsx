@@ -1,5 +1,8 @@
 "use client";
 
+import { Upload } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,9 +13,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { UploadDropzone } from "@/lib/uploadthing";
-import { Upload } from "lucide-react";
-import { ReactNode, useState } from "react";
-import { toast } from "sonner";
 
 export function ImageUploadDialog({
   children,

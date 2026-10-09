@@ -1,6 +1,12 @@
 /* eslint-disable react-hooks/incompatible-library */
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,11 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
-import { ReactNode, useEffect, useState } from "react";
-import { createSlug } from "@/lib/utils";
 import {
   Field,
   FieldError,
@@ -24,12 +25,14 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/lib/orpc";
-import { updateOrganizationSchema, UpdateOrganizationType } from "../schema";
-import { ImageUploadDialog } from "../[organizationId]/_components/image-dialog";
+import { createSlug } from "@/lib/utils";
 import { AttachmentChip } from "../[organizationId]/_components/attachment-chip";
+import { ImageUploadDialog } from "../[organizationId]/_components/image-dialog";
+import {
+  type UpdateOrganizationType,
+  updateOrganizationSchema,
+} from "../schema";
 
 export function UpdateOrganizationDialog({
   children,

@@ -1,16 +1,15 @@
 "use client";
 
-import { toast } from "sonner";
-import { ReactNode, useState } from "react";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { ChevronDownIcon, InfoIcon, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { type ReactNode, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +18,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { inviteMemberSchema, InviteMemberSchemaType } from "../schema";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -32,23 +47,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MembershipRole } from "@/generated/prisma/enums";
-import { client, orpc } from "@/lib/orpc";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useMutation } from "@tanstack/react-query";
-import {
-  HoverCardTrigger,
-  HoverCardContent,
-  HoverCard,
-} from "@/components/ui/hover-card";
-import { ButtonGroup } from "@/components/ui/button-group";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import Link from "next/link";
+import { type client, orpc } from "@/lib/orpc";
+import { type InviteMemberSchemaType, inviteMemberSchema } from "../schema";
 
 export function InviteOrganizationDialog({
   children,

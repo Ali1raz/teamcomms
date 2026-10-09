@@ -1,8 +1,26 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
+import {
+  type CreateTeamType,
+  createTeamSchema,
+} from "@/app/(organization)/organizations/schema";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { orpc } from "@/lib/orpc";
+import { cn, createSlug } from "@/lib/utils";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,25 +29,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import { toast } from "sonner";
-import { useState } from "react";
-import { cn, createSlug } from "@/lib/utils";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
-import { Button } from "./ui/button";
-import {
-  createTeamSchema,
-  CreateTeamType,
-} from "@/app/(organization)/organizations/schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { useRouter } from "next/navigation";
 
 export function CreateTeamDialog({
   className,

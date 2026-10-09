@@ -1,5 +1,10 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { type ReactNode, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,11 +17,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { orpc } from "@/lib/orpc";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { ReactNode, useState } from "react";
-import { toast } from "sonner";
 
 export function LeaveOrganizationDialog({
   children,

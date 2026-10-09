@@ -1,18 +1,18 @@
-import { auth, FullOrg, User } from "@/lib/auth";
 import { headers } from "next/headers";
 import z from "zod";
-import { base } from "../middlewares/bast";
-import { requireAuthMiddleware } from "../middlewares/auth";
-import { createOrganizationSchema } from "../(organization)/organizations/schema";
-import { createAvatarUrl, createSlug } from "@/lib/utils";
-import { errorMessage } from "@/lib/error-message";
-import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
-import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
 import { MembershipRole } from "@/generated/prisma/enums";
+import { auth, type FullOrg, type User } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
 import { prisma } from "@/lib/prisma";
-import { requireMemberMiddleware } from "../middlewares/member";
+import { createAvatarUrl, createSlug } from "@/lib/utils";
+import { createOrganizationSchema } from "../(organization)/organizations/schema";
+import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
+import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
+import { requireAuthMiddleware } from "../middlewares/auth";
+import { base } from "../middlewares/bast";
+import { requireMemberMiddleware } from "../middlewares/member";
+import { requireOrganizationMiddleware } from "../middlewares/organization";
 
 export const listOrganizations = base
   .use(requireAuthMiddleware)
@@ -107,7 +107,7 @@ export const createOrganization = base
     const slug = createSlug(input.name);
     console.log("Creating organization with slug:", slug);
 
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.createOrganization>>;
 
     try {
       data = await auth.api.createOrganization({
@@ -163,7 +163,7 @@ export const updateOrganization = base
   .handler(async ({ input, errors }) => {
     const slug = createSlug(input.name);
 
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.updateOrganization>>;
     try {
       data = await auth.api.updateOrganization({
         body: {
@@ -221,7 +221,7 @@ export const listOrganizationMembers = base
     })
   )
   .handler(async ({ context, errors }) => {
-    let organizationmembers;
+    let organizationmembers: Awaited<ReturnType<typeof prisma.member.findMany>>;
     try {
       organizationmembers = await prisma.member.findMany({
         where: {
@@ -376,7 +376,7 @@ export const listOrganizationInvitations = base
       });
     }
 
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.listInvitations>>;
 
     try {
       data = await auth.api.listInvitations({
@@ -428,7 +428,12 @@ export const listOrganizationInvitations = base
         status: inv.status,
         expiresAt: inv.expiresAt,
         createdAt: inv.createdAt,
-        inviter: inviterMap.get(inv.inviterId)!,
+        inviter: inviterMap.get(inv.inviterId) ?? {
+          id: "",
+          name: "",
+          email: "",
+          image: null,
+        },
         invitedUser: invitedUserMap.get(inv.email) ?? null,
         team: inv.teamId ? (teamMap.get(inv.teamId) ?? null) : null,
       })),

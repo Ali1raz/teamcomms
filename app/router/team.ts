@@ -1,19 +1,19 @@
+import { headers } from "next/headers";
 import z from "zod";
+import { MembershipRole } from "@/generated/prisma/enums";
+import { auth, type User } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
+import { prisma } from "@/lib/prisma";
+import { updateTeamSchema } from "@/lib/schema";
+import { createSlug } from "@/lib/utils";
 import { createTeamSchema } from "../(organization)/organizations/schema";
 import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
+import { readsecurityMiddleware } from "../middlewares/arcjet/read";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
-import { auth, type User } from "@/lib/auth";
-import { createSlug } from "@/lib/utils";
-import { errorMessage } from "@/lib/error-message";
-import { prisma } from "@/lib/prisma";
-import { readsecurityMiddleware } from "../middlewares/arcjet/read";
-import { headers } from "next/headers";
-import { MembershipRole } from "@/generated/prisma/enums";
-import { updateTeamSchema } from "@/lib/schema";
 import { requireMemberMiddleware } from "../middlewares/member";
+import { requireOrganizationMiddleware } from "../middlewares/organization";
 
 export const createTeam = base
   .use(requireAuthMiddleware)
@@ -46,7 +46,7 @@ export const createTeam = base
     }
 
     const slug = createSlug(input.name);
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.createTeam>>;
     try {
       data = await auth.api.createTeam({
         body: {
@@ -92,7 +92,7 @@ export const updateTeam = base
     }
 
     const slug = createSlug(input.name);
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.updateTeam>>;
     try {
       data = await auth.api.updateTeam({
         body: {
@@ -377,7 +377,7 @@ export const listTeamMembers = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    let rawMembers;
+    let rawMembers: Awaited<ReturnType<typeof prisma.teamMember.findMany>>;
     try {
       rawMembers = await prisma.teamMember.findMany({
         where: { teamId: input.teamId },

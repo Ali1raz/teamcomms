@@ -1,5 +1,7 @@
 "use client";
 
+import { FolderCode, Home } from "lucide-react";
+import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Empty,
@@ -9,10 +11,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { FolderCode, Home } from "lucide-react";
-import Link from "next/link";
 
-export default function Error({ error }: { error: Error }) {
+type ErrorType = Error;
+
+export default function GlobalError({ error }: { error: ErrorType }) {
   return (
     <Empty className="h-full bg-muted/40">
       <EmptyHeader className="space-y-4">

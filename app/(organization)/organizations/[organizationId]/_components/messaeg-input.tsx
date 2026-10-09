@@ -1,22 +1,22 @@
 /* eslint-disable react-hooks/incompatible-library */
 "use client";
 
-import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
-import { createMessageSchema, CreateMessageType } from "../../schema";
-import { Messagecomponser } from "./message-omposer";
 import {
-  InfiniteData,
+  type InfiniteData,
   useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { useRealtimeTeam } from "@/components/team-realtime-provider";
+import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import type { client } from "@/lib/orpc";
 import { orpc } from "@/lib/orpc";
-import { toast } from "sonner";
-import { useState } from "react";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
+import { type CreateMessageType, createMessageSchema } from "../../schema";
+import { Messagecomponser } from "./message-omposer";
 
 // ---------------------------------------------------------------------------
 // Types inferred directly from the oRPC client so they stay in sync with the

@@ -1,4 +1,4 @@
-import { FullOrg, User } from "@/lib/auth";
+import type { FullOrg, User } from "@/lib/auth";
 import { base } from "./bast";
 
 export const requireMemberMiddleware = base

@@ -1,8 +1,6 @@
 "use client";
 
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { Button } from "@/components/ui/button";
 import {
   ArrowUpRight,
   Ban,
@@ -11,18 +9,15 @@ import {
   MoreHorizontal,
   RefreshCcw,
 } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { DeleteOrganizationDialog } from "@/components/delete-organization-dialog";
+import { MemberRoleBadge } from "@/components/general/member-role-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -32,9 +27,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import Image from "next/image";
-import { cn, getOrganizationColor } from "@/lib/utils";
-import { MemberRoleBadge } from "@/components/general/member-role-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,10 +36,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DeleteOrganizationDialog } from "@/components/delete-organization-dialog";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/lib/orpc";
+import { cn, getOrganizationColor } from "@/lib/utils";
 import { UpdateOrganizationDialog } from "./update-organization-dialog";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 
 export function OrganizationList() {
   const [isPending, startTransition] = useTransition();

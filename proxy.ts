@@ -1,7 +1,7 @@
-import { env } from "@/lib/env";
 import arcjet, { createMiddleware, detectBot } from "@arcjet/next";
 import { getSessionCookie } from "better-auth/cookies";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { env } from "@/lib/env";
 
 const protectedRoutes = ["/organizations", "/accept-invite"];
 

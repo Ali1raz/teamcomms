@@ -1,6 +1,18 @@
 "use client";
 
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { Info, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { orpc } from "@/lib/orpc";
+import { UserImage } from "./general/user-avatar";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -11,15 +23,6 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { ScrollArea } from "./ui/scroll-area";
-import { UserImage } from "./general/user-avatar";
-import { Info, Loader2 } from "lucide-react";
-import {
   Field,
   FieldContent,
   FieldDescription,
@@ -27,11 +30,8 @@ import {
   FieldLabel,
   FieldTitle,
 } from "./ui/field";
-import { Checkbox } from "./ui/checkbox";
-import { useState } from "react";
-import { toast } from "sonner";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "./ui/hover-card";
-import { Badge } from "./ui/badge";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
+import { ScrollArea } from "./ui/scroll-area";
 
 export function AddMemberToTeam({
   teamId,

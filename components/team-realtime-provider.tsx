@@ -1,12 +1,12 @@
 "use client";
-import {
-  RealtimeTeamEventSchema,
-  RealtimeTeamEventSchemaType,
-  RealtimeMessageSchemaType,
-} from "@/realtime/schema";
-import { InfiniteData, useQueryClient } from "@tanstack/react-query";
+import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
 import usePartySocket from "partysocket/react";
-import { createContext, ReactNode, useContext, useMemo } from "react";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
+import {
+  type RealtimeMessageSchemaType,
+  RealtimeTeamEventSchema,
+  type RealtimeTeamEventSchemaType,
+} from "@/realtime/schema";
 
 interface RealtimeTeamContextProps {
   teamId: string;

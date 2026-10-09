@@ -4,17 +4,17 @@ import "../lib/orpc.server"; // for pre-rendering
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { Analytics } from "@vercel/analytics/next";
+import { extractRouterConfig } from "uploadthing/server";
+import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { Providers } from "@/components/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
-import { extractRouterConfig } from "uploadthing/server";
-import { ourFileRouter } from "./api/uploadthing/core";
-import { SITE } from "@/lib/app/site";
 import { USER } from "@/lib/app/data";
-import { Analytics } from "@vercel/analytics/next";
+import { SITE } from "@/lib/app/site";
+import { cn } from "@/lib/utils";
+import { ourFileRouter } from "./api/uploadthing/core";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   authors: [
     {
       name: USER.name,
-      url: USER.social["github"],
+      url: USER.social.github,
     },
   ],
   creator: "Ali Raza",
