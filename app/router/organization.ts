@@ -221,7 +221,7 @@ export const listOrganizationMembers = base
     })
   )
   .handler(async ({ context, errors }) => {
-    let organizationmembers: Awaited<ReturnType<typeof prisma.member.findMany>>;
+    let organizationmembers;
     try {
       organizationmembers = await prisma.member.findMany({
         where: {
@@ -229,7 +229,6 @@ export const listOrganizationMembers = base
         },
         select: {
           role: true,
-
           user: {
             select: {
               id: true,
