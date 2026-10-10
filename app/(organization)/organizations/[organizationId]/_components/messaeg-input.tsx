@@ -79,8 +79,9 @@ export function MessageInput({ teamId }: IAppPops) {
           content: variables.content,
           imageUrl: variables.imageUrl ?? null,
           createdAt: new Date(),
-          // New messages have no replies yet; required by MessageItem's _count shape.
-          _count: { replies: 0 },
+          // New messages have no replies yet; required by MessageItem's shape.
+          repliesCount: 0,
+          reactions: [],
           // Use the real session user so the avatar / name look correct.
           user: {
             id: currentUser.id,
@@ -164,7 +165,7 @@ export function MessageInput({ teamId }: IAppPops) {
                 image: currentUser.image ?? null,
                 email: currentUser.email,
               },
-              _count: { replies: 0 },
+              repliesCount: 0,
             },
           },
         });

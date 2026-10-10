@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useCallback, useState } from "react";
 import { RenderJSONtoHTML } from "@/components/editor/render-content";
 import { UserImage } from "@/components/general/user-avatar";
+import { ReactionBar } from "@/components/reaction/reaction-bar";
 import { useThread } from "@/components/thread-sidebar/thread-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -113,19 +114,21 @@ export function MessageItem({
               </div>
             )}
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={openThread}
-              className="flex items-center gap-1"
-              onMouseEnter={prefetchThread}
-              onFocus={prefetchThread}
-            >
-              <MessagesSquare className="size-4" />
-              {message._count.replies || 0}{" "}
-              {message._count.replies <= 1 ? "reply" : "replies"}
-            </Button>
+            <ReactionBar messageId={message.id} reactions={message.reactions} />
+            <div className="flex">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={openThread}
+                className="flex items-center gap-1"
+                onMouseEnter={prefetchThread}
+                onFocus={prefetchThread}
+              >
+                <MessagesSquare className="size-4" />
+                {message.repliesCount || 0}{" "}
+                {message.repliesCount <= 1 ? "reply" : "replies"}
+              </Button>
+            </div>
           </>
         )}
       </div>

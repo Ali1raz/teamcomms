@@ -377,7 +377,7 @@ export const listTeamMembers = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    let rawMembers: Awaited<ReturnType<typeof prisma.teamMember.findMany>>;
+    let rawMembers;
     try {
       rawMembers = await prisma.teamMember.findMany({
         where: { teamId: input.teamId },

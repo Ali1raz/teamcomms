@@ -103,6 +103,8 @@ export function ThreadsForm({
           content: variables.content,
           imageUrl: variables.imageUrl ?? null,
           createdAt: new Date(),
+          repliesCount: 0,
+          reactions: [],
           // Reuse the real session user so the optimistic reply matches the current author.
           user: {
             id: currentUser.id,
@@ -134,10 +136,7 @@ export function ThreadsForm({
                 message.id === threadId
                   ? {
                       ...message,
-                      _count: {
-                        ...message._count,
-                        replies: message._count.replies + 1,
-                      },
+                      repliesCount: message.repliesCount + 1,
                     }
                   : message
               ),
@@ -246,7 +245,12 @@ export function ThreadsForm({
               content: data.message.content,
               imageUrl: data.message.imageUrl,
               createdAt: data.message.createdAt,
-              user: editingThread?.user,
+              user: {
+                id: currentUser.id,
+                name: currentUser.name,
+                email: currentUser.email,
+                image: currentUser.image ?? null,
+              },
             },
           },
         });

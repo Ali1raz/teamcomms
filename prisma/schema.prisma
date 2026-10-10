@@ -23,6 +23,7 @@ model User {
 
   teammembers TeamMember[]
   messages    Message[]
+  reactions   MessageReaction[]
 
   @@map("user")
 }
@@ -185,7 +186,26 @@ model Message {
 
   replies Message[] @relation("MessageThread")
 
+  reactions MessageReaction[]
+
   @@index([teamId])
   @@index([userId])
   @@map("message")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+  @@index([messageId])
+  @@index([userId])
+  @@map("messageReaction")
 }

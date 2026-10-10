@@ -44,6 +44,38 @@ export const updateMessageSchema = z.object({
 
 export type UpdateMessageSchemaType = z.infer<typeof updateMessageSchema>;
 
+export const toggleReactionSchema = z.object({
+  messageId: z.string(),
+  emoji: z.string().trim().min(1, "Emoji is required"),
+});
+
+export type ToggleReactionSchemaType = z.infer<typeof toggleReactionSchema>;
+
+export const GroupedReactionSchema = z.object({
+  emoji: z.string(),
+  count: z.number(),
+  reactedByMe: z.boolean(),
+});
+
+export type GroupedReactionSchemaType = z.infer<typeof GroupedReactionSchema>;
+
+export const messageListItemSchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  imageUrl: z.string().nullable(),
+  createdAt: z.date(),
+  repliesCount: z.number(),
+  reactions: z.array(GroupedReactionSchema),
+  user: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    image: z.string().nullable(),
+  }),
+});
+
+export type MessageListItemType = z.infer<typeof messageListItemSchema>;
+
 export const updateOrganizationSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required"),
   logo: z.string().nullable().optional(),
