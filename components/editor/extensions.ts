@@ -10,7 +10,7 @@ import { Placeholder } from "@tiptap/extensions";
 import { StarterKit } from "@tiptap/starter-kit";
 import { all, createLowlight } from "lowlight";
 
-const lowlight = createLowlight(all);
+export const lowlight = createLowlight(all);
 
 export const extensions = [
   StarterKit.configure({
