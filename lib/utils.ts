@@ -11,6 +11,44 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Collapse a list of raw reactions into per-emoji groups with counts.
+ *
+ * `reactedByMe` is true when the current user appears among the reactions for
+ * that emoji, which the UI uses to highlight reactions the user has added.
+ */
+export function groupReactions(
+  reactions: { emoji: string; userId: string }[],
+  userId: string
+) {
+  const reactionMap = new Map<
+    string,
+    { count: number; reactedByMe: boolean }
+  >();
+
+  for (const reaction of reactions) {
+    const existing = reactionMap.get(reaction.emoji);
+
+    if (existing) {
+      reactionMap.set(reaction.emoji, {
+        count: existing.count + 1,
+        reactedByMe: existing.reactedByMe || reaction.userId === userId,
+      });
+    } else {
+      reactionMap.set(reaction.emoji, {
+        count: 1,
+        reactedByMe: reaction.userId === userId,
+      });
+    }
+  }
+
+  return Array.from(reactionMap, ([emoji, { count, reactedByMe }]) => ({
+    emoji,
+    count,
+    reactedByMe,
+  }));
+}
+
 export function getOrganizationColor(id: string) {
   const charsum = id
     .split("")
@@ -91,7 +129,7 @@ function normalizeWhitespace(text: string) {
  * see https://tiptap.dev/docs/editor/api/utilities/static-renderer
  */
 export async function jsonToMarkdown(json: string) {
-  let content: unknown;
+  let content;
   try {
     content = JSON.parse(json);
   } catch {

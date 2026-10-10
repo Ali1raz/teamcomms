@@ -6,6 +6,7 @@ import {
   deleteMessage,
   listMessages,
   listThreads,
+  toggleReaction,
   updateMessage,
 } from "./message";
 import {
@@ -70,6 +71,9 @@ export const router = {
     delete: deleteMessage,
     threads: {
       list: listThreads,
+    },
+    reaction: {
+      toggle: toggleReaction,
     },
   },
   ai: {

@@ -2,6 +2,7 @@
 import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
 import usePartySocket from "partysocket/react";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
+import { type client, orpc } from "@/lib/orpc";
 import {
   type RealtimeMessageSchemaType,
   RealtimeTeamEventSchema,
@@ -18,6 +19,10 @@ type MessageListPage = {
   nextCursor?: string;
 };
 type InfiniteMessages = InfiniteData<MessageListPage>;
+
+// Partial key matching every cached threads.list query (any thread).
+const threadListKey = orpc.message.threads.list.key({ type: "query" });
+type ThreadQueryData = Awaited<ReturnType<typeof client.message.threads.list>>;
 
 type RealtimeTeamContextValue = {
   send: (e: RealtimeTeamEventSchemaType) => void;
@@ -51,7 +56,8 @@ export const RealtimeTeamProvider = ({
           const raw = eventData.payload.message;
           const mapped = {
             ...raw,
-            _count: { replies: raw._count?.replies ?? 0 },
+            repliesCount: raw.repliesCount ?? 0,
+            reactions: [],
           };
 
           queryClient.setQueryData<InfiniteMessages>(
@@ -110,12 +116,10 @@ export const RealtimeTeamProvider = ({
                   message.id === messageId
                     ? {
                         ...message,
-                        _count: {
-                          replies: Math.max(
-                            0,
-                            Number(message._count?.replies ?? 0) + Number(delta)
-                          ),
-                        },
+                        repliesCount: Math.max(
+                          0,
+                          Number(message.repliesCount ?? 0) + Number(delta)
+                        ),
                       }
                     : message
                 ),
@@ -140,6 +144,50 @@ export const RealtimeTeamProvider = ({
                   ...page,
                   messages: page.messages.filter((msg) => msg.id !== messageId),
                 })),
+              };
+            }
+          );
+          return;
+        }
+
+        if (eventData.type === "reaction:updated") {
+          const { messageId, reactions } = eventData.payload;
+
+          // Replace only the reactions for the matching message in the list
+          // cache; every other field stays untouched.
+          queryClient.setQueryData<InfiniteMessages>(
+            ["message.list", teamId],
+            (old) => {
+              if (!old) return old;
+              return {
+                ...old,
+                pages: old.pages.map((page) => ({
+                  ...page,
+                  messages: page.messages.map((message) =>
+                    message.id === messageId
+                      ? { ...message, reactions }
+                      : message
+                  ),
+                })),
+              };
+            }
+          );
+
+          // The same message also lives in the open thread's query
+          // (parent + replies), so keep it in sync too.
+          queryClient.setQueriesData<ThreadQueryData>(
+            { queryKey: threadListKey },
+            (old) => {
+              if (!old) return old;
+              return {
+                ...old,
+                parent:
+                  old.parent.id === messageId
+                    ? { ...old.parent, reactions }
+                    : old.parent,
+                threads: old.threads.map((thread) =>
+                  thread.id === messageId ? { ...thread, reactions } : thread
+                ),
               };
             }
           );

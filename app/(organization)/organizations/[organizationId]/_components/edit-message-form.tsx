@@ -119,7 +119,7 @@ export function EditMessageForm({
               content: update.message.content,
               imageUrl: update.message.imageUrl ?? null,
               user: message.user,
-              _count: { replies: message._count?.replies ?? 0 },
+              repliesCount: message.repliesCount ?? 0,
             },
           },
         });

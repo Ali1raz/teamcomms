@@ -61,7 +61,9 @@ export function RealtimeThreadPRovider({
 
               const reply = {
                 ...replyObj,
-              } as ThreadQuerydata["threads"][number];
+                repliesCount: 0,
+                reactions: [],
+              } satisfies ThreadQuerydata["threads"][number];
 
               return {
                 ...old,
