@@ -8,7 +8,9 @@ import {
   type ComponentProps,
   type CSSProperties,
   Suspense,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Button } from "@/components/ui/button";
@@ -48,14 +50,26 @@ export function RightSidebar({
   width = "24rem",
   ...props
 }: ComponentProps<typeof Sidebar> & { width?: string }) {
-  const { threadId } = useThread();
+  const { threadId, setThreadId } = useThread();
   const { setOpen, isMobile, setOpenMobile } = useSidebarWithSide("right");
-  const { organizationId } = useParams<{
+  const { teamId, organizationId } = useParams<{
     teamId: string;
     organizationId: string;
   }>();
+  const prevTeamIdRef = useRef(teamId);
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (prevTeamIdRef.current === teamId) return;
+    prevTeamIdRef.current = teamId;
+    setThreadId(null);
+    if (isMobile) {
+      setOpenMobile(false);
+    } else {
+      setOpen(false);
+    }
+  }, [teamId, isMobile, setThreadId, setOpen, setOpenMobile]);
 
   const threadsQueryOptions = orpc.message.threads.list.queryOptions({
     input: { threadId: threadId ?? "" },
