@@ -138,7 +138,7 @@ export function UpdateProfileForm({ session }: { session: Session }) {
               />
             </FieldGroup>
 
-            <Button type="submit" disabled={isPending} className="w-full">
+            <Button type="submit" disabled={isPending} className="w-fit">
               {isPending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
