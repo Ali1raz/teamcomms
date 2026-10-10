@@ -13,7 +13,7 @@ export function UserImage({
   isOnline?: boolean;
   showOnline?: boolean;
 }) {
-  const imageUrl = image ?? `https://avatar.vercel.sh/${name ?? "U"}`;
+  const imageUrl = image || `https://avatar.vercel.sh/${name?.trim() || "U"}`;
 
   return (
     <div className="relative">
