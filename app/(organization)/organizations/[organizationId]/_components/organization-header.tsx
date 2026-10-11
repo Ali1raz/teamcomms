@@ -45,7 +45,7 @@ export function OrganizationHeader() {
       ) : (
         <span className="text-lg font-mono">TeamComms</span>
       )}
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center sm:gap-4 gap-2">
         {user && user.role !== "member" && (
           <div className="hidden sm:flex">
             <InviteOrganizationDialog
