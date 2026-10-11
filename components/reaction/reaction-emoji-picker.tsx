@@ -8,6 +8,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const QUICK_REACTIONS = [
   { emoji: "👍", label: "Thumbs up" },
@@ -36,12 +41,17 @@ export function ReactionEmojiPicker({ onSelect }: ReactionEmojiPickerProps) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="icon-sm">
-          <SmilePlus className="size-4" />
-          <span className="sr-only">Add reaction</span>
-        </Button>
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="outline" size="icon-sm">
+              <SmilePlus />
+              <span className="sr-only">Add reaction</span>
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Add reaction</TooltipContent>
+      </Tooltip>
       <PopoverContent align="start" className="w-fit p-2">
         <div className="grid grid-cols-5 gap-1">
           {QUICK_REACTIONS.map(({ emoji, label }) => (

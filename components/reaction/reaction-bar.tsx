@@ -9,6 +9,11 @@ import { toast } from "sonner";
 import type { GroupedReactionSchemaType } from "@/app/(organization)/organizations/schema";
 import { useRealtimeTeam } from "@/components/team-realtime-provider";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { authClient } from "@/lib/auth-client";
 import { type client, orpc } from "@/lib/orpc";
 import { cn, groupReactions } from "@/lib/utils";
@@ -197,20 +202,27 @@ export function ReactionBar({ messageId, reactions }: ReactionBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-1">
       {reactions.map((reaction) => (
-        <Button
-          key={reaction.emoji}
-          type="button"
-          variant={reaction.reactedByMe ? "outline" : "ghost"}
-          size="xs"
-          className={cn(
-            "h-6 gap-1 rounded-full px-2",
-            reaction.reactedByMe && "border-primary bg-primary/10 text-primary"
-          )}
-          onClick={() => handleToggle(reaction.emoji)}
-        >
-          <span>{reaction.emoji}</span>
-          <span>{reaction.count}</span>
-        </Button>
+        <Tooltip key={reaction.emoji}>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant={reaction.reactedByMe ? "outline" : "ghost"}
+              size="xs"
+              className={cn(
+                "h-6 gap-1 rounded-full px-2",
+                reaction.reactedByMe &&
+                  "border-primary bg-primary/10 text-primary"
+              )}
+              onClick={() => handleToggle(reaction.emoji)}
+            >
+              <span>{reaction.emoji}</span>
+              <span>{reaction.count}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {reaction.reactedByMe ? "Remove your reaction" : "Add reaction"}
+          </TooltipContent>
+        </Tooltip>
       ))}
       <ReactionEmojiPicker onSelect={handleToggle} />
     </div>
