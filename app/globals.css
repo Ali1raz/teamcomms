@@ -165,6 +165,13 @@
 }
 
 .tiptap {
+  line-height: 1.7;
+
+  li,
+  p {
+    line-height: 1.7;
+  }
+
   :first-child {
     margin-top: 0;
   }
