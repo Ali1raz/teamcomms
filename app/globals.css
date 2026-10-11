@@ -132,6 +132,8 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-width: var(--border) transparent;
   }
   body {
     @apply bg-background text-foreground;
@@ -139,6 +141,19 @@
   html {
     @apply font-sans;
   }
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 5px;
 }
 
 .tiptap p.is-editor-empty:first-child::before {
