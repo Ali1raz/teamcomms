@@ -128,7 +128,7 @@ export function OrganizationList() {
             >
               <CardHeader className="flex gap-2 items-start">
                 {ws.logo ? (
-                  <div className="size-8 relative overflow-hidden rounded-full">
+                  <div className="flex aspect-square size-6 shrink-0 items-center justify-center overflow-hidden rounded-md">
                     <Image
                       alt={ws.name}
                       src={ws.logo}
@@ -141,7 +141,7 @@ export function OrganizationList() {
                 ) : (
                   <div
                     className={cn(
-                      "size-8 rounded-full transition-all duration-100",
+                      "aspect-square size-5 shrink-0 rounded-md",
                       getOrganizationColor(ws.id)
                     )}
                   />

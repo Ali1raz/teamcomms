@@ -4,7 +4,7 @@ import { MembershipRole } from "@/generated/prisma/enums";
 import { auth, type FullOrg, type User } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { prisma } from "@/lib/prisma";
-import { createAvatarUrl, createSlug } from "@/lib/utils";
+import { createSlug } from "@/lib/utils";
 import { createOrganizationSchema } from "../(organization)/organizations/schema";
 import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
@@ -114,7 +114,6 @@ export const createOrganization = base
         body: {
           name: input.name,
           slug: slug,
-          logo: createAvatarUrl(slug),
           userId: context.user.id,
           keepCurrentActiveOrganization: false,
         },

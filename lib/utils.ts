@@ -68,11 +68,6 @@ export function createSlug(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function createAvatarUrl(seed = "ar") {
-  // Build a deterministic DiceBear avatar URL so the same seed always returns the same avatar.
-  return `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
-}
-
 /**
  * Relative time label for message timestamps.
  *

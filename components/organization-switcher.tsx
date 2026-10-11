@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/lib/orpc";
-import { cn, createAvatarUrl } from "@/lib/utils";
+import { cn, getOrganizationColor } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -73,23 +73,29 @@ export function OrganizationSwitcher() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="w-full px-4 py-5 mt-2">
-              <div className="flex aspect-square size-5 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                <Image
-                  alt="logo"
-                  src={
-                    activeOrganization.logo ??
-                    createAvatarUrl(activeOrganization.name)
-                  }
-                  width={20}
-                  height={20}
-                  unoptimized
-                  className="w-full h-full object-cover rounded"
+              {activeOrganization.logo ? (
+                <div className="flex aspect-square size-5 shrink-0 items-center justify-center overflow-hidden rounded-md">
+                  <Image
+                    alt="logo"
+                    src={activeOrganization.logo}
+                    width={20}
+                    height={20}
+                    unoptimized
+                    className="size-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    "aspect-square size-5 shrink-0 rounded-md",
+                    getOrganizationColor(activeOrganization.id)
+                  )}
                 />
-              </div>
-              <span className="truncate font-medium line-clamp-1">
+              )}
+              <span className="min-w-0 flex-1 truncate font-medium">
                 {activeOrganization.name}
               </span>
-              <ChevronsUpDown className="ml-auto" />
+              <ChevronsUpDown className="shrink-0" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
@@ -112,21 +118,30 @@ export function OrganizationSwitcher() {
                   org.id === activeId && "bg-accent"
                 )}
               >
-                <div className="flex items-center gap-2">
-                  <div className="flex size-6 items-center justify-center rounded-xs border">
-                    <Image
-                      alt="logo"
-                      src={org.logo || createAvatarUrl(org.name)}
-                      width={20}
-                      height={20}
-                      unoptimized
-                      className="w-full h-full object-cover rounded"
-                    />
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex aspect-square size-5 shrink-0 items-center justify-center overflow-hidden rounded-md">
+                    {org.logo ? (
+                      <Image
+                        alt="logo"
+                        src={org.logo}
+                        width={20}
+                        height={20}
+                        unoptimized
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className={cn(
+                          "aspect-square size-5 shrink-0 rounded-md",
+                          getOrganizationColor(org.id)
+                        )}
+                      />
+                    )}
                   </div>
-                  {org.name}
+                  <span className="truncate">{org.name}</span>
                 </div>
                 {org.id === activeId && (
-                  <Badge className="bg-primary text-primary-foreground group-hover:text-primary-foreground!">
+                  <Badge className="shrink-0 bg-primary text-primary-foreground group-hover:text-primary-foreground!">
                     Active
                   </Badge>
                 )}

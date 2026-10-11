@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { orpc } from "@/lib/orpc";
-import { createSlug } from "@/lib/utils";
+import { cn, createSlug, getOrganizationColor } from "@/lib/utils";
 import { AttachmentChip } from "../[organizationId]/_components/attachment-chip";
 import { ImageUploadDialog } from "../[organizationId]/_components/image-dialog";
 import {
@@ -143,15 +143,23 @@ export function UpdateOrganizationDialog({
                     onChangeComplete={(url) => form.setValue("logo", url)}
                   />
                 ) : (
-                  <ImageUploadDialog
-                    onUploadComplete={(url) => {
-                      form.setValue("logo", url, { shouldValidate: true });
-                    }}
-                  >
-                    <Button type="button" variant="outline" size="sm">
-                      Upload Logo
-                    </Button>
-                  </ImageUploadDialog>
+                  <>
+                    <div
+                      className={cn(
+                        "size-8 shrink-0 rounded-full",
+                        getOrganizationColor(organizationId)
+                      )}
+                    />
+                    <ImageUploadDialog
+                      onUploadComplete={(url) => {
+                        form.setValue("logo", url, { shouldValidate: true });
+                      }}
+                    >
+                      <Button type="button" variant="outline" size="sm">
+                        Upload Logo
+                      </Button>
+                    </ImageUploadDialog>
+                  </>
                 )}
               </div>
             </Field>
