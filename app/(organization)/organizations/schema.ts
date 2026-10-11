@@ -51,6 +51,13 @@ export const toggleReactionSchema = z.object({
 
 export type ToggleReactionSchemaType = z.infer<typeof toggleReactionSchema>;
 
+export const RawReactionSchema = z.object({
+  emoji: z.string(),
+  userId: z.string(),
+});
+
+export type RawReactionSchemaType = z.infer<typeof RawReactionSchema>;
+
 export const GroupedReactionSchema = z.object({
   emoji: z.string(),
   count: z.number(),

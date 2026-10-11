@@ -1,8 +1,20 @@
 "use client";
 import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
 import usePartySocket from "partysocket/react";
-import { createContext, type ReactNode, useContext, useMemo } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useMemo,
+  useRef,
+} from "react";
+import {
+  replaceReactionsInMessageList,
+  replaceReactionsInThread,
+} from "@/components/reaction/reactions";
+import { authClient } from "@/lib/auth-client";
 import { type client, orpc } from "@/lib/orpc";
+import { groupReactions } from "@/lib/utils";
 import {
   type RealtimeMessageSchemaType,
   RealtimeTeamEventSchema,
@@ -37,11 +49,24 @@ export const RealtimeTeamProvider = ({
   children,
 }: RealtimeTeamContextProps) => {
   const queryClient = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const currentUserId = session?.user?.id ?? "";
+  // Track the first open so a reconnect (not the initial connect) can recover
+  // events that were missed while the socket was offline.
+  const hasOpenedRef = useRef(false);
 
   const socket = usePartySocket({
     host: process.env.NEXT_PUBLIC_PARTYKIT_HOST || "http://localhost:8787",
     room: teamId,
     party: "chat",
+    onOpen() {
+      if (!hasOpenedRef.current) {
+        hasOpenedRef.current = true;
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["message.list", teamId] });
+      queryClient.invalidateQueries({ queryKey: threadListKey });
+    },
     onMessage(event) {
       try {
         const data = JSON.parse(event.data);
@@ -153,43 +178,22 @@ export const RealtimeTeamProvider = ({
         if (eventData.type === "reaction:updated") {
           const { messageId, reactions } = eventData.payload;
 
+          // The server sends raw reactions; regroup them for THIS viewer before
+          // writing, otherwise the actor's reactedByMe leaks into our cache.
+          const grouped = groupReactions(reactions, currentUserId);
+
           // Replace only the reactions for the matching message in the list
           // cache; every other field stays untouched.
           queryClient.setQueryData<InfiniteMessages>(
             ["message.list", teamId],
-            (old) => {
-              if (!old) return old;
-              return {
-                ...old,
-                pages: old.pages.map((page) => ({
-                  ...page,
-                  messages: page.messages.map((message) =>
-                    message.id === messageId
-                      ? { ...message, reactions }
-                      : message
-                  ),
-                })),
-              };
-            }
+            (old) => replaceReactionsInMessageList(old, messageId, grouped)
           );
 
           // The same message also lives in the open thread's query
           // (parent + replies), so keep it in sync too.
           queryClient.setQueriesData<ThreadQueryData>(
             { queryKey: threadListKey },
-            (old) => {
-              if (!old) return old;
-              return {
-                ...old,
-                parent:
-                  old.parent.id === messageId
-                    ? { ...old.parent, reactions }
-                    : old.parent,
-                threads: old.threads.map((thread) =>
-                  thread.id === messageId ? { ...thread, reactions } : thread
-                ),
-              };
-            }
+            (old) => replaceReactionsInThread(old, messageId, grouped)
           );
           return;
         }

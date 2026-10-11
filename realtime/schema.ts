@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GroupedReactionSchema } from "@/app/(organization)/organizations/schema";
+import { RawReactionSchema } from "@/app/(organization)/organizations/schema";
 
 export const RealtimeUserSchema = z.object({
   id: z.string(),
@@ -55,10 +55,6 @@ export const RealtimeTeamEventSchema = z.union([
     payload: z.object({ message: RealtimeMessageSchema }),
   }),
   z.object({
-    type: z.literal("reaction:added"),
-    payload: z.object({ messageId: z.string(), emoji: z.string() }),
-  }),
-  z.object({
     type: z.literal("message:reply:increment"),
     payload: z.object({ messageId: z.string(), delta: z.number() }),
   }),
@@ -70,7 +66,7 @@ export const RealtimeTeamEventSchema = z.union([
     type: z.literal("reaction:updated"),
     payload: z.object({
       messageId: z.string(),
-      reactions: z.array(GroupedReactionSchema),
+      reactions: z.array(RawReactionSchema),
     }),
   }),
 ]);

@@ -6,6 +6,7 @@ interface __BaseEnv_Env {
 	BETTER_AUTH_SECRET: string;
 	NEXT_PUBLIC_BETTER_AUTH_URL: string;
 	NEXT_PUBLIC_PARTYKIT_HOST: string;
+	INTERNAL_SECRET: string;
 	NODEMAILER_USER: string;
 	NODEMAILER_APP_PASSWORD: string;
 	GITHUB_CLIENT_ID: string;

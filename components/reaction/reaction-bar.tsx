@@ -9,9 +9,15 @@ import { toast } from "sonner";
 import type { GroupedReactionSchemaType } from "@/app/(organization)/organizations/schema";
 import { useRealtimeTeam } from "@/components/team-realtime-provider";
 import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
 import { type client, orpc } from "@/lib/orpc";
-import { cn } from "@/lib/utils";
+import { cn, groupReactions } from "@/lib/utils";
 import { ReactionEmojiPicker } from "./reaction-emoji-picker";
+import {
+  replaceReactionsInMessageList,
+  replaceReactionsInThread,
+  toggleReactionOptimistic,
+} from "./reactions";
 
 interface ReactionBarProps {
   messageId: string;
@@ -30,50 +36,6 @@ const messageListKey = ["message.list"];
 const threadListKey = orpc.message.threads.list.key({
   type: "query",
 });
-
-/**
- * Apply a reaction toggle optimistically on a grouped reaction list.
- *
- * A user can only react once per message, so selecting a new emoji while the
- * user already reacted swaps the previous one out.
- */
-function toggleReactionOptimistic(
-  reactions: GroupedReactionSchemaType[],
-  emoji: string
-): GroupedReactionSchemaType[] {
-  const mine = reactions.find((reaction) => reaction.reactedByMe);
-
-  // Clicking my current reaction removes it (toggle off).
-  if (mine?.emoji === emoji) {
-    return reactions
-      .map((reaction) =>
-        reaction.emoji === emoji
-          ? { ...reaction, count: reaction.count - 1, reactedByMe: false }
-          : reaction
-      )
-      .filter((reaction) => reaction.count > 0);
-  }
-
-  // Drop my previous reaction first (one reaction per message)...
-  const withoutMine = mine
-    ? reactions
-        .map((reaction) =>
-          reaction.emoji === mine.emoji
-            ? { ...reaction, count: reaction.count - 1, reactedByMe: false }
-            : reaction
-        )
-        .filter((reaction) => reaction.count > 0)
-    : reactions;
-
-  // ...then react with (or increment) the newly selected emoji.
-  return withoutMine.some((reaction) => reaction.emoji === emoji)
-    ? withoutMine.map((reaction) =>
-        reaction.emoji === emoji
-          ? { ...reaction, count: reaction.count + 1, reactedByMe: true }
-          : reaction
-      )
-    : [...withoutMine, { emoji, count: 1, reactedByMe: true }];
-}
 
 /** Optimistically update a cached message.list page for the toggled message. */
 function updateMessageListReactions(
@@ -128,6 +90,8 @@ function updateThreadDataReactions(
 export function ReactionBar({ messageId, reactions }: ReactionBarProps) {
   const queryClient = useQueryClient();
   const { send } = useRealtimeTeam();
+  const { data: session } = authClient.useSession();
+  const currentUserId = session?.user?.id ?? "";
 
   const toggleReactionMutation = useMutation(
     orpc.message.reaction.toggle.mutationOptions({
@@ -163,11 +127,33 @@ export function ReactionBar({ messageId, reactions }: ReactionBarProps) {
       },
 
       onSuccess: (data) => {
-        const toggled = data.reactions.find((reaction) => reaction.reactedByMe);
-        toast.success(toggled ? "Reaction added" : "Reaction removed");
+        const grouped = groupReactions(data.reactions, currentUserId);
 
-        // Broadcast the new reaction state to everyone in this team so the
-        // message list and open thread panels stay in sync live.
+        toast.success(
+          grouped.some((reaction) => reaction.reactedByMe)
+            ? "Reaction added"
+            : "Reaction removed"
+        );
+
+        // Only the last in-flight toggle may write the authoritative server
+        // state; a late response must not overwrite a newer optimistic click.
+        if (
+          queryClient.isMutating({
+            mutationKey: orpc.message.reaction.toggle.mutationKey(),
+          }) === 1
+        ) {
+          queryClient.setQueriesData<InfiniteMessages>(
+            { queryKey: messageListKey },
+            (old) => replaceReactionsInMessageList(old, data.messageId, grouped)
+          );
+          queryClient.setQueriesData<ThreadData>(
+            { queryKey: threadListKey },
+            (old) => replaceReactionsInThread(old, data.messageId, grouped)
+          );
+        }
+
+        // Broadcast the raw reaction state so every other client can regroup it
+        // for their own viewer before writing it to their caches.
         send({
           type: "reaction:updated",
           payload: { messageId: data.messageId, reactions: data.reactions },
@@ -190,9 +176,16 @@ export function ReactionBar({ messageId, reactions }: ReactionBarProps) {
       },
 
       onSettled: () => {
-        // Re-sync both views with the server once the mutation settles.
-        queryClient.invalidateQueries({ queryKey: messageListKey });
-        queryClient.invalidateQueries({ queryKey: threadListKey });
+        // Re-sync both views with the server once all toggles settle; guarding
+        // on the last in-flight toggle avoids a refetch racing a newer click.
+        if (
+          queryClient.isMutating({
+            mutationKey: orpc.message.reaction.toggle.mutationKey(),
+          }) === 1
+        ) {
+          queryClient.invalidateQueries({ queryKey: messageListKey });
+          queryClient.invalidateQueries({ queryKey: threadListKey });
+        }
       },
     })
   );

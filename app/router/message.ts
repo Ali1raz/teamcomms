@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { groupReactions } from "@/lib/utils";
 import {
   createMessageSchema,
-  GroupedReactionSchema,
   messageListItemSchema,
+  RawReactionSchema,
   toggleReactionSchema,
   updateMessageSchema,
 } from "../(organization)/organizations/schema";
@@ -185,6 +185,7 @@ export const listMessages = base
         createdAt: true,
         _count: { select: { replies: true } },
         reactions: {
+          orderBy: { createdAt: "asc" },
           select: {
             emoji: true,
             userId: true,
@@ -363,7 +364,7 @@ export const toggleReaction = base
   .output(
     z.object({
       messageId: z.string(),
-      reactions: z.array(GroupedReactionSchema),
+      reactions: z.array(RawReactionSchema),
     })
   )
   .handler(async ({ context, input, errors }) => {
@@ -396,37 +397,32 @@ export const toggleReaction = base
       },
     });
 
-    if (existing) {
-      // A user can only react once per message. Reacting again with the same
-      // emoji removes the reaction (toggle off); a different emoji swaps it.
-      if (existing.emoji === input.emoji) {
-        await prisma.messageReaction.delete({
-          where: {
-            userId_messageId: {
-              userId: context.user.id,
-              messageId: input.messageId,
-            },
-          },
-        });
-      } else {
-        await prisma.messageReaction.update({
-          where: {
-            userId_messageId: {
-              userId: context.user.id,
-              messageId: input.messageId,
-            },
-          },
-          data: {
-            emoji: input.emoji,
-          },
-        });
-      }
+    // A user can only react once per message. Reacting again with the same
+    // emoji removes the reaction (toggle off); a different emoji swaps it.
+    // deleteMany + upsert keep these writes race-safe: a concurrent request
+    // can no longer trip the unique constraint between read and write.
+    if (existing?.emoji === input.emoji) {
+      await prisma.messageReaction.deleteMany({
+        where: {
+          userId: context.user.id,
+          messageId: input.messageId,
+        },
+      });
     } else {
-      await prisma.messageReaction.create({
-        data: {
+      await prisma.messageReaction.upsert({
+        where: {
+          userId_messageId: {
+            userId: context.user.id,
+            messageId: input.messageId,
+          },
+        },
+        create: {
           emoji: input.emoji,
           userId: context.user.id,
           messageId: input.messageId,
+        },
+        update: {
+          emoji: input.emoji,
         },
       });
     }
@@ -435,6 +431,7 @@ export const toggleReaction = base
       where: { id: input.messageId },
       select: {
         reactions: {
+          orderBy: { createdAt: "asc" },
           select: {
             emoji: true,
             userId: true,
@@ -445,7 +442,7 @@ export const toggleReaction = base
 
     return {
       messageId: input.messageId,
-      reactions: groupReactions(updated?.reactions ?? [], context.user.id),
+      reactions: updated?.reactions ?? [],
     };
   });
 
@@ -486,6 +483,7 @@ export const listThreads = base
         createdAt: true,
         _count: { select: { replies: true } },
         reactions: {
+          orderBy: { createdAt: "asc" },
           select: {
             emoji: true,
             userId: true,
@@ -509,6 +507,7 @@ export const listThreads = base
             createdAt: true,
             _count: { select: { replies: true } },
             reactions: {
+              orderBy: { createdAt: "asc" },
               select: {
                 emoji: true,
                 userId: true,
