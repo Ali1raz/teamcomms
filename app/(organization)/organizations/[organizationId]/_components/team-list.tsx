@@ -3,15 +3,8 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { FolderCode, Loader2, RefreshCcw } from "lucide-react";
 import { CreateTeamDialog } from "@/components/create-tem-dialog";
+import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { orpc } from "@/lib/orpc";
 import { LeaveOrganizationDialog } from "./leave-organization-dialog";
@@ -61,26 +54,15 @@ export function TeamList({ organizationId }: { organizationId: string }) {
           <Skeleton className="w-full h-24" />
         </div>
       ) : teams.length === 0 ? (
-        <Empty className="h-120 mt-4 bg-muted/40">
-          <EmptyHeader>
-            <EmptyMedia
-              variant="icon"
-              className="bg-muted rounded-full size-28"
-            >
-              <FolderCode className="size-14" />
-            </EmptyMedia>
-            <EmptyTitle className="sm:text-4xl text-2xl sm:mt-8 mt-4">
-              No team found!
-            </EmptyTitle>
-            <EmptyDescription className="text-pretty">
-              No team found in this organization, once created teams will appear
-              here.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            {user && user.role !== "member" && <CreateTeamDialog />}
-          </EmptyContent>
-        </Empty>
+        <EmptyState
+          className="mt-4 h-120"
+          icon={FolderCode}
+          title="No team found!"
+          description="No team found in this organization, once created teams will appear here."
+          titleClassName="sm:mt-8"
+          descriptionClassName="text-pretty"
+          action={user && user.role !== "member" ? <CreateTeamDialog /> : null}
+        />
       ) : (
         <div className="mt-4 space-y-2">
           {teams.map((team) => (

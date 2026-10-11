@@ -149,14 +149,15 @@ export function ThreadItem({
   );
 
   return (
-    <Card
+    <div
       key={thread.id}
       className={cn(
+        "first:mt-2 hover:bg-muted/30 p-3 not-last:border-b",
         editingThreadId === thread.id && "ring-1 ring-primary bg-muted/40"
       )}
     >
-      <CardContent className="relative">
-        <CardAction className="absolute -top-2 right-2">
+      <div className="relative">
+        <div className="absolute top-0 right-2">
           <ThreadActionsDropdown
             canEdit={organizationUserId === thread.user.id}
             isDeleting={deletingThreadId === thread.id}
@@ -168,7 +169,7 @@ export function ThreadItem({
               });
             }}
           />
-        </CardAction>
+        </div>
         <div className="flex gap-2 items-start">
           <UserImage
             image={thread.user.image}
@@ -206,7 +207,7 @@ export function ThreadItem({
             <ReactionBar messageId={thread.id} reactions={thread.reactions} />
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

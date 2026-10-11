@@ -83,7 +83,7 @@ export function LoginForm({
             ) : (
               <GitHub className="size-4 mr-2 invert dark:invert-0" />
             )}
-            Login with Github
+            {isGithubPending ? "Logging in..." : "Login with Github"}
           </Button>
           {lastMethod === "github" && <LastUsedBadge />}
         </div>
@@ -99,7 +99,7 @@ export function LoginForm({
             ) : (
               <Google className="size-4 mr-2" />
             )}
-            Login with Google
+            {isGooglePending ? "Logging in..." : "Login with Google"}
           </Button>
           {lastMethod === "google" && <LastUsedBadge />}
         </div>

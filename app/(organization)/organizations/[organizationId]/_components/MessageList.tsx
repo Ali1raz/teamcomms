@@ -4,14 +4,8 @@ import { useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Ban, ChevronDownIcon, ChevronsDownIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePresence } from "@/hooks/use-presence";
 import { orpc } from "@/lib/orpc";
@@ -200,24 +194,13 @@ export function MessageList() {
 
   if ((!messages || messages?.length === 0) && !isFetching) {
     return (
-      <div className="flex items-center justify-center h-full p-4">
-        <Empty className="h-full bg-muted/40">
-          <EmptyHeader>
-            <EmptyMedia
-              variant="icon"
-              className="bg-muted rounded-full size-28"
-            >
-              <Ban className="sm:size-14 size-8" />
-            </EmptyMedia>
-            <EmptyTitle className="sm:text-4xl sm:mt-6 mt-4 text-2xl">
-              No messages
-            </EmptyTitle>
-            <EmptyDescription className="sm:w-xl w-sm sm:text-lg text-xs">
-              There are no messages in this team yet. Start the conversation by
-              sending a new message!
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+      <div className="flex h-full items-center justify-center p-4">
+        <EmptyState
+          icon={Ban}
+          iconClassName="size-8 sm:size-14"
+          title="No messages"
+          description="There are no messages in this team yet. Start the conversation by sending a new message!"
+        />
       </div>
     );
   }
@@ -249,11 +232,7 @@ export function MessageList() {
 
   return (
     <div className="relative h-full">
-      <div
-        ref={ref}
-        onScroll={handleScroll}
-        className="h-full overflow-y-auto px-2 space-y-1"
-      >
+      <div ref={ref} onScroll={handleScroll} className="h-full overflow-y-auto">
         {messages?.map((msg) => (
           <MessageItem
             key={msg.id}
