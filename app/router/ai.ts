@@ -112,9 +112,6 @@ export const generateThreadSummary = base
     console.log("=========");
     console.log("Replies", replies.length);
 
-    console.log("compiled", compiled);
-    console.log("=========");
-
     // Run PII check here because middleware cannot access the parsed/compiled text.
     // This prevents sensitive data (CC numbers, phone numbers) from being sent to the AI.
     const sensitiveDecision = await sensitiveInfoAj().protect(context.request, {
