@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useCallback, useState } from "react";
 import { RenderJSONtoHTML } from "@/components/editor/render-content";
 import { UserImage } from "@/components/general/user-avatar";
+import { ImageZoom } from "@/components/kibo-ui/image-zoom";
 import { ReactionBar } from "@/components/reaction/reaction-bar";
 import { useThread } from "@/components/thread-sidebar/thread-context";
 import { Button } from "@/components/ui/button";
@@ -103,7 +104,7 @@ export function MessageItem({
             />
 
             {message.imageUrl && (
-              <div>
+              <ImageZoom>
                 <Image
                   src={message.imageUrl}
                   alt="uploaded image"
@@ -111,7 +112,7 @@ export function MessageItem({
                   height={512}
                   className="object-cover rounded max-h-75 w-auto"
                 />
-              </div>
+              </ImageZoom>
             )}
 
             <ReactionBar messageId={message.id} reactions={message.reactions} />

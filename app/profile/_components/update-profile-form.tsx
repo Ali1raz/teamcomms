@@ -8,6 +8,7 @@ import { useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ImageUploadDialog } from "@/app/(organization)/organizations/[organizationId]/_components/image-dialog";
+import { ImageZoom } from "@/components/kibo-ui/image-zoom";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -101,12 +102,14 @@ export function UpdateProfileForm({ session }: { session: Session }) {
                       {field.value ? (
                         <div className="flex items-end gap-2">
                           <div className="relative size-32 overflow-hidden rounded-full">
-                            <Image
-                              src={field.value}
-                              alt="Profile"
-                              fill
-                              className="object-cover size-24"
-                            />
+                            <ImageZoom className="h-full">
+                              <Image
+                                src={field.value}
+                                alt="Profile"
+                                fill
+                                className="object-cover size-24"
+                              />
+                            </ImageZoom>
                           </div>
                           <Button
                             type="button"

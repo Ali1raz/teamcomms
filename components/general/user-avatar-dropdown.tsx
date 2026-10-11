@@ -46,7 +46,7 @@ export default function UserAvatarDropdown({
         <DropdownMenuLabel>
           <div className="flex items-start gap-2 text-left text-sm">
             <UserImage name={name} image={image} />
-            <div className="grid flex-1 text-left text-sm gap-2 leading-tight">
+            <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">
                 {name && name.length > 0 ? name : email.split("@")[0]}
               </span>

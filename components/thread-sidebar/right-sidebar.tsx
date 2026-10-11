@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ImageZoom } from "@/components/kibo-ui/image-zoom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -173,7 +174,7 @@ export function RightSidebar({
                   />
 
                   {data.parent.imageUrl && (
-                    <div>
+                    <ImageZoom>
                       <Image
                         src={data.parent.imageUrl}
                         alt="uploaded image"
@@ -181,7 +182,7 @@ export function RightSidebar({
                         height={512}
                         className="object-cover rounded max-h-75 w-auto"
                       />
-                    </div>
+                    </ImageZoom>
                   )}
 
                   <div className="flex flex-col gap-2">

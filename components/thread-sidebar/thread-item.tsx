@@ -8,6 +8,7 @@ import {
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { ImageZoom } from "@/components/kibo-ui/image-zoom";
 import { Card, CardAction, CardContent } from "@/components/ui/card";
 import { type client, orpc } from "@/lib/orpc";
 import { cn, formatRelativeTime } from "@/lib/utils";
@@ -193,7 +194,7 @@ export function ThreadItem({
             />
 
             {thread.imageUrl && (
-              <div>
+              <ImageZoom>
                 <Image
                   src={thread.imageUrl}
                   alt="uploaded image"
@@ -201,7 +202,7 @@ export function ThreadItem({
                   height={512}
                   className="object-cover rounded max-h-75 w-auto"
                 />
-              </div>
+              </ImageZoom>
             )}
 
             <ReactionBar messageId={thread.id} reactions={thread.reactions} />
