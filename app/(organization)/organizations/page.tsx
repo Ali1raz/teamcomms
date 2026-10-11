@@ -14,7 +14,7 @@ export default async function Organizations() {
   await queryClient.prefetchQuery(orpc.organization.list.queryOptions());
 
   return (
-    <div className="h-screen bg-muted/20 w-full">
+    <div className="w-full">
       <HydrateClient client={queryClient}>
         <OrganizationHeader />
       </HydrateClient>

@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { DeleteOrganizationDialog } from "@/components/delete-organization-dialog";
+import { EmptyState } from "@/components/general/empty-state";
 import { MemberRoleBadge } from "@/components/general/member-role-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,13 +37,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/lib/orpc";
@@ -90,7 +84,7 @@ export function OrganizationList() {
   }
 
   return (
-    <div className="flex w-full mx-auto mt-10 max-w-4xl flex-col gap-4">
+    <div className="flex w-full mx-auto mt-10 flex-col gap-4">
       <Button
         onClick={() => refetch()}
         disabled={isFetching || isPending}
@@ -104,24 +98,14 @@ export function OrganizationList() {
         {isFetching ? "Refreshing..." : "Refresh"}
       </Button>
       {(!organizations || organizations?.length === 0) && !isFetching && (
-        <div className="flex items-center justify-center h-full">
-          <Empty className="h-full bg-muted/40 py-24">
-            <EmptyHeader>
-              <EmptyMedia
-                variant="icon"
-                className="bg-muted rounded-full size-28"
-              >
-                <Ban className="sm:size-14 size-8" />
-              </EmptyMedia>
-              <EmptyTitle className="sm:text-4xl sm:mt-6 mt-4 text-2xl">
-                No organizations found.
-              </EmptyTitle>
-              <EmptyDescription className="sm:w-xl w-sm sm:text-lg text-xs">
-                There are no organizations. Start by creating a new organization
-                and inviting friends to start chatting.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+        <div className="flex h-full items-center justify-center">
+          <EmptyState
+            className="py-24"
+            icon={Ban}
+            iconClassName="size-8 sm:size-14"
+            title="No organizations found."
+            description="There are no organizations. Start by creating a new organization and inviting friends to start chatting."
+          />
         </div>
       )}
 

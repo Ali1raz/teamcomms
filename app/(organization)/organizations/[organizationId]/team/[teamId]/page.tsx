@@ -23,7 +23,7 @@ export default async function TeamIdPage(
 
   return (
     <section className="h-full flex w-full flex-col">
-      <div className="flex-1 mb-4 px-2 min-h-0">
+      <div className="flex-1 my-4 min-h-0">
         <MessageList />
       </div>
 
