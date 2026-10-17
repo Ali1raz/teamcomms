@@ -97,7 +97,13 @@ export function UpdateOrganizationDialog({
   const slugPreview = createSlug(watchedName ?? "");
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) form.reset({ name: currentName, logo: currentLogo ?? null });
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
