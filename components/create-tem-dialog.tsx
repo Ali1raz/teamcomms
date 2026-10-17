@@ -83,7 +83,13 @@ export function CreateTeamDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) form.reset();
+      }}
+    >
       <DialogTrigger asChild>
         {children ?? (
           <Button className={cn(className)} variant="outline" size="sm">

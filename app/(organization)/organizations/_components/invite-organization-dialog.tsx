@@ -97,7 +97,13 @@ export function InviteOrganizationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) form.reset();
+      }}
+    >
       <DialogTrigger asChild>
         {children ?? (
           <InviteButtonGroup
