@@ -101,7 +101,7 @@ export default function RootLayout({
         >
           <Providers>
             <TooltipProvider>
-              <RootProvider>{children}</RootProvider>
+              <RootProvider theme={{ enabled: false }}>{children}</RootProvider>
             </TooltipProvider>
           </Providers>
         </ThemeProvider>
