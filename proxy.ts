@@ -1,9 +1,38 @@
 import arcjet, { createMiddleware, detectBot } from "@arcjet/next";
 import { getSessionCookie } from "better-auth/cookies";
+import { isMarkdownPreferred, rewritePath } from "fumadocs-core/negotiation";
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
+import { docsContentRoute, docsRoute } from "@/lib/shared";
 
 const protectedRoutes = ["/organizations", "/accept-invite"];
+
+const { rewrite: rewriteSuffix } = rewritePath(
+  `${docsRoute}{/*path}.md`,
+  `${docsContentRoute}{/*path}/content.md`
+);
+const { rewrite: rewriteDocs } = rewritePath(
+  `${docsRoute}{/*path}`,
+  `${docsContentRoute}{/*path}/content.md`
+);
+
+// Rewrite documentation requests to their Markdown representation either when
+// the `.md` suffix is used or when the client prefers Markdown via `Accept`.
+function markdownRewrite(request: NextRequest) {
+  const suffix = rewriteSuffix(request.nextUrl.pathname);
+  if (suffix) {
+    return NextResponse.rewrite(new URL(suffix, request.nextUrl));
+  }
+
+  if (isMarkdownPreferred(request)) {
+    const result = rewriteDocs(request.nextUrl.pathname);
+    if (result) {
+      return NextResponse.rewrite(new URL(result, request.nextUrl));
+    }
+  }
+
+  return undefined;
+}
 
 async function authMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -57,5 +86,5 @@ export const config = {
 
 // Pass any existing middleware with the optional existingMiddleware prop
 export const proxy = createMiddleware(aj, async (request: NextRequest) => {
-  return authMiddleware(request);
+  return markdownRewrite(request) ?? authMiddleware(request);
 });

@@ -6,6 +6,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { Analytics } from "@vercel/analytics/next";
+import { RootProvider } from "fumadocs-ui/provider/next";
 import { extractRouterConfig } from "uploadthing/server";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -99,7 +100,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Providers>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <RootProvider>{children}</RootProvider>
+            </TooltipProvider>
           </Providers>
         </ThemeProvider>
         <Toaster closeButton duration={5000} position="top-center" richColors />

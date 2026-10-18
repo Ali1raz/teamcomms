@@ -1,0 +1,68 @@
+---
+title: Directory Structure
+description: High-level map of the TeamComms codebase
+---
+
+## Project Structure
+
+A high-level map of the codebase. Only the main folders are shown — dig into each for details.
+
+```text
+team-comms/
+├── app/                    # Next.js App Router (routes + backend)
+│   ├── (auth)/             # Login / sign-up route group
+│   ├── (organization)/     # Organization & team route group
+│   ├── accept-invite/      # Invitation acceptance flow
+│   ├── profile/            # User profile pages
+│   ├── docs/               # Fumadocs site ([[...slug]] catch-all)
+│   ├── api/                # Route handlers (auth, search, uploadthing)
+│   ├── rpc/[[...rest]]/    # oRPC HTTP handler
+│   ├── router/             # oRPC procedure definitions, grouped by domain
+│   │                       #   (ai, invitations, members, message,
+│   │                       #    organization, team, user)
+│   ├── middlewares/        # oRPC middleware (auth, member, organization, arcjet)
+│   ├── data/               # Server-side data access helpers
+│   ├── llms*.txt / .mdx    # LLM-friendly docs exports
+│   ├── layout.tsx          # Root layout
+│   └── globals.css         # Global styles / Tailwind entry
+│
+├── components/             # UI components
+│   ├── ui/                 # shadcn/ui primitives
+│   ├── ai/ + ai-elements/  # AI chat UI
+│   ├── editor/             # Tiptap editor
+│   ├── motion-primitives/  # Animation helpers
+│   ├── reaction/, thread-sidebar/, toc/, general/, kibo-ui/
+│   └── ...
+│
+├── layouts/                # App shell layouts (glass, docs, shared slots)
+├── hooks/                  # Reusable React hooks (presence, signout, ...)
+│
+├── lib/                    # Shared server/client utilities
+│   ├── auth.ts / auth-client.ts   # Better Auth server + client
+│   ├── orpc.ts / orpc.server.ts   # oRPC client + server setup
+│   ├── prisma.ts                  # Prisma client instance
+│   ├── query/                     # TanStack Query helpers (client, hydration)
+│   ├── arcjet.ts                  # Security config
+│   ├── env.ts                     # Typed env validation
+│   ├── source.ts                  # Fumadocs source loader
+│   └── ...                        # uploadthing, nodemailer, permissions, utils
+│
+├── realtime/               # PartyServer WebSocket server (presence, chat rooms)
+│
+├── prisma/
+│   └── schema.prisma       # Database schema & models
+├── generated/prisma/       # Generated Prisma client (do not edit)
+│
+├── content/docs/           # MDX documentation content (this site)
+├── public/                 # Static assets
+│
+├── proxy.ts                # Request proxy / middleware
+├── instrumentation.ts      # App instrumentation hook
+├── wrangler.json           # Cloudflare Workers / PartyServer config
+├── next.config.ts          # Next.js configuration
+├── biome.json              # Biome lint/format config
+├── components.json         # shadcn/ui config
+└── package.json            # Scripts & dependencies
+```
+
+**How it fits together:** UI routes live in `app/`, call oRPC procedures from `app/router/` via the typed client in `lib/orpc.ts`, which persist through Prisma (`lib/prisma.ts` + `prisma/schema.prisma`). Realtime features connect through the PartyServer deployed from `realtime/`, and all shared logic stays in `lib/`.

@@ -1,0 +1,32 @@
+---
+title: Knowledge Graph
+description: Query the TeamComms codebase with graphify
+---
+
+## Knowledge Graph
+
+This project uses [graphify](https://github.com/safishamsi/graphify) to keep a queryable knowledge graph of the codebase. After cloning, run an update whenever you pull changes or finish a feature:
+
+```bash
+# After pulling changes
+pnpm graph:update
+
+# Before starting work — orient yourself
+pnpm graph:query "How does authentication work?"
+
+# After significant changes
+pnpm graph:update
+# Or a full rebuild with deep mode
+pnpm graph:build
+```
+
+| Command                        | Description                            |
+| ------------------------------ | -------------------------------------- |
+| `pnpm graph:build`             | Full rebuild with deep mode            |
+| `pnpm graph:update`            | Incremental update (fast, no API cost) |
+| `pnpm graph:query "question"`  | Query the graph for focused context    |
+| `pnpm graph:cluster`           | Re-cluster and regenerate report       |
+| `pnpm graph:path "A" "B"`      | Shortest path between two nodes        |
+| `pnpm graph:explain "concept"` | Plain-language explanation of a node   |
+
+The graph outputs to `graphify-out/` (gitignored). For AI agents, run `graphify query "<question>"` before reading files — it returns a scoped subgraph much smaller than grepping hundreds of files.
