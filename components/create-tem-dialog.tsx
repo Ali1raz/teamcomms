@@ -97,8 +97,8 @@ export function CreateTeamDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-100">
-        <DialogHeader className="text-xs text-muted-foreground">
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>Create new team to get started</DialogDescription>
         </DialogHeader>

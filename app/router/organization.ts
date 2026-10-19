@@ -1,8 +1,23 @@
 import { headers } from "next/headers";
 import z from "zod";
+import {
+  INVITATION_SORT_FIELDS,
+  INVITATION_SORT_ORDERS,
+  INVITATION_STATUSES,
+  type InvitationSortField,
+  type InvitationSortOrder,
+  toMembershipRole,
+} from "@/app/(organization)/organizations/[organizationId]/invitations/constants";
+import { type Prisma } from "@/generated/prisma/client";
 import { MembershipRole } from "@/generated/prisma/enums";
 import { auth, type FullOrg, type User } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
+import {
+  clampPage,
+  DEFAULT_PAGE,
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+} from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { createSlug } from "@/lib/utils";
 import { createOrganizationSchema } from "../(organization)/organizations/schema";
@@ -316,6 +331,24 @@ export const updateOrganizationMemberRole = base
     }
   });
 
+function toInvitationOrderBy(
+  sortBy: InvitationSortField,
+  sortOrder: InvitationSortOrder
+): Prisma.InvitationOrderByWithRelationInput {
+  switch (sortBy) {
+    case "email":
+      return { email: sortOrder };
+    case "role":
+      return { role: sortOrder };
+    case "status":
+      return { status: sortOrder };
+    case "expiresAt":
+      return { expiresAt: sortOrder };
+    default:
+      return { createdAt: sortOrder };
+  }
+}
+
 export const listOrganizationInvitations = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
@@ -329,6 +362,18 @@ export const listOrganizationInvitations = base
   .input(
     z.object({
       organizationId: z.string(),
+      page: z.number().int().min(1).default(DEFAULT_PAGE),
+      perPage: z
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PER_PAGE)
+        .default(DEFAULT_PER_PAGE),
+      search: z.string().optional(),
+      status: z.enum([...INVITATION_STATUSES]).optional(),
+      role: z.enum([...Object.values(MembershipRole)]).optional(),
+      sortBy: z.enum([...INVITATION_SORT_FIELDS]).default("createdAt"),
+      sortOrder: z.enum([...INVITATION_SORT_ORDERS]).default("desc"),
     })
   )
   .output(
@@ -338,7 +383,7 @@ export const listOrganizationInvitations = base
           id: z.string(),
           organizationId: z.string(),
           email: z.string(),
-          role: z.enum(MembershipRole),
+          role: z.enum(MembershipRole).nullish(),
           status: z.string(),
           expiresAt: z.coerce.date(),
           createdAt: z.coerce.date(),
@@ -365,6 +410,10 @@ export const listOrganizationInvitations = base
             .nullable(),
         })
       ),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
     })
   )
   .handler(async ({ context, input, errors }) => {
@@ -374,67 +423,88 @@ export const listOrganizationInvitations = base
       });
     }
 
-    let data: Awaited<ReturnType<typeof auth.api.listInvitations>>;
+    const search = input.search?.trim();
 
-    try {
-      data = await auth.api.listInvitations({
-        query: {
-          organizationId: context.organization.id,
-        },
-        headers: await headers(),
-      });
-    } catch (error: unknown) {
-      throw errors.INTERNAL_SERVER_ERROR({
-        message: errorMessage(error, "Failed to list invitations"),
-      });
-    }
+    const where: Prisma.InvitationWhereInput = {
+      organizationId: context.organization.id,
+      ...(input.status ? { status: input.status } : {}),
+      ...(input.role ? { role: input.role } : {}),
+      ...(search
+        ? {
+            OR: [
+              { email: { contains: search, mode: "insensitive" } },
+              { user: { name: { contains: search, mode: "insensitive" } } },
+              { user: { email: { contains: search, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    };
 
-    const inviterIds = [...new Set(data.map((inv) => inv.inviterId))];
-    const teamIds = data.map((inv) => inv.teamId).filter(Boolean) as string[];
-    const emails = data.map((inv) => inv.email);
+    const page = await (async () => {
+      try {
+        const total = await prisma.invitation.count({ where });
+        const pageCount = Math.max(Math.ceil(total / input.perPage), 1);
+        const safePage = clampPage(input.page, pageCount);
 
-    const [inviters, teams, invitedUsers] = await Promise.all([
-      prisma.user.findMany({
-        where: { id: { in: inviterIds } },
-        select: { id: true, name: true, email: true, image: true },
-      }),
-      prisma.team.findMany({
-        where: { id: { in: teamIds } },
-        select: { id: true, name: true, slug: true },
-      }),
-      prisma.user.findMany({
-        where: { email: { in: emails } },
-        select: { id: true, name: true, email: true, image: true },
-      }),
-    ]);
+        const rows = await prisma.invitation.findMany({
+          where,
+          orderBy: toInvitationOrderBy(input.sortBy, input.sortOrder),
+          skip: (safePage - 1) * input.perPage,
+          take: input.perPage,
+          select: {
+            id: true,
+            organizationId: true,
+            email: true,
+            role: true,
+            status: true,
+            expiresAt: true,
+            createdAt: true,
+            user: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+            team: { select: { id: true, name: true, slug: true } },
+          },
+        });
 
-    const inviterMap = new Map(inviters.map((u) => [u.id, u]));
-    const teamMap = new Map(teams.map((t) => [t.id, t]));
-    const invitedUserMap = new Map(invitedUsers.map((u) => [u.email, u]));
+        const emails = rows.map((row) => row.email);
+        const invitedUsers = await prisma.user.findMany({
+          where: { email: { in: emails } },
+          select: { id: true, name: true, email: true, image: true },
+        });
+        const invitedUserMap = new Map(
+          invitedUsers.map((user) => [user.email, user])
+        );
 
-    const sorted = [...data].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+        return {
+          total,
+          pageCount,
+          page: safePage,
+          rows: rows.map((invitation) => ({
+            id: invitation.id,
+            organizationId: invitation.organizationId,
+            email: invitation.email,
+            role: toMembershipRole(invitation.role),
+            status: invitation.status,
+            expiresAt: invitation.expiresAt,
+            createdAt: invitation.createdAt,
+            inviter: invitation.user,
+            invitedUser: invitedUserMap.get(invitation.email) ?? null,
+            team: invitation.team,
+          })),
+        };
+      } catch (error: unknown) {
+        throw errors.INTERNAL_SERVER_ERROR({
+          message: errorMessage(error, "Failed to list invitations"),
+        });
+      }
+    })();
 
     return {
-      invitations: sorted.map((inv) => ({
-        id: inv.id,
-        organizationId: inv.organizationId,
-        email: inv.email,
-        role: inv.role,
-        status: inv.status,
-        expiresAt: inv.expiresAt,
-        createdAt: inv.createdAt,
-        inviter: inviterMap.get(inv.inviterId) ?? {
-          id: "",
-          name: "",
-          email: "",
-          image: null,
-        },
-        invitedUser: invitedUserMap.get(inv.email) ?? null,
-        team: inv.teamId ? (teamMap.get(inv.teamId) ?? null) : null,
-      })),
+      invitations: page.rows,
+      total: page.total,
+      page: page.page,
+      perPage: input.perPage,
+      pageCount: page.pageCount,
     };
   });
 

@@ -108,6 +108,13 @@ export function formatLocalDateTime(createdAt: string | number | Date) {
   });
 }
 
+export function formatLocalDate(createdAt: string | number | Date) {
+  // Date-only label; pair with formatLocalDateTime for the full value on hover.
+  return new Date(createdAt).toLocaleDateString("en-US", {
+    dateStyle: "medium",
+  });
+}
+
 /**
  * trim trailing whitespaces and collapse >2 blank lines
  */

@@ -89,7 +89,7 @@ export function UpdateMemberRoleDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-100">
+      <DialogContent className="sm:max-w-sm">
         <DialogTitle>Update Role</DialogTitle>
         <DialogDescription>
           Change the role of <span className="font-bold">{memberName}</span> in
