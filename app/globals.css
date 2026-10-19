@@ -7,7 +7,6 @@
 @import "fumadocs-ui/css/preset.css";
 @import "fumadocs-ui/css/generated/glass.css";
 
-@plugin "@tailwindcss/typography";
 @source "../node_modules/@uploadthing/react/dist";
 
 @custom-variant dark (&:is(.dark *));
