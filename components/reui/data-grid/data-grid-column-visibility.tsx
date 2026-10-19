@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
 // Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
-"use no memo"
+"use no memo";
 
-import type { ReactElement } from "react"
+import type { Table } from "@tanstack/react-table";
+import type { ReactElement } from "react";
+import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import {
   getColumnHeaderLabel,
   useDataGrid,
-} from "@/components/reui/data-grid/data-grid"
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid"
-import type { Table } from "@tanstack/react-table"
+} from "@/components/reui/data-grid/data-grid";
 
 import {
   DropdownMenu,
@@ -18,20 +18,22 @@ import {
   DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 function DataGridColumnVisibility<TData extends object>({
   table,
   trigger,
 }: {
-  table: Table<DataGridFeatures, TData>
-  trigger: ReactElement<Record<string, unknown>>
+  table: Table<DataGridFeatures, TData>;
+  trigger: ReactElement<Record<string, unknown>>;
 }) {
-  const { i18n } = useDataGrid()
+  const { i18n } = useDataGrid();
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="w-fit" asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuTrigger className="w-fit" asChild>
+        {trigger}
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="font-medium">
@@ -57,12 +59,12 @@ function DataGridColumnVisibility<TData extends object>({
                 >
                   {getColumnHeaderLabel(column)}
                 </DropdownMenuCheckboxItem>
-              )
+              );
             })}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
-export { DataGridColumnVisibility }
+export { DataGridColumnVisibility };

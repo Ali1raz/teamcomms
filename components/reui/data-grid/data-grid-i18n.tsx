@@ -1,49 +1,49 @@
 export interface DataGridI18nLabels {
   /* The column header menu. */
-  sortAscending: string
-  sortDescending: string
-  pinColumnStart: string
-  pinColumnEnd: string
-  moveColumnStart: string
-  moveColumnEnd: string
-  columnsMenu: string
-  unpinColumn: (title: string) => string
-  toggleColumns: string
+  sortAscending: string;
+  sortDescending: string;
+  pinColumnStart: string;
+  pinColumnEnd: string;
+  moveColumnStart: string;
+  moveColumnEnd: string;
+  columnsMenu: string;
+  unpinColumn: (title: string) => string;
+  toggleColumns: string;
   /* Row and cell affordances. */
-  rowCreate: string
-  pinRow: string
-  unpinRow: string
-  selectRow: string
-  selectAll: string
-  expandRow: string
-  collapseRow: string
-  dragToReorder: string
-  dragToReorderRow: string
-  reorderingUnavailable: string
+  rowCreate: string;
+  pinRow: string;
+  unpinRow: string;
+  selectRow: string;
+  selectAll: string;
+  expandRow: string;
+  collapseRow: string;
+  dragToReorder: string;
+  dragToReorderRow: string;
+  reorderingUnavailable: string;
   /* Grid states. */
-  loading: string
-  empty: string
-  allRowsLoaded: string
+  loading: string;
+  empty: string;
+  allRowsLoaded: string;
   /* Pagination. */
-  rowsPerPage: string
-  paginationInfo: (info: { from: number; to: number; count: number }) => string
-  previousPage: string
-  nextPage: string
-  goToPage: (page: number) => string
-  paginationEllipsis: string
+  rowsPerPage: string;
+  paginationInfo: (info: { from: number; to: number; count: number }) => string;
+  previousPage: string;
+  nextPage: string;
+  goToPage: (page: number) => string;
+  paginationEllipsis: string;
   /* The faceted column filter. */
-  filterSelectedCount: (count: number) => string
-  filterNoResults: string
-  filterClear: string
+  filterSelectedCount: (count: number) => string;
+  filterNoResults: string;
+  filterClear: string;
 }
 
 export interface DataGridI18nConfig {
-  labels: DataGridI18nLabels
+  labels: DataGridI18nLabels;
 }
 
 export type DataGridI18nOverrides = {
-  labels?: Partial<DataGridI18nLabels>
-}
+  labels?: Partial<DataGridI18nLabels>;
+};
 
 const DEFAULT_DATA_GRID_LABELS: DataGridI18nLabels = {
   sortAscending: "Asc",
@@ -77,11 +77,11 @@ const DEFAULT_DATA_GRID_LABELS: DataGridI18nLabels = {
   filterSelectedCount: (count) => `${count} selected`,
   filterNoResults: "No results found.",
   filterClear: "Clear filters",
-}
+};
 
 const DEFAULT_DATA_GRID_I18N: DataGridI18nConfig = Object.freeze({
   labels: Object.freeze(DEFAULT_DATA_GRID_LABELS),
-})
+});
 
 /**
  * A shallow merge per section, deliberately: a deep merge would leak a
@@ -92,8 +92,8 @@ const DEFAULT_DATA_GRID_I18N: DataGridI18nConfig = Object.freeze({
 export function mergeDataGridI18n(
   overrides?: DataGridI18nOverrides
 ): DataGridI18nConfig {
-  if (!overrides?.labels) return DEFAULT_DATA_GRID_I18N
+  if (!overrides?.labels) return DEFAULT_DATA_GRID_I18N;
   return {
     labels: { ...DEFAULT_DATA_GRID_LABELS, ...overrides.labels },
-  }
+  };
 }

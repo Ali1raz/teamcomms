@@ -1,29 +1,22 @@
-"use client"
+"use client";
 
 // Opts the grid out of React Compiler. Its parts read state through builder
 // calls on rows, columns and headers that keep their identity across renders
 // (row.getIsExpanded(), column.getIsResizing()); compiled, those reads are
 // cached against the unchanged object and never run again. The grid memoizes
 // by hand instead, and the component that renders it still compiles.
-"use no memo"
+"use no memo";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from "react"
-import type { ReactNode } from "react"
-import {
-  mergeDataGridI18n,
-  type DataGridI18nConfig,
-  type DataGridI18nOverrides,
-} from "@/components/reui/data-grid/data-grid-i18n"
+import type {
+  Cell,
+  Column,
+  ColumnFiltersState,
+  ReactTable,
+  RowData,
+  SortingState,
+  Table,
+  TableFeatures,
+} from "@tanstack/react-table";
 import {
   cellSelectionFeature,
   columnFacetingFeature,
@@ -53,19 +46,25 @@ import {
   sortFn_text,
   sortFn_textCaseSensitive,
   tableFeatures,
-} from "@tanstack/react-table"
-import type {
-  Cell,
-  Column,
-  ColumnFiltersState,
-  ReactTable,
-  RowData,
-  SortingState,
-  Table,
-  TableFeatures,
-} from "@tanstack/react-table"
-
-import { cn } from "cn"
+} from "@tanstack/react-table";
+import { cn } from "cn";
+import type { ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
+import {
+  type DataGridI18nConfig,
+  type DataGridI18nOverrides,
+  mergeDataGridI18n,
+} from "@/components/reui/data-grid/data-grid-i18n";
 
 /**
  * Per-column extras the grid reads off `columnDef.meta`.
@@ -86,18 +85,18 @@ export interface DataGridColumnCellEdit<TData> {
    * written; a function decides per row, so locked rows (archived, another
    * user's, a totals row) reject like any read-only cell. Defaults to true.
    */
-  editable?: boolean | ((row: TData) => boolean)
+  editable?: boolean | ((row: TData) => boolean);
   /**
    * Clipboard or fill string to typed value. Return undefined to reject the
    * cell into `rejected`. Without it the raw string passes through unchanged -
    * a deliberate non-coercion, so a number column receives strings only when
    * the consumer chose not to parse.
    */
-  parse?: (raw: string, row: TData) => unknown
+  parse?: (raw: string, row: TData) => unknown;
   /** Typed value to clipboard string. Fallback: String(value ?? ""). */
-  format?: (value: unknown, row: TData) => string
+  format?: (value: unknown, row: TData) => string;
   /** Value dispatched by Delete/Backspace and cut. Defaults to null. */
-  clearValue?: unknown
+  clearValue?: unknown;
   /**
    * Opt into the grid's built-in free-text editor: an overlay input (or
    * auto-growing textarea) flush over the focused cell, opened by Enter, F2,
@@ -105,19 +104,19 @@ export interface DataGridColumnCellEdit<TData> {
    * `"edit"` with `parse` applied. Columns without it stay consumer-edited
    * via `onCellEditRequest` or their own cell renderers.
    */
-  control?: "text" | "textarea"
+  control?: "text" | "textarea";
 }
 
 export interface DataGridColumnMeta<TData> {
-  headerTitle?: string
-  headerClassName?: string
-  cellClassName?: string
-  skeleton?: ReactNode
-  expandedContent?: (row: TData) => ReactNode
-  autoSize?: boolean
+  headerTitle?: string;
+  headerClassName?: string;
+  cellClassName?: string;
+  skeleton?: ReactNode;
+  expandedContent?: (row: TData) => ReactNode;
+  autoSize?: boolean;
   /** Header spans this many leaves: this one and its next adjacent siblings. */
-  headerColSpan?: number
-  cellEdit?: DataGridColumnCellEdit<TData>
+  headerColSpan?: number;
+  cellEdit?: DataGridColumnCellEdit<TData>;
   /**
    * Under `columnsResizable`, this column absorbs the free space the filler
    * strip would otherwise hold, so the grid always reads full-width and the
@@ -125,7 +124,7 @@ export interface DataGridColumnMeta<TData> {
    * space remains, manual resizing of this column is visually a no-op (the
    * absorbed space compensates), the flex-column trade-off.
    */
-  fillWidth?: boolean
+  fillWidth?: boolean;
 }
 
 /**
@@ -199,10 +198,10 @@ export const dataGridFeatures = tableFeatures({
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columnMeta: metaHelper<DataGridColumnMeta<any>>(),
-})
+});
 
 /** The feature set `dataGridFeatures` registers. */
-export type DataGridFeatures = typeof dataGridFeatures
+export type DataGridFeatures = typeof dataGridFeatures;
 
 /**
  * The grid's internal view of the table.
@@ -217,17 +216,17 @@ export type DataGridFeatures = typeof dataGridFeatures
 export type DataGridTableInstance<TData extends object> = ReactTable<
   DataGridFeatures,
   TData
->
+>;
 
 /** Label for headers / column visibility: `meta.headerTitle`, string `columnDef.header`, or `column.id`. */
 export function getColumnHeaderLabel<TData extends RowData, TValue>(
   column: Column<DataGridFeatures, TData, TValue>
 ): string {
-  const meta = column.columnDef.meta as { headerTitle?: string } | undefined
-  if (typeof meta?.headerTitle === "string") return meta.headerTitle
-  const defHeader = column.columnDef.header
-  if (typeof defHeader === "string") return defHeader
-  return String(column.id)
+  const meta = column.columnDef.meta as { headerTitle?: string } | undefined;
+  if (typeof meta?.headerTitle === "string") return meta.headerTitle;
+  const defHeader = column.columnDef.header;
+  if (typeof defHeader === "string") return defHeader;
+  return String(column.id);
 }
 
 /**
@@ -239,43 +238,43 @@ export function getColumnHeaderLabel<TData extends RowData, TValue>(
 export function getDataGridHeaderSpans<TData extends object>(
   table: DataGridTableInstance<TData>
 ) {
-  const spans = new Map<string, Column<DataGridFeatures, TData, unknown>[]>()
+  const spans = new Map<string, Column<DataGridFeatures, TData, unknown>[]>();
   const families = [
     table.getStartVisibleLeafColumns(),
     table.getCenterVisibleLeafColumns(),
     table.getEndVisibleLeafColumns(),
-  ] as Column<DataGridFeatures, TData, unknown>[][]
+  ] as Column<DataGridFeatures, TData, unknown>[][];
 
   for (const family of families) {
     for (let index = 0; index < family.length; index++) {
-      const owner = family[index]!
-      const span = Math.floor(owner.columnDef.meta?.headerColSpan ?? 1)
-      if (span < 2) continue
+      const owner = family[index]!;
+      const span = Math.floor(owner.columnDef.meta?.headerColSpan ?? 1);
+      if (span < 2) continue;
 
       // The next span - 1 siblings in definition order, so a span never
       // leaves its parent group; a hidden one is skipped, not a gap.
-      const siblings = owner.parent?.columns ?? table.getAllColumns()
-      const at = siblings.findIndex((sibling) => sibling.id === owner.id)
+      const siblings = owner.parent?.columns ?? table.getAllColumns();
+      const at = siblings.findIndex((sibling) => sibling.id === owner.id);
       const intended =
         at < 0
           ? []
           : siblings
               .slice(at + 1, at + span)
-              .filter((sibling) => sibling.getIsVisible())
-      const covered: Column<DataGridFeatures, TData, unknown>[] = []
+              .filter((sibling) => sibling.getIsVisible());
+      const covered: Column<DataGridFeatures, TData, unknown>[] = [];
       for (const sibling of intended) {
-        const next = family[index + 1 + covered.length]
-        if (next?.id !== sibling.id) break
-        covered.push(next)
+        const next = family[index + 1 + covered.length];
+        if (next?.id !== sibling.id) break;
+        covered.push(next);
       }
-      if (!covered.length) continue
+      if (!covered.length) continue;
 
-      spans.set(owner.id, covered)
-      index += covered.length
+      spans.set(owner.id, covered);
+      index += covered.length;
     }
   }
 
-  return spans
+  return spans;
 }
 
 /**
@@ -287,17 +286,17 @@ export function getDataGridHeaderSpans<TData extends object>(
 export function getDataGridCellSelectionCellAttrs<TData extends object>(
   cell: Cell<DataGridFeatures, TData, unknown>
 ): {
-  "aria-selected": boolean
-  "data-col-id": string
-  "data-cell-selected": true | undefined
-  "data-cell-focused": true | undefined
-  "data-cell-edge-top": true | undefined
-  "data-cell-edge-right": true | undefined
-  "data-cell-edge-bottom": true | undefined
-  "data-cell-edge-left": true | undefined
+  "aria-selected": boolean;
+  "data-col-id": string;
+  "data-cell-selected": true | undefined;
+  "data-cell-focused": true | undefined;
+  "data-cell-edge-top": true | undefined;
+  "data-cell-edge-right": true | undefined;
+  "data-cell-edge-bottom": true | undefined;
+  "data-cell-edge-left": true | undefined;
 } {
-  const selected = cell.getIsSelected()
-  const edges = cell.getSelectionEdges()
+  const selected = cell.getIsSelected();
+  const edges = cell.getSelectionEdges();
   return {
     "aria-selected": selected,
     "data-col-id": cell.column.id,
@@ -307,7 +306,7 @@ export function getDataGridCellSelectionCellAttrs<TData extends object>(
     "data-cell-edge-right": edges.right || undefined,
     "data-cell-edge-bottom": edges.bottom || undefined,
     "data-cell-edge-left": edges.left || undefined,
-  }
+  };
 }
 
 /**
@@ -401,24 +400,24 @@ export const dataGridCellSelectionCellClasses = cn(
   // the fill session, so neighboring target cells never double their edges.
   "data-[cell-fill-target]:bg-primary/4",
   "data-[cell-fill-target]:data-pinned:bg-[color-mix(in_oklab,var(--primary)_4%,var(--data-grid-surface,var(--data-grid-card-surface,var(--background))))]"
-)
+);
 
 export type DataGridApiFetchParams = {
-  pageIndex: number
-  pageSize: number
-  sorting?: SortingState
-  filters?: ColumnFiltersState
-  searchQuery?: string
-}
+  pageIndex: number;
+  pageSize: number;
+  sorting?: SortingState;
+  filters?: ColumnFiltersState;
+  searchQuery?: string;
+};
 
 export type DataGridApiResponse<T> = {
-  data: T[]
-  empty: boolean
+  data: T[];
+  empty: boolean;
   pagination: {
-    total: number
-    page: number
-  }
-}
+    total: number;
+    page: number;
+  };
+};
 
 /**
  * Everything `<DataGrid>` accepts except the two props the provider consumes
@@ -428,22 +427,22 @@ export type DataGridApiResponse<T> = {
 export type DataGridLayoutProps<TData extends object> = Omit<
   DataGridProps<TableFeatures, TData>,
   "table" | "children"
->
+>;
 
 export interface DataGridContextProps<TData extends object> {
-  props: DataGridLayoutProps<TData>
-  table: DataGridTableInstance<TData>
-  recordCount: number
-  isLoading: boolean
+  props: DataGridLayoutProps<TData>;
+  table: DataGridTableInstance<TData>;
+  recordCount: number;
+  isLoading: boolean;
   /** Stable per-grid prefix for the DOM ids ARIA relations point at. */
-  gridId: string
+  gridId: string;
   /** The merged label set; components read `i18n.labels.<key>`. */
-  i18n: DataGridI18nConfig
+  i18n: DataGridI18nConfig;
   /**
    * Internal coordinator for `meta.autoSize` columns. Lives at the core level
    * so every table variant and viewport instance shares one application state.
    */
-  autoSize?: DataGridAutoSizeController
+  autoSize?: DataGridAutoSizeController;
 }
 
 /**
@@ -452,7 +451,7 @@ export interface DataGridContextProps<TData extends object> {
  * renderers always agree on the same encoding.
  */
 export function toDataGridDomId(value: string): string {
-  return value.replace(/[^\w-]/g, "_")
+  return value.replace(/[^\w-]/g, "_");
 }
 
 export type DataGridAutoSizeController = {
@@ -470,7 +469,7 @@ export type DataGridAutoSizeController = {
    * from every viewport measurement; returns true when a sizing update
    * was dispatched.
    */
-  apply: (freeSpace: number) => boolean
+  apply: (freeSpace: number) => boolean;
   /**
    * The width the armed column would reflow to at this free space, and the
    * width it holds now, without committing anything. Null when no column is
@@ -478,21 +477,21 @@ export type DataGridAutoSizeController = {
    */
   preview: (
     freeSpace: number
-  ) => { columnId: string; current: number; size: number } | null
+  ) => { columnId: string; current: number; size: number } | null;
   /**
    * Records a width the caller commits for the armed column, so the next
    * measurement reads it as this coordinator's own write and keeps
    * reflowing, rather than as a user drag that stands it down.
    */
-  adopt: (columnId: string, size: number) => void
-}
+  adopt: (columnId: string, size: number) => void;
+};
 
 type DataGridAutoSizeReflowState = {
-  applied: { columnId: string; base: number; grown: number } | null
-  settleTimer: ReturnType<typeof setTimeout> | null
-  pendingFreeSpace: number
-  lastCommitAt: number
-}
+  applied: { columnId: string; base: number; grown: number } | null;
+  settleTimer: ReturnType<typeof setTimeout> | null;
+  pendingFreeSpace: number;
+  lastCommitAt: number;
+};
 
 /**
  * Bookkeeping keyed on the TABLE STORE, never on a React instance: dev
@@ -506,20 +505,20 @@ type DataGridAutoSizeReflowState = {
 const dataGridAutoSizeStates = new WeakMap<
   object,
   DataGridAutoSizeReflowState
->()
+>();
 
 function getDataGridAutoSizeState(store: object): DataGridAutoSizeReflowState {
-  let state = dataGridAutoSizeStates.get(store)
+  let state = dataGridAutoSizeStates.get(store);
   if (!state) {
     state = {
       applied: null,
       settleTimer: null,
       pendingFreeSpace: 0,
       lastCommitAt: 0,
-    }
-    dataGridAutoSizeStates.set(store, state)
+    };
+    dataGridAutoSizeStates.set(store, state);
   }
-  return state
+  return state;
 }
 
 function createDataGridAutoSizeController<TData extends object>(
@@ -542,31 +541,31 @@ function createDataGridAutoSizeController<TData extends object>(
   // two commits instead of sixty a second. The trailing timer may fire
   // after the grid unmounts; it re-reads the table then, and a sizing
   // write to the consumer's store is inert once nothing renders it.
-  const SETTLE_MS = 150
+  const SETTLE_MS = 150;
 
   // The armed column's reflow target at this free space. Shared by reflow,
   // which commits it, and preview, which only reports it.
   const resolveReflow = (freeSpace: number) => {
-    const table = getTable()
-    const state = getDataGridAutoSizeState(table.store)
+    const table = getTable();
+    const state = getDataGridAutoSizeState(table.store);
     // LIVE state, never the render snapshot: a measurement can run between
     // our own sizing commit and React's re-render, and the stale snapshot
     // would hide the width this controller just wrote.
     const columnSizing =
-      table.atoms.columnSizing?.get() ?? table.state.columnSizing
-    if (!state.applied) return null
+      table.atoms.columnSizing?.get() ?? table.state.columnSizing;
+    if (!state.applied) return null;
     const autoSizeColumn = table
       .getVisibleLeafColumns()
       .find(
         (column) => column.columnDef.meta?.autoSize && column.getCanResize()
-      )
+      );
     if (!autoSizeColumn || autoSizeColumn.id !== state.applied.columnId)
-      return null
+      return null;
     // A width this coordinator did not write belongs to the user's drag;
     // reflow stands down until a reset re-arms the column.
-    const currentSize = columnSizing[state.applied.columnId]
+    const currentSize = columnSizing[state.applied.columnId];
     if (currentSize !== undefined && currentSize !== state.applied.grown) {
-      return null
+      return null;
     }
     // The free space as it would measure with our growth removed; the
     // target re-absorbs exactly that, floored at minSize so a narrow
@@ -575,16 +574,16 @@ function createDataGridAutoSizeController<TData extends object>(
     // columnDef always carries TanStack's built-in minSize (20), so only a
     // value that differs from the defaults, or a defaultColumn.minSize,
     // counts as one the consumer set.
-    const freeAtBase = freeSpace + (state.applied.grown - state.applied.base)
-    const resolvedMinSize = autoSizeColumn.columnDef.minSize
+    const freeAtBase = freeSpace + (state.applied.grown - state.applied.base);
+    const resolvedMinSize = autoSizeColumn.columnDef.minSize;
     const hasConsumerMinSize =
       table.options.defaultColumn?.minSize !== undefined ||
-      resolvedMinSize !== table.getDefaultColumnDef().minSize
+      resolvedMinSize !== table.getDefaultColumnDef().minSize;
     const floor =
       hasConsumerMinSize && resolvedMinSize !== undefined
         ? resolvedMinSize
-        : state.applied.base
-    const target = Math.max(floor, state.applied.base + freeAtBase)
+        : state.applied.base;
+    const target = Math.max(floor, state.applied.base + freeAtBase);
     return {
       table,
       state,
@@ -592,25 +591,25 @@ function createDataGridAutoSizeController<TData extends object>(
       target,
       // Always set on a resolved columnDef (MAX_SAFE_INTEGER by default).
       maxSize: autoSizeColumn.columnDef.maxSize!,
-    }
-  }
+    };
+  };
 
   const reflow = (freeSpace: number): boolean => {
-    const resolved = resolveReflow(freeSpace)
-    if (!resolved) return false
-    const { table, state, applied, target } = resolved
-    if (Math.abs(target - applied.grown) < 1) return false
-    state.applied = { ...applied, grown: target }
+    const resolved = resolveReflow(freeSpace);
+    if (!resolved) return false;
+    const { table, state, applied, target } = resolved;
+    if (Math.abs(target - applied.grown) < 1) return false;
+    state.applied = { ...applied, grown: target };
     table.setColumnSizing((old) => ({
       ...old,
       [applied.columnId]: target,
-    }))
-    return true
-  }
+    }));
+    return true;
+  };
 
   return {
     preview(freeSpace: number) {
-      const resolved = resolveReflow(freeSpace)
+      const resolved = resolveReflow(freeSpace);
       // In rendered pixels: getSize() clamps to maxSize, so an unclamped
       // preview painted a capped column past its cap until the release.
       return resolved
@@ -619,56 +618,56 @@ function createDataGridAutoSizeController<TData extends object>(
             current: Math.min(resolved.applied.grown, resolved.maxSize),
             size: Math.min(resolved.target, resolved.maxSize),
           }
-        : null
+        : null;
     },
     adopt(columnId: string, size: number) {
-      const state = getDataGridAutoSizeState(getTable().store)
+      const state = getDataGridAutoSizeState(getTable().store);
       if (state.applied?.columnId === columnId) {
-        state.applied = { ...state.applied, grown: size }
+        state.applied = { ...state.applied, grown: size };
       }
     },
     apply(freeSpace: number) {
-      const table = getTable()
-      const state = getDataGridAutoSizeState(table.store)
+      const table = getTable();
+      const state = getDataGridAutoSizeState(table.store);
       // Same live read as `reflow`; the snapshot race is what made the
       // re-arm check clear the bookkeeping right after the first absorb.
       const columnSizing =
-        table.atoms.columnSizing?.get() ?? table.state.columnSizing
+        table.atoms.columnSizing?.get() ?? table.state.columnSizing;
 
       // Re-arm after reset flows (double-click resetSize, resetColumnSizing,
       // controlled state replacement) so the column re-fills instead of
       // leaving a dead blank strip.
       if (state.applied && columnSizing[state.applied.columnId] === undefined) {
-        state.applied = null
+        state.applied = null;
       }
 
       const autoSizeColumn = table
         .getVisibleLeafColumns()
         .find(
           (column) => column.columnDef.meta?.autoSize && column.getCanResize()
-        )
+        );
 
       if (autoSizeColumn && state.applied?.columnId === autoSizeColumn.id) {
-        state.pendingFreeSpace = freeSpace
-        const now = Date.now()
+        state.pendingFreeSpace = freeSpace;
+        const now = Date.now();
         if (now - state.lastCommitAt > SETTLE_MS) {
-          state.lastCommitAt = now
-          return reflow(freeSpace)
+          state.lastCommitAt = now;
+          return reflow(freeSpace);
         }
-        if (state.settleTimer !== null) clearTimeout(state.settleTimer)
+        if (state.settleTimer !== null) clearTimeout(state.settleTimer);
         state.settleTimer = setTimeout(() => {
-          state.settleTimer = null
-          state.lastCommitAt = Date.now()
-          reflow(state.pendingFreeSpace)
-        }, SETTLE_MS)
-        return false
+          state.settleTimer = null;
+          state.lastCommitAt = Date.now();
+          reflow(state.pendingFreeSpace);
+        }, SETTLE_MS);
+        return false;
       }
 
-      const fillWidth = Math.max(0, freeSpace)
-      if (fillWidth <= 0) return false
+      const fillWidth = Math.max(0, freeSpace);
+      if (fillWidth <= 0) return false;
 
       if (!autoSizeColumn) {
-        return false
+        return false;
       }
 
       // A width this coordinator did not write belongs to someone else -
@@ -682,9 +681,9 @@ function createDataGridAutoSizeController<TData extends object>(
       // (a remount, a new table store) forgets what it did, and the guard has
       // to survive that. An explicit reset clears the entry and re-arms the
       // fill, which is what makes double-click-to-reset still work.
-      const currentSize = columnSizing[autoSizeColumn.id]
+      const currentSize = columnSizing[autoSizeColumn.id];
       if (currentSize !== undefined && currentSize !== state.applied?.grown) {
-        return false
+        return false;
       }
 
       // Candidate switched (e.g. the grown column was hidden and another
@@ -695,30 +694,30 @@ function createDataGridAutoSizeController<TData extends object>(
         state.applied &&
         columnSizing[state.applied.columnId] === state.applied.grown
           ? state.applied
-          : null
-      const base = columnSizing[autoSizeColumn.id] ?? autoSizeColumn.getSize()
-      const grown = base + fillWidth
+          : null;
+      const base = columnSizing[autoSizeColumn.id] ?? autoSizeColumn.getSize();
+      const grown = base + fillWidth;
 
-      state.applied = { columnId: autoSizeColumn.id, base, grown }
+      state.applied = { columnId: autoSizeColumn.id, base, grown };
       table.setColumnSizing((old) => {
-        const next = { ...old, [autoSizeColumn.id]: grown }
+        const next = { ...old, [autoSizeColumn.id]: grown };
         if (revert && next[revert.columnId] === revert.grown) {
-          next[revert.columnId] = revert.base
+          next[revert.columnId] = revert.base;
         }
-        return next
-      })
+        return next;
+      });
 
-      return true
+      return true;
     },
-  }
+  };
 }
 
 export type DataGridRequestParams = {
-  pageIndex: number
-  pageSize: number
-  sorting?: SortingState
-  columnFilters?: ColumnFiltersState
-}
+  pageIndex: number;
+  pageSize: number;
+  sorting?: SortingState;
+  columnFilters?: ColumnFiltersState;
+};
 
 /** Which spreadsheet operation produced a cell change batch. */
 export type DataGridCellsChangeSource =
@@ -726,57 +725,57 @@ export type DataGridCellsChangeSource =
   | "cut"
   | "clear"
   | "fill"
-  | "edit"
+  | "edit";
 
 export interface DataGridCellChange<TData> {
-  rowId: string
-  columnId: string
+  rowId: string;
+  columnId: string;
   /** The consumer's row object, so immutable write-back needs no second lookup. */
-  row: TData
+  row: TData;
   /** Accessor value at dispatch time; enables consumer-side undo stacks. */
-  previousValue: unknown
+  previousValue: unknown;
   /** Typed value produced by `meta.cellEdit.parse`, or `clearValue` for clear/cut. */
-  value: unknown
+  value: unknown;
 }
 
 /** What onCellsCopy receives after the grid writes the clipboard. */
 export interface DataGridCopyDetails {
   /** The TSV text that reached the clipboard. */
-  text: string
+  text: string;
   /** The same content as a row-major grid of formatted fields. */
-  grid: string[][]
+  grid: string[][];
   /** True when the write came from a cut, which clears the region next. */
-  cut: boolean
+  cut: boolean;
 }
 
 /** One resolved positive region, in pre-paginated display indexes. */
 export interface DataGridCellSelectionBound {
-  minRowIndex: number
-  maxRowIndex: number
-  minColumnIndex: number
-  maxColumnIndex: number
+  minRowIndex: number;
+  maxRowIndex: number;
+  minColumnIndex: number;
+  maxColumnIndex: number;
 }
 
 /** What onCellSelectionChange receives, resolved from the live selection. */
 export interface DataGridCellSelectionSnapshot {
   /** The virtually focused cell, the active range's anchor. Null when clear. */
-  focused: { rowId: string; columnId: string } | null
+  focused: { rowId: string; columnId: string } | null;
   /** Every positive region, geometric order. */
-  bounds: DataGridCellSelectionBound[]
+  bounds: DataGridCellSelectionBound[];
   /** The most recent region, the one copy and paste act on. */
-  activeBound: DataGridCellSelectionBound | null
+  activeBound: DataGridCellSelectionBound | null;
   /**
    * Cells of the selection the view can show - the count that matches the
    * painted range and what a batch will touch.
    */
-  visibleCellCount: number
+  visibleCellCount: number;
 }
 
 export interface DataGridCellRejection {
-  rowId: string
-  columnId: string
-  raw: string
-  reason: "readonly" | "invalid"
+  rowId: string;
+  columnId: string;
+  raw: string;
+  reason: "readonly" | "invalid";
 }
 
 /**
@@ -784,13 +783,13 @@ export interface DataGridCellRejection {
  * tint the row, "deleted" mutes and strikes it. Purely presentational - the
  * consumer's state stays the only owner of what the statuses mean.
  */
-export type DataGridRowStatus = "new" | "dirty" | "deleted"
+export type DataGridRowStatus = "new" | "dirty" | "deleted";
 
 /**
  * Lifecycle of a cell for the optional CRUD indications: a corner mark in
  * the amber tone for "dirty", the destructive tone for "invalid".
  */
-export type DataGridCellStatus = "dirty" | "invalid"
+export type DataGridCellStatus = "dirty" | "invalid";
 
 /**
  * Asks the consumer to open its editor for the focused cell: Enter or F2, or
@@ -799,12 +798,12 @@ export type DataGridCellStatus = "dirty" | "invalid"
  * column is writable via `meta.cellEdit`.
  */
 export interface DataGridCellEditRequest<TData> {
-  rowId: string
-  columnId: string
-  row: TData
-  previousValue: unknown
+  rowId: string;
+  columnId: string;
+  row: TData;
+  previousValue: unknown;
   /** The typed character that started the edit; absent for Enter and F2. */
-  initialText?: string
+  initialText?: string;
 }
 
 /**
@@ -813,60 +812,60 @@ export interface DataGridCellEditRequest<TData> {
  * writes data itself.
  */
 export interface DataGridCellsChangeDetails<TData> {
-  source: DataGridCellsChangeSource
-  changes: DataGridCellChange<TData>[]
-  rejected: DataGridCellRejection[]
+  source: DataGridCellsChangeSource;
+  changes: DataGridCellChange<TData>[];
+  rejected: DataGridCellRejection[];
 }
 
 export interface DataGridProps<
   TFeatures extends TableFeatures,
   TData extends object,
 > {
-  className?: string
-  table?: Table<TFeatures, TData>
-  recordCount: number
-  children?: ReactNode
-  onRowClick?: (row: TData) => void
+  className?: string;
+  table?: Table<TFeatures, TData>;
+  recordCount: number;
+  children?: ReactNode;
+  onRowClick?: (row: TData) => void;
   /**
    * Receives every spreadsheet write batch (paste, cut, clear, fill, edit).
    * Served through the props getter like `onRowClick`, so an inline identity
    * never republishes the context. Absent: copy still works, writes no-op.
    */
-  onCellsChange?: (details: DataGridCellsChangeDetails<TData>) => void
+  onCellsChange?: (details: DataGridCellsChangeDetails<TData>) => void;
   /**
    * Opens the consumer's editor from the keyboard: Enter, F2, or typing on
    * the focused cell. Absent: Enter keeps moving down, typing does nothing.
    */
-  onCellEditRequest?: (request: DataGridCellEditRequest<TData>) => void
+  onCellEditRequest?: (request: DataGridCellEditRequest<TData>) => void;
   /**
    * Fires on every cell-selection change (focus moves, ranges grow or
    * clear) with a resolved snapshot, so a selection count, formula bar or
    * context panel needs no reach into TanStack internals.
    */
-  onCellSelectionChange?: (snapshot: DataGridCellSelectionSnapshot) => void
+  onCellSelectionChange?: (snapshot: DataGridCellSelectionSnapshot) => void;
   /**
    * Fires after the grid writes the clipboard (Cmd/Ctrl+C or X, or the
    * native copy and cut events), e.g. to confirm with a toast.
    */
-  onCellsCopy?: (details: DataGridCopyDetails) => void
+  onCellsCopy?: (details: DataGridCopyDetails) => void;
   /**
    * Renders an "Add row" affordance as the table body's last row; clicking
    * it is the consumer's cue to start creating a row. Absent: no row.
    */
-  onRowCreate?: () => void
+  onRowCreate?: () => void;
   /** Label of the onRowCreate affordance. Defaults to "Add row". */
-  rowCreateLabel?: ReactNode
+  rowCreateLabel?: ReactNode;
   /**
    * Rendered inside the table body after the data rows: the slot a DRAFT
    * row lives in while it is being created, before it joins `data` and the
    * pagination math. Supply a `<tr>` of cells; the colgroup sizes them.
    */
-  appendRow?: ReactNode
+  appendRow?: ReactNode;
   /**
    * Optional CRUD indication per row. Return undefined for no indication;
    * omit the prop entirely to render none anywhere.
    */
-  getRowStatus?: (row: TData) => DataGridRowStatus | undefined
+  getRowStatus?: (row: TData) => DataGridRowStatus | undefined;
   /**
    * Optional CRUD indication per cell: the classic corner mark on cells the
    * consumer tracks as edited or invalid.
@@ -874,100 +873,100 @@ export interface DataGridProps<
   getCellStatus?: (
     row: TData,
     columnId: string
-  ) => DataGridCellStatus | undefined
-  isLoading?: boolean
+  ) => DataGridCellStatus | undefined;
+  isLoading?: boolean;
   /**
    * Overrides for every built-in string: menu items, aria labels,
    * pagination copy, state messages. Merged over the defaults; a more
    * specific component prop (`rowCreateLabel`, `loadingMessage`, the
    * pagination label props) still wins over its `i18n` counterpart.
    */
-  i18n?: DataGridI18nOverrides
-  loadingMode?: "skeleton" | "spinner"
-  loadingMessage?: ReactNode | string
-  fetchingMoreMessage?: ReactNode | string
-  allRowsLoadedMessage?: ReactNode | string
-  emptyMessage?: ReactNode | string
+  i18n?: DataGridI18nOverrides;
+  loadingMode?: "skeleton" | "spinner";
+  loadingMessage?: ReactNode | string;
+  fetchingMoreMessage?: ReactNode | string;
+  allRowsLoadedMessage?: ReactNode | string;
+  emptyMessage?: ReactNode | string;
   tableLayout?: {
-    dense?: boolean
-    cellBorder?: boolean
-    rowBorder?: boolean
-    rowRounded?: boolean
-    stripped?: boolean
-    headerBackground?: boolean
-    footerBackground?: boolean
-    headerBorder?: boolean
-    headerSticky?: boolean
-    width?: "auto" | "fixed"
-    columnsVisibility?: boolean
-    columnsResizable?: boolean
-    columnsResizeMode?: "onChange" | "onEnd"
-    columnsPinnable?: boolean
-    columnsMovable?: boolean
-    columnsDraggable?: boolean
-    rowsDraggable?: boolean
-    rowsPinnable?: boolean
+    dense?: boolean;
+    cellBorder?: boolean;
+    rowBorder?: boolean;
+    rowRounded?: boolean;
+    stripped?: boolean;
+    headerBackground?: boolean;
+    footerBackground?: boolean;
+    headerBorder?: boolean;
+    headerSticky?: boolean;
+    width?: "auto" | "fixed";
+    columnsVisibility?: boolean;
+    columnsResizable?: boolean;
+    columnsResizeMode?: "onChange" | "onEnd";
+    columnsPinnable?: boolean;
+    columnsMovable?: boolean;
+    columnsDraggable?: boolean;
+    rowsDraggable?: boolean;
+    rowsPinnable?: boolean;
     /** Spreadsheet cell range selection: mouse ranges, keyboard, clipboard chrome. */
-    cellSelection?: boolean
+    cellSelection?: boolean;
     /**
      * "range" (default): drag, Shift and Ctrl/Cmd gestures and Shift+keys
      * grow multi-cell regions. "single": one focused cell only - every
      * gesture collapses to it and Ctrl/Cmd+A is inert.
      */
-    cellSelectionMode?: "single" | "range"
+    cellSelectionMode?: "single" | "range";
     /** Drag-to-fill handle on the selection corner. Requires cellSelection. */
-    cellFillHandle?: boolean
+    cellFillHandle?: boolean;
     /**
      * How a cell opens its editor from the mouse: "dblclick" (default,
      * the spreadsheet standard - first click focuses, second edits) or
      * "click", opening the editor as soon as a plain click lands on the
      * focused cell; modifier clicks and drags still select.
      */
-    cellEditMode?: "dblclick" | "click"
+    cellEditMode?: "dblclick" | "click";
     /**
      * When true, committing an edit with Enter moves focus down (Shift+Enter
      * up), the Sheets and Excel convention. Off by default: the commit keeps
      * focus on the edited cell. Tab always commits and moves across.
      */
-    cellEditEnterAdvance?: boolean
+    cellEditEnterAdvance?: boolean;
     /**
      * The handle's look: "dot" is a solid primary dot kept inside the
      * cell corner; "ring" is the Sheets-style hollow circle riding the
      * corner point, clamped at the grid's own boundary; "square" is the
      * Excel-style solid square inside the corner. Default "dot".
      */
-    cellFillHandleVariant?: "dot" | "ring" | "square"
-  }
+    cellFillHandleVariant?: "dot" | "ring" | "square";
+  };
   tableClassNames?: {
-    base?: string
-    header?: string
-    headerRow?: string
-    headerSticky?: string
-    body?: string
-    bodyRow?: string
-    footer?: string
-    edgeCell?: string
+    base?: string;
+    header?: string;
+    headerRow?: string;
+    headerSticky?: string;
+    body?: string;
+    bodyRow?: string;
+    footer?: string;
+    edgeCell?: string;
     /** Override the getRowStatus tints; defaults are the warning-muted set. */
-    rowNew?: string
-    rowDirty?: string
-    rowDeleted?: string
+    rowNew?: string;
+    rowDirty?: string;
+    rowDeleted?: string;
     /**
      * Override the pinned-row chrome (muted tint, boundary shadow). A grid
      * that pins a draft row for quick-create wants it to read as an active
      * row, not a muted one.
      */
-    rowPinned?: string
+    rowPinned?: string;
     /** The onRowCreate affordance row, e.g. to match the grid's row height. */
-    rowCreate?: string
+    rowCreate?: string;
     /** The fill handle, e.g. to restyle or resize it beyond the built-in variants. */
-    cellFillHandle?: string
-  }
+    cellFillHandle?: string;
+  };
 }
 
 const DataGridContext = createContext<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   DataGridContextProps<any> | undefined
->(undefined)
+>(undefined);
 
 /**
  * Reads the grid context. Pass `TData` from the calling component when the
@@ -981,19 +980,19 @@ function useDataGrid<
 >(): DataGridContextProps<TData> {
   const context = useContext(DataGridContext) as
     | DataGridContextProps<TData>
-    | undefined
+    | undefined;
   if (!context) {
-    throw new Error("useDataGrid must be used within a DataGridProvider")
+    throw new Error("useDataGrid must be used within a DataGridProvider");
   }
-  return context
+  return context;
 }
 
 type DataGridStateAtom<TValue> = {
-  get: () => TValue
-  subscribe: (listener: () => void) => { unsubscribe: () => void }
-}
+  get: () => TValue;
+  subscribe: (listener: () => void) => { unsubscribe: () => void };
+};
 
-const noopUnsubscribe = () => {}
+const noopUnsubscribe = () => {};
 
 /**
  * Re-renders the caller when one table state atom changes, without waiting
@@ -1010,32 +1009,35 @@ function useDataGridAtom<TValue, TSelected = TValue | undefined>(
 ): TSelected {
   const subscribe = useCallback(
     (onChange: () => void) => {
-      if (!atom) return noopUnsubscribe
-      const subscription = atom.subscribe(onChange)
-      return () => subscription.unsubscribe()
+      if (!atom) return noopUnsubscribe;
+      const subscription = atom.subscribe(onChange);
+      return () => subscription.unsubscribe();
     },
     [atom]
-  )
-  const getSnapshot = () => select(atom?.get())
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  );
+  const getSnapshot = () => select(atom?.get());
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 // Slices kept out of the inputs: cells paint cell selection through their
 // own Subscribe, and a resize drag paints through useDataGridAtom.
-const DATA_GRID_UNPUBLISHED_STATE = new Set(["cellSelection", "columnResizing"])
+const DATA_GRID_UNPUBLISHED_STATE = new Set([
+  "cellSelection",
+  "columnResizing",
+]);
 
 const isDataGridPropNode = (value: unknown) =>
   value !== null &&
   typeof value === "object" &&
   !Array.isArray(value) &&
-  ("$$typeof" in value || Object.getPrototypeOf(value) !== Object.prototype)
+  ("$$typeof" in value || Object.getPrototypeOf(value) !== Object.prototype);
 
 // Functions and React nodes count by presence here; their identity is a
 // callback input.
 function dataGridPropsSignatureReplacer(_key: string, value: unknown) {
-  if (typeof value === "function") return "fn"
-  if (isDataGridPropNode(value)) return "node"
-  return value
+  if (typeof value === "function") return "fn";
+  if (isDataGridPropNode(value)) return "node";
+  return value;
 }
 
 // Inputs that always publish: every state slice but the two above, `data`
@@ -1050,11 +1052,11 @@ function getDataGridStateInputs<TData extends object>(
     table.options.data,
     table.options.columns,
     JSON.stringify(props, dataGridPropsSignatureReplacer),
-  ]
+  ];
   for (const [key, slice] of Object.entries(table.state)) {
-    if (!DATA_GRID_UNPUBLISHED_STATE.has(key)) inputs.push(key, slice)
+    if (!DATA_GRID_UNPUBLISHED_STATE.has(key)) inputs.push(key, slice);
   }
-  return inputs
+  return inputs;
 }
 
 // Every callback and React node prop, compared by identity.
@@ -1063,34 +1065,34 @@ function getDataGridCallbackInputs<TData extends object>(
 ): unknown[] {
   return Object.values(props).filter(
     (value) => typeof value === "function" || isDataGridPropNode(value)
-  )
+  );
 }
 
 const isSameDataGridInputs = (previous: unknown[], next: unknown[]) =>
   previous.length === next.length &&
-  next.every((input, index) => Object.is(input, previous[index]))
+  next.every((input, index) => Object.is(input, previous[index]));
 
 function DataGridProvider<TData extends object>({
   children,
   table,
   ...props
 }: DataGridLayoutProps<TData> & {
-  table: DataGridTableInstance<TData>
-  children?: ReactNode
+  table: DataGridTableInstance<TData>;
+  children?: ReactNode;
 }) {
   // Stable for the grid's lifetime; ARIA ids and relations hang off it.
-  const gridId = useId()
+  const gridId = useId();
   // Latest-value refs behind the context getters: a reader always gets the
   // current props, labels and table, while the published value changes only
   // when its inputs do (below). v9 re-creates the table on every state
   // change, including each resize tick.
-  const propsRef = useRef(props)
-  propsRef.current = props
-  const i18n = mergeDataGridI18n(props.i18n)
-  const i18nRef = useRef(i18n)
-  i18nRef.current = i18n
-  const tableRef = useRef(table)
-  tableRef.current = table
+  const propsRef = useRef(props);
+  propsRef.current = props;
+  const i18n = mergeDataGridI18n(props.i18n);
+  const i18nRef = useRef(i18n);
+  i18nRef.current = i18n;
+  const tableRef = useRef(table);
+  tableRef.current = table;
 
   // Re-assert an explicit tableLayout resize mode so consumer-level useTable
   // options cannot flip it back between drags. v9 makes `table.options`
@@ -1100,39 +1102,39 @@ function DataGridProvider<TData extends object>({
   const resizeMode =
     props.tableLayout?.columnsResizable && props.tableLayout.columnsResizeMode
       ? props.tableLayout.columnsResizeMode
-      : undefined
+      : undefined;
 
   useEffect(() => {
-    if (!resizeMode) return
-    if (table.options.columnResizeMode === resizeMode) return
-    table.setOptions((old) => ({ ...old, columnResizeMode: resizeMode }))
-  }, [table, resizeMode])
+    if (!resizeMode) return;
+    if (table.options.columnResizeMode === resizeMode) return;
+    table.setOptions((old) => ({ ...old, columnResizeMode: resizeMode }));
+  }, [table, resizeMode]);
 
   // With the selection UI on, every paste/fill/clear batch replaces `data`,
   // and the feature's default autoResetCellSelection would wipe the selection
   // after each write. Ranges are row-id based and unresolvable ids drop out
   // of the bounds safely, so keeping state across data edits is the correct
   // default here.
-  const cellSelectionOn = !!props.tableLayout?.cellSelection
+  const cellSelectionOn = !!props.tableLayout?.cellSelection;
   useEffect(() => {
-    if (!cellSelectionOn || table.atoms.cellSelection == null) return
-    if (table.options.autoResetCellSelection === false) return
-    table.setOptions((old) => ({ ...old, autoResetCellSelection: false }))
-  }, [table, cellSelectionOn])
+    if (!cellSelectionOn || table.atoms.cellSelection == null) return;
+    if (table.options.autoResetCellSelection === false) return;
+    table.setOptions((old) => ({ ...old, autoResetCellSelection: false }));
+  }, [table, cellSelectionOn]);
 
   // Rendered row indexes re-base per page, so a range kept across a page flip
   // re-lights the same positions over different rows. A page change clears
   // the selection instead - the rule Excel-family grids apply to paginated
   // range selection.
-  const pageKey = `${table.state.pagination?.pageIndex}:${table.state.pagination?.pageSize}`
-  const previousPageKeyRef = useRef(pageKey)
+  const pageKey = `${table.state.pagination?.pageIndex}:${table.state.pagination?.pageSize}`;
+  const previousPageKeyRef = useRef(pageKey);
   useEffect(() => {
-    if (previousPageKeyRef.current === pageKey) return
-    previousPageKeyRef.current = pageKey
-    if (!cellSelectionOn || table.atoms.cellSelection == null) return
-    tableRef.current.resetCellSelection(true)
+    if (previousPageKeyRef.current === pageKey) return;
+    previousPageKeyRef.current = pageKey;
+    if (!cellSelectionOn || table.atoms.cellSelection == null) return;
+    tableRef.current.resetCellSelection(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageKey, cellSelectionOn])
+  }, [pageKey, cellSelectionOn]);
 
   // One autoSize coordinator per table instance so split header/body viewports
   // cannot apply the growth twice. Keyed on `table.store`, which v9 keeps
@@ -1142,7 +1144,7 @@ function DataGridProvider<TData extends object>({
   const autoSize = useMemo(
     () => createDataGridAutoSizeController(() => tableRef.current),
     [table.store]
-  )
+  );
 
   // A new context value re-renders every useDataGrid reader, every cell
   // included, past any memo, and it is the only update a part gets when React
@@ -1157,52 +1159,52 @@ function DataGridProvider<TData extends object>({
   // While a column resize is in flight the value holds still: the drag's own
   // visuals subscribe through useDataGridAtom, and the render after it
   // publishes what it changed.
-  const committedOptionsRef = useRef(table.options)
-  const hasMemoizedOptions = committedOptionsRef.current === table.options
+  const committedOptionsRef = useRef(table.options);
+  const hasMemoizedOptions = committedOptionsRef.current === table.options;
   useLayoutEffect(() => {
-    committedOptionsRef.current = table.options
-  })
-  const isResizing = !!table.state.columnResizing?.isResizingColumn
+    committedOptionsRef.current = table.options;
+  });
+  const isResizing = !!table.state.columnResizing?.isResizingColumn;
   const publishedRef = useRef<{
-    stateInputs: unknown[]
-    callbackInputs: unknown[]
-    value: DataGridContextProps<TData>
-  } | null>(null)
-  let published = publishedRef.current
+    stateInputs: unknown[];
+    callbackInputs: unknown[];
+    value: DataGridContextProps<TData>;
+  } | null>(null);
+  let published = publishedRef.current;
   if (!published || !isResizing) {
-    const stateInputs = getDataGridStateInputs(table, props, autoSize)
-    const callbackInputs = getDataGridCallbackInputs(props)
+    const stateInputs = getDataGridStateInputs(table, props, autoSize);
+    const callbackInputs = getDataGridCallbackInputs(props);
     const stateChanged =
-      !published || !isSameDataGridInputs(published.stateInputs, stateInputs)
+      !published || !isSameDataGridInputs(published.stateInputs, stateInputs);
     const callbacksChanged =
       !published ||
-      !isSameDataGridInputs(published.callbackInputs, callbackInputs)
+      !isSameDataGridInputs(published.callbackInputs, callbackInputs);
     if (published && !stateChanged && callbacksChanged && !hasMemoizedOptions) {
-      published.callbackInputs = callbackInputs
+      published.callbackInputs = callbackInputs;
     } else if (stateChanged || callbacksChanged) {
       published = {
         stateInputs,
         callbackInputs,
         value: {
           get props() {
-            return propsRef.current
+            return propsRef.current;
           },
           get table() {
-            return tableRef.current
+            return tableRef.current;
           },
           get i18n() {
-            return i18nRef.current
+            return i18nRef.current;
           },
           recordCount: props.recordCount,
           isLoading: props.isLoading || false,
           gridId,
           autoSize,
         },
-      }
-      publishedRef.current = published
+      };
+      publishedRef.current = published;
     }
   }
-  const value = published!.value
+  const value = published!.value;
 
   return (
     // One React context serves every TData, but v9 declares both TFeatures and
@@ -1214,7 +1216,7 @@ function DataGridProvider<TData extends object>({
     >
       {children}
     </DataGridContext.Provider>
-  )
+  );
 }
 
 function DataGrid<TFeatures extends TableFeatures, TData extends object>({
@@ -1260,7 +1262,7 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
       footer: "",
       edgeCell: "",
     },
-  }
+  };
 
   const mergedProps: DataGridProps<TFeatures, TData> = {
     ...defaultProps,
@@ -1273,35 +1275,35 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
       ...defaultProps.tableClassNames,
       ...(props.tableClassNames || {}),
     },
-  }
+  };
 
   // Ensure table is provided
   if (!table) {
-    throw new Error('DataGrid requires a "table" prop')
+    throw new Error('DataGrid requires a "table" prop');
   }
 
   // The single widening point. Consumers own the TanStack core and may hand
   // over any feature bundle; internals need a concrete one to resolve the
   // feature-gated APIs they call, and v9's invariant TFeatures rules out
   // expressing that with a generic constraint.
-  const internalTable = table as unknown as DataGridTableInstance<TData>
-  const internalProps = mergedProps as unknown as DataGridLayoutProps<TData>
+  const internalTable = table as unknown as DataGridTableInstance<TData>;
+  const internalProps = mergedProps as unknown as DataGridLayoutProps<TData>;
 
   return (
     <DataGridProvider table={internalTable} {...internalProps}>
       {children}
     </DataGridProvider>
-  )
+  );
 }
 
 function DataGridContainer({
   children,
   className,
 }: {
-  children: ReactNode
-  className?: string
+  children: ReactNode;
+  className?: string;
   /** Accepted for backwards compatibility; currently has no effect. */
-  border?: boolean
+  border?: boolean;
 }) {
   return (
     <div
@@ -1312,13 +1314,13 @@ function DataGridContainer({
     >
       {children}
     </div>
-  )
+  );
 }
 
 export {
-  useDataGrid,
-  useDataGridAtom,
-  DataGridProvider,
   DataGrid,
   DataGridContainer,
-}
+  DataGridProvider,
+  useDataGrid,
+  useDataGridAtom,
+};

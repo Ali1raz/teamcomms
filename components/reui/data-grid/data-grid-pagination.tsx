@@ -1,41 +1,40 @@
-"use client"
+"use client";
 
 // Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
-"use no memo"
+"use no memo";
 
-import type { JSX, ReactNode } from "react"
-import { useDataGrid } from "@/components/reui/data-grid/data-grid"
-
-import { cn } from "cn"
-import { Button } from "@/components/ui/button"
+import { cn } from "cn";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import type { JSX, ReactNode } from "react";
+import { useDataGrid } from "@/components/reui/data-grid/data-grid";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { PER_PAGE_OPTIONS } from "@/lib/pagination"
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PER_PAGE_OPTIONS } from "@/lib/pagination";
 
 interface DataGridPaginationProps {
-  sizes?: number[]
-  sizesInfo?: string
-  sizesLabel?: string
-  sizesDescription?: string
-  sizesSkeleton?: ReactNode
-  more?: boolean
+  sizes?: number[];
+  sizesInfo?: string;
+  sizesLabel?: string;
+  sizesDescription?: string;
+  sizesSkeleton?: ReactNode;
+  more?: boolean;
   /** Page buttons the truncated middle shows; the row adds first, last and
    *  an ellipsis for each hidden stretch. Clamped to a minimum of 3. */
-  moreLimit?: number
-  info?: string
-  infoSkeleton?: ReactNode
-  className?: string
-  rowsPerPageLabel?: string
-  previousPageLabel?: string
-  nextPageLabel?: string
-  ellipsisText?: string
+  moreLimit?: number;
+  info?: string;
+  infoSkeleton?: ReactNode;
+  className?: string;
+  rowsPerPageLabel?: string;
+  previousPageLabel?: string;
+  nextPageLabel?: string;
+  ellipsisText?: string;
 }
 
 /**
@@ -45,7 +44,7 @@ interface DataGridPaginationProps {
 type DataGridPaginationItem =
   | { type: "page"; index: number }
   | { type: "ellipsis"; direction: "previous"; target: number }
-  | { type: "ellipsis"; direction: "next"; target: number }
+  | { type: "ellipsis"; direction: "next"; target: number };
 
 /**
  * The adaptive window: first page, the run around the current one, last page,
@@ -69,8 +68,8 @@ function getDataGridPaginationItems(
   // the count is always odd: an even `limit` would make the head and tail
   // rows one slot wider than the middle, and the footer would twitch as the
   // user pages through.
-  const sibling = Math.max(0, Math.floor(((Math.floor(limit) || 3) - 3) / 2))
-  const pages = sibling * 2 + 3
+  const sibling = Math.max(0, Math.floor(((Math.floor(limit) || 3) - 3) / 2));
+  const pages = sibling * 2 + 3;
 
   // Two ellipses cost the width of two pages, so below this there is nothing
   // to gain by hiding any.
@@ -78,7 +77,7 @@ function getDataGridPaginationItems(
     return Array.from({ length: pageCount }, (_, index) => ({
       type: "page" as const,
       index,
-    }))
+    }));
   }
 
   if (pageIndex <= sibling + 2) {
@@ -89,7 +88,7 @@ function getDataGridPaginationItems(
       })),
       { type: "ellipsis", direction: "next", target: pages },
       { type: "page", index: pageCount - 1 },
-    ]
+    ];
   }
 
   if (pageIndex >= pageCount - sibling - 3) {
@@ -104,7 +103,7 @@ function getDataGridPaginationItems(
         type: "page" as const,
         index: pageCount - pages + offset,
       })),
-    ]
+    ];
   }
 
   return [
@@ -120,7 +119,7 @@ function getDataGridPaginationItems(
     })),
     { type: "ellipsis", direction: "next", target: pageIndex + sibling + 1 },
     { type: "page", index: pageCount - 1 },
-  ]
+  ];
 }
 
 /**
@@ -130,11 +129,10 @@ function getDataGridPaginationItems(
  * and keep the arrows' height. Hardcoding one value would be right in three
  * styles and wrong in five.
  */
-const PAGE_BUTTON_WIDTH_CLASS =
-  "min-w-7"
+const PAGE_BUTTON_WIDTH_CLASS = "min-w-7";
 
 function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
-  const { i18n, table, recordCount, isLoading } = useDataGrid()
+  const { i18n, table, recordCount, isLoading } = useDataGrid();
 
   const defaultProps: Partial<DataGridPaginationProps> = {
     sizes: [...PER_PAGE_OPTIONS],
@@ -145,17 +143,17 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
     previousPageLabel: i18n.labels.previousPage,
     nextPageLabel: i18n.labels.nextPage,
     ellipsisText: i18n.labels.paginationEllipsis,
-  }
+  };
 
-  const mergedProps: DataGridPaginationProps = { ...defaultProps, ...props }
+  const mergedProps: DataGridPaginationProps = { ...defaultProps, ...props };
 
-  const btnBaseClasses = "p-0 text-sm"
-  const btnArrowClasses = btnBaseClasses + " rtl:transform rtl:rotate-180"
-  const pageIndex = table.state.pagination.pageIndex
-  const pageSize = table.state.pagination.pageSize
-  const from = recordCount === 0 ? 0 : pageIndex * pageSize + 1
-  const to = Math.min((pageIndex + 1) * pageSize, recordCount)
-  const pageCount = table.getPageCount()
+  const btnBaseClasses = "p-0 text-sm";
+  const btnArrowClasses = btnBaseClasses + " rtl:transform rtl:rotate-180";
+  const pageIndex = table.state.pagination.pageIndex;
+  const pageSize = table.state.pagination.pageSize;
+  const from = recordCount === 0 ? 0 : pageIndex * pageSize + 1;
+  const to = Math.min((pageIndex + 1) * pageSize, recordCount);
+  const pageCount = table.getPageCount();
 
   // A supplied `info` keeps its placeholder-template contract; the default
   // routes through the i18n label function, where word order is free.
@@ -164,13 +162,13 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
         .replaceAll("{from}", from.toString())
         .replaceAll("{to}", to.toString())
         .replaceAll("{count}", recordCount.toString())
-    : i18n.labels.paginationInfo({ from, to, count: recordCount })
+    : i18n.labels.paginationInfo({ from, to, count: recordCount });
 
   const paginationItems = getDataGridPaginationItems(
     pageIndex,
     pageCount,
     mergedProps.moreLimit ?? 5
-  )
+  );
 
   return (
     <div
@@ -191,8 +189,8 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
             <Select
               value={`${pageSize}`}
               onValueChange={(value) => {
-                const newPageSize = Number(value)
-                table.setPageSize(newPageSize)
+                const newPageSize = Number(value);
+                table.setPageSize(newPageSize);
               }}
             >
               {/* w-fit with a min, never a fixed width: a fixed w-16 clipped
@@ -265,7 +263,7 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
                       )}
                       onClick={() => {
                         if (pageIndex !== item.index) {
-                          table.setPageIndex(item.index)
+                          table.setPageIndex(item.index);
                         }
                       }}
                     >
@@ -304,7 +302,7 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export { DataGridPagination, type DataGridPaginationProps }
+export { DataGridPagination, type DataGridPaginationProps };

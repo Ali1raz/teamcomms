@@ -1,33 +1,32 @@
-"use client"
+"use client";
 
 // Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
-"use no memo"
+"use no memo";
 
-import { useMemo, useState } from "react"
-import { Badge } from "@/components/reui/badge"
-import { useDataGrid } from "@/components/reui/data-grid/data-grid"
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid"
-import type { Column } from "@tanstack/react-table"
-
-import { cn } from "cn"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import type { Column } from "@tanstack/react-table";
+import { cn } from "cn";
+import { CheckIcon, CirclePlusIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/reui/badge";
+import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { useDataGrid } from "@/components/reui/data-grid/data-grid";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Separator } from "@/components/ui/separator"
-import { CirclePlusIcon, CheckIcon } from "lucide-react"
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 
 interface DataGridColumnFilterProps<TData extends object, TValue> {
-  column?: Column<DataGridFeatures, TData, TValue>
-  title?: string
+  column?: Column<DataGridFeatures, TData, TValue>;
+  title?: string;
   options: {
-    label: string
-    value: string
-    icon?: React.ComponentType<{ className?: string }>
-  }[]
+    label: string;
+    value: string;
+    icon?: React.ComponentType<{ className?: string }>;
+  }[];
 }
 
 function DataGridColumnFilter<TData extends object, TValue>({
@@ -35,20 +34,20 @@ function DataGridColumnFilter<TData extends object, TValue>({
   title,
   options,
 }: DataGridColumnFilterProps<TData, TValue>) {
-  const { i18n } = useDataGrid()
-  const facets = column?.getFacetedUniqueValues()
-  const filterValue = column?.getFilterValue()
+  const { i18n } = useDataGrid();
+  const facets = column?.getFacetedUniqueValues();
+  const filterValue = column?.getFilterValue();
   const selectedValues = new Set(
     Array.isArray(filterValue) ? (filterValue as string[]) : []
-  )
-  const [searchQuery, setSearchQuery] = useState("")
+  );
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredOptions = useMemo(() => {
-    if (!searchQuery) return options
+    if (!searchQuery) return options;
     return options.filter((option) =>
       option.label.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [options, searchQuery])
+    );
+  }, [options, searchQuery]);
 
   return (
     <Popover>
@@ -102,19 +101,19 @@ function DataGridColumnFilter<TData extends object, TValue>({
           ) : (
             <div className="p-1">
               {filteredOptions.map((option) => {
-                const isSelected = selectedValues.has(option.value)
-                const facetCount = facets?.get(option.value)
+                const isSelected = selectedValues.has(option.value);
+                const facetCount = facets?.get(option.value);
                 const toggleOption = () => {
                   if (isSelected) {
-                    selectedValues.delete(option.value)
+                    selectedValues.delete(option.value);
                   } else {
-                    selectedValues.add(option.value)
+                    selectedValues.add(option.value);
                   }
-                  const filterValues = Array.from(selectedValues)
+                  const filterValues = Array.from(selectedValues);
                   column?.setFilterValue(
                     filterValues.length ? filterValues : undefined
-                  )
-                }
+                  );
+                };
                 return (
                   <div
                     key={option.value}
@@ -124,8 +123,8 @@ function DataGridColumnFilter<TData extends object, TValue>({
                     onClick={toggleOption}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault()
-                        toggleOption()
+                        e.preventDefault();
+                        toggleOption();
                       }
                     }}
                     className={cn(
@@ -153,7 +152,7 @@ function DataGridColumnFilter<TData extends object, TValue>({
                       </span>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
           )}
@@ -167,8 +166,8 @@ function DataGridColumnFilter<TData extends object, TValue>({
                   onClick={() => column?.setFilterValue(undefined)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault()
-                      column?.setFilterValue(undefined)
+                      e.preventDefault();
+                      column?.setFilterValue(undefined);
                     }
                   }}
                   className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground rounded-md relative flex cursor-pointer items-center justify-center px-2 py-1.5 text-sm outline-hidden select-none"
@@ -181,7 +180,7 @@ function DataGridColumnFilter<TData extends object, TValue>({
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }
 
-export { DataGridColumnFilter, type DataGridColumnFilterProps }
+export { DataGridColumnFilter, type DataGridColumnFilterProps };
