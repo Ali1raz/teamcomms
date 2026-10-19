@@ -73,7 +73,7 @@ export function CancelInvitationDialog({
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-100">
-        <DialogHeader className="text-xs text-muted-foreground">
+        <DialogHeader className="text-xs">
           <DialogTitle>Cancel Invitation</DialogTitle>
           <DialogDescription>
             Are you sure you want to cancel the invitation for{" "}

@@ -6,6 +6,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { Analytics } from "@vercel/analytics/next";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { extractRouterConfig } from "uploadthing/server";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -98,9 +99,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Providers>
-            <TooltipProvider>{children}</TooltipProvider>
-          </Providers>
+          <NuqsAdapter>
+            <Providers>
+              <TooltipProvider>{children}</TooltipProvider>
+            </Providers>
+          </NuqsAdapter>
         </ThemeProvider>
         <Toaster closeButton duration={5000} position="top-center" richColors />
         <Analytics />

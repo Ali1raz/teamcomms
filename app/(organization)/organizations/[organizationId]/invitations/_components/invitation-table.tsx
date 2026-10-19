@@ -1,46 +1,50 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Ban, Loader2, RefreshCcw } from "lucide-react";
-import { EmptyState } from "@/components/general/empty-state";
-import { MemberRoleBadge } from "@/components/general/member-role-badge";
-import { UserImage } from "@/components/general/user-avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  keepPreviousData,
+  useQuery,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import type {
+  OnChangeFn,
+  PaginationState,
+  SortingState,
+} from "@tanstack/react-table";
+import { Loader2, RefreshCcw, Settings2 } from "lucide-react";
+import { useCallback, useMemo, useTransition } from "react";
+import { ServerDataGrid } from "@/components/data-grid/server-data-grid";
+import { useServerDataGrid } from "@/components/data-grid/use-server-data-grid";
+import { DataGridColumnVisibility } from "@/components/reui/data-grid/data-grid-column-visibility";
+import { Button } from "@/components/ui/button";
 import { orpc } from "@/lib/orpc";
-import { formatLocalDateTime } from "@/lib/utils";
+import { clampPage, PER_PAGE_OPTIONS } from "@/lib/pagination";
 import { InviteOrganizationDialog } from "../../../_components/invite-organization-dialog";
-import { InvitationTableActionsDropdown } from "./invitation-table-actions-dropdown";
-
-const statusVariant: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline" | "ghost" | "link"
-> = {
-  pending: "secondary",
-  accepted: "default",
-  rejected: "destructive",
-  canceled: "outline",
-};
+import { toInvitationSortField } from "../constants";
+import {
+  hasActiveInvitationFilters,
+  toInvitationQueryInput,
+  useInvitationFilters,
+} from "../search-params";
+import { getInvitationColumns } from "./invitation-columns";
+import { InvitationFilters } from "./invitation-filters";
 
 export function InvitationList({ organizationId }: { organizationId: string }) {
+  const [isPending, startTransition] = useTransition();
+  const [filters, setFilters] = useInvitationFilters({ startTransition });
+
   const {
-    data: { invitations },
+    data,
+    isPending: isLoading,
     isFetching,
+    isError,
+    error,
     refetch,
-  } = useSuspenseQuery(
-    orpc.organization.invitations.list.queryOptions({
-      input: { organizationId },
-    })
-  );
+  } = useQuery({
+    ...orpc.organization.invitations.list.queryOptions({
+      input: toInvitationQueryInput(organizationId, filters),
+    }),
+    placeholderData: keepPreviousData,
+  });
 
   const {
     data: { currentOrganization },
@@ -49,7 +53,100 @@ export function InvitationList({ organizationId }: { organizationId: string }) {
   const {
     data: { teams },
   } = useSuspenseQuery(
-    orpc.team.list.queryOptions({ input: { organizationId: organizationId } })
+    orpc.team.list.queryOptions({ input: { organizationId } })
+  );
+
+  const invitations = data?.invitations ?? [];
+  const pageCount = data?.pageCount ?? 1;
+  const total = data?.total ?? 0;
+  const isBusy = isFetching || isPending;
+  const isFiltered = hasActiveInvitationFilters(filters);
+
+  const pagination = useMemo<PaginationState>(
+    () => ({
+      pageIndex: clampPage(filters.page, pageCount) - 1,
+      pageSize: filters.perPage,
+    }),
+    [filters.page, filters.perPage, pageCount]
+  );
+
+  const sorting = useMemo<SortingState>(
+    () => [{ id: filters.sortBy, desc: filters.sortOrder === "desc" }],
+    [filters.sortBy, filters.sortOrder]
+  );
+
+  const onPaginationChange = useCallback<OnChangeFn<PaginationState>>(
+    (updater) => {
+      const next =
+        typeof updater === "function" ? updater(pagination) : updater;
+      setFilters({ page: next.pageIndex + 1, perPage: next.pageSize });
+    },
+    [pagination, setFilters]
+  );
+
+  const onSortingChange = useCallback<OnChangeFn<SortingState>>(
+    (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater;
+      const [first] = next;
+      setFilters({
+        sortBy: first ? toInvitationSortField(first.id) : null,
+        sortOrder: first ? (first.desc ? "desc" : "asc") : null,
+        page: 1,
+      });
+    },
+    [sorting, setFilters]
+  );
+
+  const columns = useMemo(
+    () => getInvitationColumns({ organizationId }),
+    [organizationId]
+  );
+
+  const table = useServerDataGrid({
+    columns,
+    data: invitations,
+    pageCount,
+    getRowId: (row) => row.id,
+    pagination,
+    onPaginationChange,
+    sorting,
+    onSortingChange,
+  });
+
+  const emptyMessage = isError ? (
+    <div className="flex flex-col items-center gap-3 py-6">
+      <p className="text-sm">
+        {error?.message || "Failed to load invitations."}
+      </p>
+      <Button onClick={() => refetch()} size="sm" variant="outline">
+        <RefreshCcw className="size-4" />
+        Retry
+      </Button>
+    </div>
+  ) : isFiltered ? (
+    <div className="flex flex-col items-center gap-3 py-6">
+      <p className="text-sm">No invitations match your filters.</p>
+      <Button
+        onClick={() =>
+          setFilters({ search: null, status: null, role: null, page: 1 })
+        }
+        size="sm"
+        variant="outline"
+      >
+        Clear filters
+      </Button>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center gap-3 py-6">
+      <p className="text-sm">No invitations yet.</p>
+      <InviteOrganizationDialog
+        organizationName={currentOrganization?.name}
+        organizationId={organizationId}
+        teams={teams}
+      >
+        <Button size="sm">Invite new Member</Button>
+      </InviteOrganizationDialog>
+    </div>
   );
 
   return (
@@ -61,130 +158,47 @@ export function InvitationList({ organizationId }: { organizationId: string }) {
             Manage invitations for this organization
           </p>
         </div>
-        <div className="flex gap-2 sm:mt-0 mt-4">
-          <Button
-            onClick={() => refetch({})}
-            disabled={isFetching}
-            className="w-fit"
-          >
-            {isFetching ? (
+        <div className="flex gap-2">
+          <Button disabled={isBusy} onClick={() => refetch()} variant="outline">
+            {isBusy ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <RefreshCcw className="size-4" />
             )}
-            {isFetching ? "Refreshing..." : "Refresh"}
+            {isBusy ? "Refreshing..." : "Refresh"}
           </Button>
           <InviteOrganizationDialog
             organizationName={currentOrganization?.name}
-            teams={teams}
             organizationId={organizationId}
+            teams={teams}
           >
             <Button>Invite new Member</Button>
           </InviteOrganizationDialog>
         </div>
       </div>
 
-      {(!invitations || invitations.length === 0) && !isFetching ? (
-        <div className="flex h-full items-center justify-center">
-          <EmptyState
-            className="py-24"
-            icon={Ban}
-            iconClassName="size-8 sm:size-14"
-            title="No invitations found."
-            description="There are no invitations. Start by creating a new invitation."
-          />
-        </div>
-      ) : isFetching ? (
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      ) : (
-        <Table>
-          <TableHeader className="bg-accent">
-            <TableRow>
-              <TableHead>Invited User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Invited By</TableHead>
-              <TableHead>Team</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Expires At</TableHead>
-              <TableHead className="w-12">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invitations.map((invitation) => (
-              <TableRow key={invitation.id}>
-                <TableCell className="flex flex-row gap-1 items-center">
-                  <UserImage
-                    image={invitation.invitedUser?.image}
-                    name={invitation.invitedUser?.name}
-                  />
-                  <div className="flex flex-col">
-                    <span className="max-w-30 truncate">
-                      {invitation.invitedUser?.name}
-                    </span>
-                    <span className="truncate text-muted-foreground text-sm max-w-48">
-                      {invitation.email}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <MemberRoleBadge role={invitation.role ?? "member"} />
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={statusVariant[invitation.status] ?? "outline"}
-                    className="capitalize"
-                  >
-                    {invitation.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="flex flex-row gap-1 items-center">
-                  <UserImage
-                    image={invitation.inviter?.image}
-                    name={invitation.inviter?.name}
-                  />
-                  <div className="flex flex-col">
-                    <span className="max-w-30 truncate">
-                      {invitation.inviter?.name}
-                    </span>
-                    <span className="truncate text-muted-foreground text-sm max-w-48">
-                      {invitation.inviter?.email}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {invitation.team ? (
-                    <Badge variant="secondary" className="truncate max-w-32">
-                      {invitation.team.name}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                  {formatLocalDateTime(invitation.createdAt)}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                  {formatLocalDateTime(invitation.expiresAt)}
-                </TableCell>
-                <TableCell>
-                  <InvitationTableActionsDropdown
-                    invitationId={invitation.id}
-                    organizationId={organizationId}
-                    invitationEmail={invitation.email}
-                    status={invitation.status}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <div className="space-y-2">
+        <InvitationFilters />
+
+        <ServerDataGrid
+          emptyMessage={emptyMessage}
+          isLoading={isLoading}
+          pageSizeOptions={[...PER_PAGE_OPTIONS]}
+          recordCount={total}
+          table={table}
+          toolbar={
+            <DataGridColumnVisibility
+              table={table}
+              trigger={
+                <Button size="sm" variant="outline">
+                  <Settings2 className="size-4" />
+                  Columns
+                </Button>
+              }
+            />
+          }
+        />
+      </div>
     </div>
   );
 }
