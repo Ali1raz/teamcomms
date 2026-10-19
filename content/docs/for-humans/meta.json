@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "index",
+    "organizations",
+    "invitations",
+    "teams",
+    "messages",
+    "profile"
+  ]
+}
