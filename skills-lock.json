@@ -7,6 +7,12 @@
       "skillPath": "arcjet/SKILL.md",
       "computedHash": "a8206f25940508eaad6b2fba6ef7993617545a0e596866b252b9be94a4ad1b44"
     },
+    "playwright-best-practices": {
+      "source": "currents-dev/playwright-best-practices-skill",
+      "sourceType": "github",
+      "skillPath": "playwright-best-practices/SKILL.md",
+      "computedHash": "7eb144f734450fee649dc1d209114775ddda07cbf45be84fe969d3d4f3971dce"
+    },
     "prisma-client-api": {
       "source": "prisma/skills",
       "sourceType": "github",
@@ -28,8 +34,14 @@
     "tiptap": {
       "source": "ueberdosis/tiptap",
       "sourceType": "github",
-      "skillPath": "skills/tiptap/SKILL.md",
-      "computedHash": "d3abb7a7e4cb1eb4064e8dcb0928771d58052c7d92e2ec3725a3a9a3c6cd338b"
+      "skillPath": ".agents/skills/tiptap/SKILL.md",
+      "computedHash": "88ea00fb5ca1fed01160dc0baec4767fa0279d037ed9c8ee20a6ea43eb28b8ea"
+    },
+    "writing-for-agents": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
+      "computedHash": "95da47fc97af998e85b7d7e6d57b3ac76727c1e290cfe9ea09005aacb826959f"
     }
   }
 }

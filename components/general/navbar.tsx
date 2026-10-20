@@ -115,9 +115,6 @@ const Navbar = () => {
           </section>
 
           <section className="flex flex-row items-center gap-2 lg:hidden">
-            {/* <Button className="rounded" size="default">
-              Book a call
-            </Button> */}
             <Button
               variant="ghost"
               size="icon"
@@ -173,7 +170,7 @@ const Navbar = () => {
                       href={"/organizations"}
                       className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
                     >
-                      Dasboard
+                      Dashboard
                     </Link>
                   ) : (
                     <Link
@@ -183,6 +180,12 @@ const Navbar = () => {
                       Log In
                     </Link>
                   )}
+                  <Link
+                    href="/docs"
+                    className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
+                  >
+                    Read Docs
+                  </Link>
                 </motion.div>
 
                 <motion.div

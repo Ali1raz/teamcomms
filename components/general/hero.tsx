@@ -30,27 +30,38 @@ const Hero = () => {
             to keep teams in sync.
           </p>
 
-          {isPending ? (
-            <Skeleton className="w-24 h-10 bg-muted" />
-          ) : data ? (
+          <div className="flex gap-2">
+            {isPending ? (
+              <Skeleton className="w-24 h-10 bg-muted" />
+            ) : data ? (
+              <Link
+                className={buttonVariants({
+                  className: "w-fit",
+                })}
+                href="/organizations"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                className={buttonVariants({
+                  className: "w-fit",
+                })}
+                href="/login"
+              >
+                Get Started
+              </Link>
+            )}
             <Link
               className={buttonVariants({
                 className: "w-fit",
+                variant: "outline",
               })}
-              href="/organizations"
+              href="/docs"
             >
-              Dashboard
+              Read Docs
             </Link>
-          ) : (
-            <Link
-              className={buttonVariants({
-                className: "w-fit",
-              })}
-              href="/login"
-            >
-              Get Started
-            </Link>
-          )}
+          </div>
         </section>
       </section>
       <div className="relative my-18 pointer-events-none">

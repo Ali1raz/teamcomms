@@ -103,7 +103,9 @@ export default function RootLayout({
           <NuqsAdapter>
             <Providers>
               <TooltipProvider>
-                <RootProvider theme={{ enabled: false }}>{children}</RootProvider>
+                <RootProvider theme={{ enabled: false }}>
+                  {children}
+                </RootProvider>
               </TooltipProvider>
             </Providers>
           </NuqsAdapter>
