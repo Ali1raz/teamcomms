@@ -1,6 +1,11 @@
 "use client";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
+import {
+  EmojiPicker,
+  EmojiPickerContent,
+  EmojiPickerTrigger,
+} from "@/components/reui/emoji-picker";
 import { cn } from "@/lib/utils";
 import { baseExtensions } from "./extensions";
 import { Menubar } from "./menubar";
@@ -15,6 +20,7 @@ interface iAppProps {
 }
 
 export function Editor({ field, sendButton, footerLeft }: iAppProps) {
+  const editorDomRef = useRef<HTMLElement | null>(null);
   const editor = useEditor({
     extensions: baseExtensions,
     content: (() => {
@@ -40,6 +46,10 @@ export function Editor({ field, sendButton, footerLeft }: iAppProps) {
     },
     immediatelyRender: false,
   });
+
+  useEffect(() => {
+    editorDomRef.current = editor?.view.dom ?? null;
+  }, [editor]);
 
   useEffect(() => {
     if (!editor || !field) {
@@ -80,7 +90,25 @@ export function Editor({ field, sendButton, footerLeft }: iAppProps) {
       <EditorContent editor={editor} className="p-4 max-h-50 overflow-y-auto" />
       <div className="p-4 py-2 border-t flex items-center justify-between bg-card">
         {footerLeft}
-        <div className={cn("justify-self-end", !footerLeft && "ml-auto")}>
+        <div
+          className={cn(
+            "flex items-center gap-2 justify-self-end",
+            !footerLeft && "ml-auto"
+          )}
+        >
+          <EmojiPicker
+            value={null}
+            onEmojiSelect={({ value }) => {
+              editor.chain().focus().insertContent(value).run();
+            }}
+          >
+            <EmojiPickerTrigger variant="ghost" size="icon-sm" />
+            <EmojiPickerContent
+              side="bottom"
+              align="end"
+              returnFocus={editorDomRef}
+            />
+          </EmojiPicker>
           {sendButton}
         </div>
       </div>
