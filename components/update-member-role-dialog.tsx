@@ -47,7 +47,9 @@ export function UpdateMemberRoleDialog({
     orpc.organization.members.updateRole.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: orpc.organization.members.list.queryKey(),
+          queryKey: orpc.organization.members.list.queryKey({
+            input: { organizationId },
+          }),
         });
         queryClient.invalidateQueries({
           queryKey: orpc.user.get.queryKey(),
@@ -89,7 +91,7 @@ export function UpdateMemberRoleDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-100">
+      <DialogContent className="sm:max-w-sm">
         <DialogTitle>Update Role</DialogTitle>
         <DialogDescription>
           Change the role of <span className="font-bold">{memberName}</span> in

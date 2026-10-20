@@ -1,6 +1,8 @@
 import { ImageIcon, Send } from "lucide-react";
 import { Editor } from "@/components/editor/editor";
 import { Button } from "@/components/ui/button";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { getShortcutModifierLabel } from "@/lib/utils";
 import { AttachmentChip } from "./attachment-chip";
 import { ImageUploadDialog } from "./image-dialog";
 
@@ -29,6 +31,7 @@ export function Messagecomponser({
   return (
     <Editor
       field={{ value: field.value, onChange: field.onChange }}
+      onSubmit={onSubmit}
       sendButton={
         <Button
           disabled={isSubmitting}
@@ -37,6 +40,10 @@ export function Messagecomponser({
           onClick={onSubmit}
         >
           <Send data-icon="inline-start" /> {submitLabel}
+          <KbdGroup className="hidden sm:flex">
+            <Kbd>{getShortcutModifierLabel()}</Kbd>
+            <Kbd>↵</Kbd>
+          </KbdGroup>
         </Button>
       }
       footerLeft={

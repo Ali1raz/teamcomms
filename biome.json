@@ -1,7 +1,9 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": { "includes": ["**", "!**/public", "!.agents"] },
+  "files": {
+    "includes": ["**", "!**/public", "!.agents", "!components/reui/**"]
+  },
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,
@@ -26,7 +28,8 @@
       "!**/pnpm-lock.yaml",
       "!**/public",
       "!**/.agents/",
-      "!.opencode/"
+      "!.opencode/",
+      "!components/reui/**"
     ]
   },
   "linter": {
@@ -83,7 +86,8 @@
       "!next-env.d.ts",
       "!generated/**",
       "!.wrangler/**",
-      "!worker-configuration.d.ts"
+      "!worker-configuration.d.ts",
+      "!components/reui/**"
     ],
     "domains": { "tailwind": "recommended", "next": "recommended" }
   },

@@ -24,7 +24,11 @@ export default async function OrganizationLayout({
         input: { organizationId: organizationId },
       })
     ),
-    queryClient.prefetchQuery(orpc.organization.members.list.queryOptions()),
+    queryClient.prefetchQuery(
+      orpc.organization.members.list.queryOptions({
+        input: { organizationId },
+      })
+    ),
   ]);
   return (
     <SidebarProvider defaultOpenRight={false}>
@@ -33,7 +37,7 @@ export default async function OrganizationLayout({
           <AppSidebar organizationId={organizationId} />
         </HydrateClient>
         <RealtimeProviderWrapper>
-          <SidebarInset className="h-screen flex flex-col overflow-hidden">
+          <SidebarInset className="flex h-dvh flex-col overflow-hidden">
             <HydrateClient client={queryClient}>
               <OrganizationHeader />
             </HydrateClient>

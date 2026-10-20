@@ -73,7 +73,13 @@ export function CreateOrganizationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) form.reset();
+      }}
+    >
       <DialogTrigger asChild>
         {children ?? <Button>Create Organization</Button>}
       </DialogTrigger>

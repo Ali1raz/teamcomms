@@ -11,6 +11,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function getShortcutModifierLabel() {
+  if (typeof navigator === "undefined") {
+    return "Ctrl";
+  }
+
+  return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
+}
+
 /**
  * Collapse a list of raw reactions into per-emoji groups with counts.
  *
@@ -105,6 +113,13 @@ export function formatLocalDateTime(createdAt: string | number | Date) {
   return new Date(createdAt).toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
+  });
+}
+
+export function formatLocalDate(createdAt: string | number | Date) {
+  // Date-only label; pair with formatLocalDateTime for the full value on hover.
+  return new Date(createdAt).toLocaleDateString("en-US", {
+    dateStyle: "medium",
   });
 }
 

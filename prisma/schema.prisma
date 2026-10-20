@@ -84,6 +84,7 @@ model Organization {
   id          String       @id @default(uuid())
   name        String
   slug        String
+  description String?
   logo        String?
   createdAt   DateTime
   metadata    String?

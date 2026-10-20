@@ -37,7 +37,9 @@ export function LeaveOrganizationDialog({
           queryKey: orpc.organization.list.queryKey(),
         });
         queryClient.invalidateQueries({
-          queryKey: orpc.organization.members.list.queryKey(),
+          queryKey: orpc.organization.members.list.queryKey({
+            input: { organizationId },
+          }),
         });
 
         router.push("/organizations");
@@ -67,7 +69,7 @@ export function LeaveOrganizationDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Delete Message</DialogTitle>
+          <DialogTitle>Leave Organization</DialogTitle>
           <DialogDescription>
             Are you sure you want to leave this organization? This action cannot
             be undone.

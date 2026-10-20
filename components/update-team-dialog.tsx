@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -50,6 +50,12 @@ export function UpdateTeamDialog({
     mode: "onChange",
   });
 
+  useEffect(() => {
+    if (open) {
+      form.reset({ name: team.name, teamId: team.id });
+    }
+  }, [open, team.name, team.id, form]);
+
   const teamName = useWatch({
     control: form.control,
     name: "name",
@@ -85,7 +91,13 @@ export function UpdateTeamDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) form.reset({ name: team.name, teamId: team.id });
+      }}
+    >
       <DialogTrigger asChild>
         {children || (
           <Button className={cn(className)} variant="outline" size="sm">

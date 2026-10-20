@@ -15,6 +15,7 @@ import {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -31,7 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { cn, getShortcutModifierLabel } from "@/lib/utils";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -40,6 +41,7 @@ const RIGHT_SIDEBAR_WIDTH = "24rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+const SIDEBAR_RIGHT_KEYBOARD_SHORTCUT = "m";
 
 type SidebarState = {
   state: "expanded" | "collapsed";
@@ -171,7 +173,7 @@ function SidebarProvider({
         if (event.key === SIDEBAR_KEYBOARD_SHORTCUT) {
           event.preventDefault();
           toggleSidebarLeft();
-        } else if (event.key === "m") {
+        } else if (event.key === SIDEBAR_RIGHT_KEYBOARD_SHORTCUT) {
           event.preventDefault();
           toggleSidebarRight();
         }
@@ -371,28 +373,43 @@ function SidebarTrigger({
   const contextSide = useContext(SidebarInnerContext);
   const targetSide = side || contextSide || "left";
   const { toggleSidebar } = useSidebarWithSide(targetSide);
+  const shortcutKey =
+    targetSide === "right"
+      ? SIDEBAR_RIGHT_KEYBOARD_SHORTCUT
+      : SIDEBAR_KEYBOARD_SHORTCUT;
 
   return (
-    <Button
-      data-sidebar="trigger"
-      data-slot="sidebar-trigger"
-      data-side={targetSide}
-      variant="ghost"
-      size="icon"
-      className={cn("size-7", className)}
-      onClick={(event) => {
-        onClick?.(event);
-        toggleSidebar();
-      }}
-      {...props}
-    >
-      <PanelLeftIcon
-        className={cn({
-          "rotate-180": targetSide === "right",
-        })}
-      />
-      <span className="sr-only">Toggle Sidebar</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          data-sidebar="trigger"
+          data-slot="sidebar-trigger"
+          data-side={targetSide}
+          variant="ghost"
+          size="icon"
+          className={cn("size-7", className)}
+          onClick={(event) => {
+            onClick?.(event);
+            toggleSidebar();
+          }}
+          {...props}
+        >
+          <PanelLeftIcon
+            className={cn({
+              "rotate-180": targetSide === "right",
+            })}
+          />
+          <span className="sr-only">Toggle Sidebar</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        Toggle sidebar
+        <KbdGroup>
+          <Kbd>{getShortcutModifierLabel()}</Kbd>
+          <Kbd>{shortcutKey.toUpperCase()}</Kbd>
+        </KbdGroup>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

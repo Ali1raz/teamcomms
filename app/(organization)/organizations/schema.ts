@@ -85,6 +85,12 @@ export type MessageListItemType = z.infer<typeof messageListItemSchema>;
 
 export const updateOrganizationSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required"),
+  description: z
+    .string()
+    .trim()
+    .max(500, "Description must be less than 500 chars")
+    .nullable()
+    .optional(),
   logo: z.string().nullable().optional(),
 });
 

@@ -83,7 +83,13 @@ export function CreateTeamDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) form.reset();
+      }}
+    >
       <DialogTrigger asChild>
         {children ?? (
           <Button className={cn(className)} variant="outline" size="sm">
@@ -91,8 +97,8 @@ export function CreateTeamDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-100">
-        <DialogHeader className="text-xs text-muted-foreground">
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>Create new team to get started</DialogDescription>
         </DialogHeader>
