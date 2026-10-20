@@ -20,7 +20,6 @@ interface iAppProps {
   onSubmit?: () => void;
 }
 
-  
 export function Editor({ field, sendButton, footerLeft, onSubmit }: iAppProps) {
   const editorDomRef = useRef<HTMLElement | null>(null);
   const onSubmitRef = useRef(onSubmit);
@@ -28,7 +27,6 @@ export function Editor({ field, sendButton, footerLeft, onSubmit }: iAppProps) {
   useEffect(() => {
     onSubmitRef.current = onSubmit;
   }, [onSubmit]);
-
 
   const editor = useEditor({
     extensions: baseExtensions,
