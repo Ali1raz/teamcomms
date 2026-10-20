@@ -114,7 +114,7 @@ export function RightSidebar({
       <Sidebar
         {...props}
         style={{ "--sidebar-width": width } as CSSProperties}
-        className="h-screen"
+        className="h-dvh"
       >
         <SidebarHeader className="p-4 h-16 border-b">
           <SidebarRail />
