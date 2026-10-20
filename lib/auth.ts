@@ -61,6 +61,15 @@ export const auth = betterAuth({
     }),
     organization({
       schema: {
+        organization: {
+          additionalFields: {
+            description: {
+              type: "string",
+              required: false,
+              input: true,
+            },
+          },
+        },
         team: {
           additionalFields: {
             slug: {
