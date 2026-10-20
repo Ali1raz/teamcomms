@@ -41,7 +41,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/lib/orpc";
 import { cn, getOrganizationColor } from "@/lib/utils";
-import { UpdateOrganizationDialog } from "./update-organization-dialog";
 
 export function OrganizationList() {
   const [isPending, startTransition] = useTransition();
@@ -197,17 +196,13 @@ export function OrganizationList() {
                         )}
                         {ws.role !== "member" && (
                           <>
-                            <UpdateOrganizationDialog
-                              organizationId={ws.id}
-                              currentName={ws.name}
-                              currentLogo={ws.logo}
-                            >
-                              <DropdownMenuItem
-                                onSelect={(e) => e.preventDefault()}
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/organizations/${ws.id}?tab=settings`}
                               >
-                                Update Organization
-                              </DropdownMenuItem>
-                            </UpdateOrganizationDialog>
+                                Organization Settings
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DeleteOrganizationDialog organizationId={ws.id}>
                               <DropdownMenuItem
