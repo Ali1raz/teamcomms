@@ -5,6 +5,7 @@ import { Edit2, MessagesSquare, MoreVertical, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 import { RenderJSONtoHTML } from "@/components/editor/render-content";
+import { ExpandableContent } from "@/components/general/expandable-content";
 import { UserImage } from "@/components/general/user-avatar";
 import { ImageZoom } from "@/components/kibo-ui/image-zoom";
 import { ReactionBar } from "@/components/reaction/reaction-bar";
@@ -73,7 +74,7 @@ export function MessageItem({
   return (
     <div
       className={cn(
-        "flex relative group gap-3 items-start overflow-x-hidden hover:bg-muted/30 transition-all duration-75 p-4 not-first:border-b border-border",
+        "flex relative group gap-3 items-start overflow-x-hidden hover:bg-muted/30 transition-colors duration-150 p-4 not-first:border-b border-border",
         open && message.id === threadId && "bg-muted/50"
       )}
     >
@@ -98,10 +99,12 @@ export function MessageItem({
           />
         ) : (
           <>
-            <RenderJSONtoHTML
-              content={JSON.parse(message.content)}
-              className="text-sm wrap-break-word prose dark:prose-invert max-w-none marker:text-primary"
-            />
+            <ExpandableContent>
+              <RenderJSONtoHTML
+                content={JSON.parse(message.content)}
+                className="text-sm wrap-break-word prose dark:prose-invert max-w-none marker:text-primary"
+              />
+            </ExpandableContent>
 
             {message.imageUrl && (
               <ImageZoom>

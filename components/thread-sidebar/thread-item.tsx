@@ -13,6 +13,7 @@ import { Card, CardAction, CardContent } from "@/components/ui/card";
 import { type client, orpc } from "@/lib/orpc";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { RenderJSONtoHTML } from "../editor/render-content";
+import { ExpandableContent } from "../general/expandable-content";
 import { UserImage } from "../general/user-avatar";
 import { ReactionBar } from "../reaction/reaction-bar";
 import { useRealtimeThread } from "../realtime-thread-provider";
@@ -188,10 +189,12 @@ export function ThreadItem({
                 {formatRelativeTime(thread.createdAt)}
               </p>
             </div>
-            <RenderJSONtoHTML
-              content={JSON.parse(thread.content)}
-              className="text-sm wrap-break-word prose dark:prose-invert leading-relaxed w-full marker:text-primary"
-            />
+            <ExpandableContent>
+              <RenderJSONtoHTML
+                content={JSON.parse(thread.content)}
+                className="text-sm wrap-break-word prose dark:prose-invert leading-relaxed w-full marker:text-primary"
+              />
+            </ExpandableContent>
 
             {thread.imageUrl && (
               <ImageZoom>
