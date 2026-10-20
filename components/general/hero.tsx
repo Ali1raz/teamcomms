@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { type Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
@@ -57,7 +58,7 @@ const Hero = () => {
                 className: "w-fit",
                 variant: "outline",
               })}
-              href="/docs"
+              href={"/docs" as Route}
             >
               Read Docs
             </Link>

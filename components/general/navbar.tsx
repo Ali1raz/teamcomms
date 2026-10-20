@@ -7,6 +7,7 @@ import {
   useMotionValueEvent,
   useScroll,
 } from "motion/react";
+import { type Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -181,7 +182,7 @@ const Navbar = () => {
                     </Link>
                   )}
                   <Link
-                    href="/docs"
+                    href={"/docs" as Route}
                     className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
                   >
                     Read Docs
