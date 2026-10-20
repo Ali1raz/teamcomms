@@ -1,5 +1,4 @@
 "use client";
-
 import { cva } from "class-variance-authority";
 import { Airplay, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -40,6 +39,11 @@ export function ThemeSwitch({
     () => true,
     () => false
   );
+  const themeAriaLabels = {
+    light: "Light",
+    dark: "Dark",
+    system: "System",
+  };
 
   const handleThemeChange = (newTheme: string) => {
     if (document?.startViewTransition) {
@@ -60,6 +64,7 @@ export function ThemeSwitch({
     return (
       <button
         className={container}
+        aria-label="Toggle Theme"
         onClick={() => handleThemeChange(value === "light" ? "dark" : "light")}
         data-theme-toggle=""
       >
@@ -83,18 +88,21 @@ export function ThemeSwitch({
   return (
     <div className={container} data-theme-toggle="" {...props}>
       <button
+        aria-label={themeAriaLabels.light}
         className={cn(itemVariants({ active: value === "light" }))}
         onClick={() => handleThemeChange("light")}
       >
         <Sun className="size-full" fill="currentColor" />
       </button>
       <button
+        aria-label={themeAriaLabels.dark}
         className={cn(itemVariants({ active: value === "dark" }))}
         onClick={() => handleThemeChange("dark")}
       >
         <Moon className="size-full" fill="currentColor" />
       </button>
       <button
+        aria-label={themeAriaLabels.system}
         className={cn(itemVariants({ active: value === "system" }))}
         onClick={() => handleThemeChange("system")}
       >
