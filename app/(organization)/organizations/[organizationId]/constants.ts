@@ -1,6 +1,6 @@
 import type { SortOrder } from "@/lib/app/constants";
 
-export const ORGANIZATION_TABS = ["teams", "members"] as const;
+export const ORGANIZATION_TABS = ["teams", "members", "settings"] as const;
 
 export type OrganizationTab = (typeof ORGANIZATION_TABS)[number];
 

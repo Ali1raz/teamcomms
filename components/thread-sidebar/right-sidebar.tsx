@@ -30,6 +30,7 @@ import { orpc } from "@/lib/orpc";
 import { formatRelativeTime } from "@/lib/utils";
 import type { RealtimeUserSchemaType } from "@/realtime/schema";
 import { RenderJSONtoHTML } from "../editor/render-content";
+import { ExpandableContent } from "../general/expandable-content";
 import { UserImage } from "../general/user-avatar";
 import { ReactionBar } from "../reaction/reaction-bar";
 import { RealtimeThreadPRovider } from "../realtime-thread-provider";
@@ -168,10 +169,12 @@ export function RightSidebar({
                       {formatRelativeTime(data.parent.createdAt)}
                     </p>
                   </div>
-                  <RenderJSONtoHTML
-                    content={JSON.parse(data.parent.content)}
-                    className="text-sm wrap-break-word prose leading-relaxed dark:prose-invert max-w-[32ch] marker:text-primary"
-                  />
+                  <ExpandableContent>
+                    <RenderJSONtoHTML
+                      content={JSON.parse(data.parent.content)}
+                      className="text-sm wrap-break-word prose leading-relaxed dark:prose-invert max-w-[32ch] marker:text-primary"
+                    />
+                  </ExpandableContent>
 
                   {data.parent.imageUrl && (
                     <ImageZoom>

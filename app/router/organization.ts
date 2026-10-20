@@ -50,6 +50,7 @@ export const listOrganizations = base
           id: z.string(),
           name: z.string(),
           slug: z.string(),
+          description: z.string().nullable().optional(),
           logo: z.string().nullable().optional(),
           role: z.enum([...Object.values(MembershipRole)]),
           totalMembers: z.number(),
@@ -92,6 +93,7 @@ export const listOrganizations = base
         id: org.id,
         name: org.name,
         slug: org.slug,
+        description: org.description ?? null,
         logo: org.logo,
         role: roleMap.get(org.id) ?? "member",
         totalMembers: countMap.get(org.id)?.members ?? 0,
@@ -167,6 +169,12 @@ export const updateOrganization = base
     z.object({
       organizationId: z.string(),
       name: z.string().trim().min(1, "Organization name is required"),
+      description: z
+        .string()
+        .trim()
+        .max(500, "Description must be less than 500 chars")
+        .nullable()
+        .optional(),
       logo: z.string().nullable().optional(),
     })
   )
@@ -175,6 +183,7 @@ export const updateOrganization = base
       id: z.string(),
       name: z.string(),
       slug: z.string(),
+      description: z.string().nullable().optional(),
       logo: z.string().nullable().optional(),
     })
   )
@@ -188,6 +197,7 @@ export const updateOrganization = base
           data: {
             name: input.name,
             slug,
+            description: input.description ?? "",
             logo: input.logo ?? undefined,
           },
           organizationId: input.organizationId,
@@ -210,6 +220,7 @@ export const updateOrganization = base
       id: data.id,
       name: data.name,
       slug: data.slug,
+      description: data.description ?? null,
       logo: data.logo,
     };
   });
