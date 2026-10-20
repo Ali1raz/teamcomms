@@ -16,6 +16,7 @@ type ServerDataGridProps<TData extends object> = {
   toolbar?: ReactNode;
   loadingMode?: "skeleton" | "spinner";
   isLoading?: boolean;
+  skeletonRowCount?: number;
   emptyMessage?: ReactNode;
   pageSizeOptions?: number[];
 };
@@ -29,16 +30,19 @@ export function ServerDataGrid<TData extends object>({
   table,
   recordCount,
   toolbar,
-  loadingMode,
+  loadingMode = "skeleton",
   isLoading,
+  skeletonRowCount = 5,
   emptyMessage,
   pageSizeOptions,
 }: ServerDataGridProps<TData>) {
   return (
     <DataGrid
+      tableLayout={{ columnsMovable: true, headerSticky: true }}
       emptyMessage={emptyMessage}
       isLoading={isLoading}
       loadingMode={loadingMode}
+      skeletonRowCount={skeletonRowCount}
       recordCount={recordCount}
       table={table}
     >

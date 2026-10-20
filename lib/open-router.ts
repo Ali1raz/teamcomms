@@ -5,4 +5,4 @@ export const openrouter = createOpenRouter({
   apiKey: env.OPENROUTER_API_KEY,
 });
 
-export const model = "z-ai/glm-4.5-air:free";
+export const model = "nvidia/nemotron-3.5-lightning:free";

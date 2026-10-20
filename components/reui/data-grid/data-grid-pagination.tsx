@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PER_PAGE_OPTIONS } from "@/lib/pagination";
+import { PER_PAGE_OPTIONS } from "@/lib/app/constants";
 
 interface DataGridPaginationProps {
   sizes?: number[];
@@ -174,7 +174,7 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
     <div
       data-slot="data-grid-pagination"
       className={cn(
-        "flex grow bg-red-400 items-center justify-between gap-2.5 flex-row",
+        "flex grow items-center justify-between gap-2.5 flex-row",
         mergedProps.className
       )}
     >

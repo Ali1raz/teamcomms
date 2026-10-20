@@ -53,7 +53,9 @@ export default function AcceptInvitePage() {
         }),
       });
       queryClient.invalidateQueries({
-        queryKey: orpc.organization.members.list.queryKey(),
+        queryKey: orpc.organization.members.list.queryKey({
+          input: { organizationId: data.invitation.organizationId },
+        }),
       });
       toast.success(
         "Invitation accepted, you are now a member in the organization!"

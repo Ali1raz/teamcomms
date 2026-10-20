@@ -47,7 +47,9 @@ export function UpdateMemberRoleDialog({
     orpc.organization.members.updateRole.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: orpc.organization.members.list.queryKey(),
+          queryKey: orpc.organization.members.list.queryKey({
+            input: { organizationId },
+          }),
         });
         queryClient.invalidateQueries({
           queryKey: orpc.user.get.queryKey(),

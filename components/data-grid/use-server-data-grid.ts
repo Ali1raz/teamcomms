@@ -46,6 +46,7 @@ export function useServerDataGrid<TData extends RowData>({
     pageCount,
     getRowId,
     manualPagination: true,
+    manualFiltering: true,
     manualSorting: true,
     autoResetPageIndex: false,
     state: { pagination, sorting },

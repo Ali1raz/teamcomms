@@ -6,13 +6,10 @@ import {
   parseAsStringEnum,
 } from "nuqs/server";
 import { MembershipRole } from "@/generated/prisma/enums";
+import { SORT_ORDERS } from "@/lib/app/constants";
 import { normalizePage } from "@/lib/pagination";
 import { paginationParsers } from "@/lib/search-params/pagination";
-import {
-  INVITATION_SORT_FIELDS,
-  INVITATION_SORT_ORDERS,
-  INVITATION_STATUSES,
-} from "./constants";
+import { INVITATION_SORT_FIELDS, INVITATION_STATUSES } from "./constants";
 
 export const invitationParsers = {
   ...paginationParsers,
@@ -22,7 +19,7 @@ export const invitationParsers = {
   sortBy: parseAsStringEnum([...INVITATION_SORT_FIELDS]).withDefault(
     "createdAt"
   ),
-  sortOrder: parseAsStringEnum([...INVITATION_SORT_ORDERS]).withDefault("desc"),
+  sortOrder: parseAsStringEnum([...SORT_ORDERS]).withDefault("desc"),
 };
 
 export type InvitationSearchParams = inferParserType<typeof invitationParsers>;

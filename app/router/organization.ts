@@ -1,23 +1,27 @@
 import { headers } from "next/headers";
 import z from "zod";
 import {
+  MEMBER_SORT_FIELDS,
+  type MemberSortField,
+} from "@/app/(organization)/organizations/[organizationId]/constants";
+import {
   INVITATION_SORT_FIELDS,
-  INVITATION_SORT_ORDERS,
   INVITATION_STATUSES,
   type InvitationSortField,
-  type InvitationSortOrder,
   toMembershipRole,
 } from "@/app/(organization)/organizations/[organizationId]/invitations/constants";
 import { type Prisma } from "@/generated/prisma/client";
 import { MembershipRole } from "@/generated/prisma/enums";
-import { auth, type FullOrg, type User } from "@/lib/auth";
-import { errorMessage } from "@/lib/error-message";
 import {
-  clampPage,
   DEFAULT_PAGE,
   DEFAULT_PER_PAGE,
   MAX_PER_PAGE,
-} from "@/lib/pagination";
+  SORT_ORDERS,
+  type SortOrder,
+} from "@/lib/app/constants";
+import { auth, type FullOrg, type User } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
+import { clampPage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { createSlug } from "@/lib/utils";
 import { createOrganizationSchema } from "../(organization)/organizations/schema";
@@ -220,7 +224,17 @@ export const listOrganizationMembers = base
     summary: "List all members of a organization",
     tags: ["Organization"],
   })
-  .input(z.void())
+  .input(
+    z.object({
+      organizationId: z.string(),
+      page: z.number().int().min(1).optional(),
+      perPage: z.number().int().min(1).max(MAX_PER_PAGE).optional(),
+      search: z.string().optional(),
+      role: z.enum([...Object.values(MembershipRole)]).optional(),
+      sortBy: z.enum([...MEMBER_SORT_FIELDS]).optional(),
+      sortOrder: z.enum([...SORT_ORDERS]).optional(),
+    })
+  )
   .output(
     z.object({
       members: z.array(
@@ -232,44 +246,104 @@ export const listOrganizationMembers = base
           role: z.enum([...Object.values(MembershipRole)]),
         })
       ),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
     })
   )
-  .handler(async ({ context, errors }) => {
-    let organizationmembers;
-    try {
-      organizationmembers = await prisma.member.findMany({
-        where: {
-          organizationId: context.organization.id,
-        },
-        select: {
-          role: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-            },
-          },
-        },
+  .handler(async ({ context, input, errors }) => {
+    if (input.organizationId !== context.organization.id) {
+      throw errors.BAD_REQUEST({
+        message: "You recently switched organization",
       });
+    }
+
+    const search = input.search?.trim();
+    const where: Prisma.MemberWhereInput = {
+      organizationId: input.organizationId,
+      ...(input.role ? { role: input.role } : {}),
+      ...(search
+        ? {
+            OR: [
+              { user: { name: { contains: search, mode: "insensitive" } } },
+              { user: { email: { contains: search, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    };
+    const orderBy = toMemberOrderBy(
+      input.sortBy ?? "name",
+      input.sortOrder ?? "asc"
+    );
+    const select = {
+      role: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    } as const;
+
+    const toMembers = (
+      rows: {
+        role: MembershipRole | null;
+        user: {
+          id: string;
+          name: string;
+          email: string;
+          image: string | null;
+        };
+      }[]
+    ) =>
+      rows.map((member) => ({
+        id: member.user.id,
+        name: member.user.name,
+        email: member.user.email,
+        image: member.user.image ?? null,
+        role: member.role ?? "member",
+      }));
+
+    try {
+      if (input.page === undefined && input.perPage === undefined) {
+        const rows = await prisma.member.findMany({ where, orderBy, select });
+
+        return {
+          members: toMembers(rows),
+          total: rows.length,
+          page: DEFAULT_PAGE,
+          perPage: rows.length,
+          pageCount: 1,
+        };
+      }
+
+      const perPage = input.perPage ?? DEFAULT_PER_PAGE;
+      const total = await prisma.member.count({ where });
+      const pageCount = Math.max(Math.ceil(total / perPage), 1);
+      const page = clampPage(input.page ?? DEFAULT_PAGE, pageCount);
+      const rows = await prisma.member.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * perPage,
+        take: perPage,
+        select,
+      });
+
+      return {
+        members: toMembers(rows),
+        total,
+        page,
+        perPage,
+        pageCount,
+      };
     } catch (error: unknown) {
       throw errors.BAD_REQUEST({
         message: errorMessage(error, "Failed to list organization members"),
       });
     }
-
-    const members = organizationmembers.map((member) => ({
-      id: member.user.id,
-      name: member.user.name,
-      email: member.user.email,
-      image: member.user.image ?? null,
-      role: member.role ?? "member",
-    }));
-
-    return {
-      members,
-    };
   });
 
 export const updateOrganizationMemberRole = base
@@ -331,9 +405,23 @@ export const updateOrganizationMemberRole = base
     }
   });
 
+function toMemberOrderBy(
+  sortBy: MemberSortField,
+  sortOrder: SortOrder
+): Prisma.MemberOrderByWithRelationInput {
+  switch (sortBy) {
+    case "email":
+      return { user: { email: sortOrder } };
+    case "role":
+      return { role: sortOrder };
+    default:
+      return { user: { name: sortOrder } };
+  }
+}
+
 function toInvitationOrderBy(
   sortBy: InvitationSortField,
-  sortOrder: InvitationSortOrder
+  sortOrder: SortOrder
 ): Prisma.InvitationOrderByWithRelationInput {
   switch (sortBy) {
     case "email":
@@ -373,7 +461,7 @@ export const listOrganizationInvitations = base
       status: z.enum([...INVITATION_STATUSES]).optional(),
       role: z.enum([...Object.values(MembershipRole)]).optional(),
       sortBy: z.enum([...INVITATION_SORT_FIELDS]).default("createdAt"),
-      sortOrder: z.enum([...INVITATION_SORT_ORDERS]).default("desc"),
+      sortOrder: z.enum([...SORT_ORDERS]).default("desc"),
     })
   )
   .output(

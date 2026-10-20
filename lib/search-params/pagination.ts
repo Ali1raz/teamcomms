@@ -1,5 +1,5 @@
 import { type inferParserType, parseAsInteger } from "nuqs/server";
-import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from "@/lib/pagination";
+import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from "@/lib/app/constants";
 
 export const paginationParsers = {
   page: parseAsInteger.withDefault(DEFAULT_PAGE),

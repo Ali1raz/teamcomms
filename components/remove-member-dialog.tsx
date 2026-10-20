@@ -36,7 +36,9 @@ export function RemoveMemberDialog({
     orpc.organization.members.remove.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: orpc.organization.members.list.queryKey(),
+          queryKey: orpc.organization.members.list.queryKey({
+            input: { organizationId },
+          }),
         });
         toast.success(`${memberName} has been removed from the organization`);
         setOpen(false);

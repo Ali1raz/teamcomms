@@ -875,6 +875,7 @@ export interface DataGridProps<
     columnId: string
   ) => DataGridCellStatus | undefined;
   isLoading?: boolean;
+  skeletonRowCount?: number;
   /**
    * Overrides for every built-in string: menu items, aria labels,
    * pagination copy, state messages. Merged over the defaults; a more

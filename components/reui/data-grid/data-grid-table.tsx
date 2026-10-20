@@ -2816,10 +2816,11 @@ function DataGridTableBodyRows<TData extends object>({
     const centerVisibleColumns = table.getCenterVisibleLeafColumns();
     const rightVisibleColumns = table.getEndVisibleLeafColumns();
     const hasRightPinnedColumns = hasDataGridTableRightPinnedColumns(table);
+    const skeletonRowCount = props.skeletonRowCount ?? 5;
 
     return (
       <>
-        {Array.from({ length: pagination.pageSize }).map((_, rowIndex) => (
+        {Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
           <DataGridTableBodyRowSkeleton key={rowIndex}>
             {[...leftVisibleColumns, ...centerVisibleColumns].map((column) => (
               <DataGridTableBodyRowSkeletonCell column={column} key={column.id}>
