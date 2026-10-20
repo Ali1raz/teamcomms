@@ -11,6 +11,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function getShortcutModifierLabel() {
+  if (typeof navigator === "undefined") {
+    return "Ctrl";
+  }
+
+  return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
+}
+
 /**
  * Collapse a list of raw reactions into per-emoji groups with counts.
  *
