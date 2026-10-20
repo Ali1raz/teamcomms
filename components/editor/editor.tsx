@@ -1,6 +1,6 @@
 "use client";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { baseExtensions } from "./extensions";
 import { Menubar } from "./menubar";
@@ -12,9 +12,16 @@ interface iAppProps {
   } | null;
   sendButton: ReactNode;
   footerLeft?: ReactNode;
+  onSubmit?: () => void;
 }
 
-export function Editor({ field, sendButton, footerLeft }: iAppProps) {
+export function Editor({ field, sendButton, footerLeft, onSubmit }: iAppProps) {
+  const onSubmitRef = useRef(onSubmit);
+
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
+
   const editor = useEditor({
     extensions: baseExtensions,
     content: (() => {
@@ -36,6 +43,15 @@ export function Editor({ field, sendButton, footerLeft }: iAppProps) {
       attributes: {
         class:
           "max-w-none sm:min-h-[125px] max-sm:h-[70px] focus:h-[100px] focus:outline-none prose prose-sm sm:prose lg:prose-lg marker:text-primary dark:prose-invert",
+      },
+      handleKeyDown: (_view, event) => {
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          onSubmitRef.current?.();
+          return true;
+        }
+
+        return false;
       },
     },
     immediatelyRender: false,
