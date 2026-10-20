@@ -47,7 +47,11 @@ export function AddMemberToTeam({
 
   const {
     data: { members },
-  } = useSuspenseQuery(orpc.organization.members.list.queryOptions());
+  } = useSuspenseQuery(
+    orpc.organization.members.list.queryOptions({
+      input: { organizationId },
+    })
+  );
 
   const {
     data: { members: teamMembers },

@@ -37,7 +37,9 @@ export function LeaveOrganizationDialog({
           queryKey: orpc.organization.list.queryKey(),
         });
         queryClient.invalidateQueries({
-          queryKey: orpc.organization.members.list.queryKey(),
+          queryKey: orpc.organization.members.list.queryKey({
+            input: { organizationId },
+          }),
         });
 
         router.push("/organizations");

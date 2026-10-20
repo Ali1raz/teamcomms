@@ -1,6 +1,6 @@
 "use client";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { ChevronRight, Hash, MoreVertical } from "lucide-react";
+import { ArrowRight, ChevronRight, Hash, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UpdateMemberRoleDialog } from "@/components/update-member-role-dialog";
 import { usePresence } from "@/hooks/use-presence";
+import { SIDEBAR_MEMBER_PREVIEW_COUNT } from "@/lib/app/constants";
 import type { ClientOutputs } from "@/lib/orpc";
 import { orpc } from "@/lib/orpc";
 import { cn } from "@/lib/utils";
@@ -60,7 +61,11 @@ export function AppSidebar({
   );
   const {
     data: { members },
-  } = useSuspenseQuery(orpc.organization.members.list.queryOptions());
+  } = useSuspenseQuery(
+    orpc.organization.members.list.queryOptions({
+      input: { organizationId },
+    })
+  );
 
   const { data: user } = useQuery(orpc.user.get.queryOptions());
 
@@ -222,45 +227,63 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <ScrollArea className="h-64">
+                  <ScrollArea className="max-h-64">
                     <SidebarMenuSub className="flex gap-2">
-                      {members?.map((member) => (
-                        <SidebarMenuSubItem
-                          key={member.id}
-                          className="flex items-start gap-3 p-2 rounded-md hover:bg-accent truncate"
-                        >
-                          <UserImage
-                            name={member.name}
-                            image={member.image}
-                            className="size-8 object-cover"
-                            isOnline={
-                              !!member.id && onlineUserIds.has(member.id)
-                            }
-                            showOnline={true}
-                          />
-                          <div className="flex flex-col flex-1 gap-1">
-                            <div className="flex items-center justify-between">
-                              <span className="leading-none max-w-[10ch]">
-                                {member.name}
-                              </span>
-                              <MemberRoleBadge role={member.role} />
+                      {members
+                        ?.slice(0, SIDEBAR_MEMBER_PREVIEW_COUNT)
+                        .map((member) => (
+                          <SidebarMenuSubItem
+                            key={member.id}
+                            className="flex items-start gap-3 p-2 rounded-md hover:bg-accent truncate"
+                          >
+                            <UserImage
+                              name={member.name}
+                              image={member.image}
+                              className="size-8 object-cover"
+                              isOnline={
+                                !!member.id && onlineUserIds.has(member.id)
+                              }
+                              showOnline={true}
+                            />
+                            <div className="flex flex-col flex-1 gap-1">
+                              <div className="flex items-center justify-between">
+                                <span className="leading-none max-w-[10ch]">
+                                  {member.name}
+                                </span>
+                                <MemberRoleBadge role={member.role} />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm max-w-[10ch] leading-none truncate text-muted-foreground">
+                                  {member.email}
+                                </span>
+                                {member.id !== user?.id &&
+                                  canManageOrganization && (
+                                    <MemberActionsDropdown
+                                      user={member}
+                                      organizationId={organizationId}
+                                      className="ml-auto px-1"
+                                    />
+                                  )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm max-w-[10ch] leading-none truncate text-muted-foreground">
-                                {member.email}
-                              </span>
-                              {member.id !== user?.id &&
-                                canManageOrganization && (
-                                  <MemberActionsDropdown
-                                    user={member}
-                                    organizationId={organizationId}
-                                    className="ml-auto px-1"
-                                  />
-                                )}
-                            </div>
-                          </div>
-                        </SidebarMenuSubItem>
-                      ))}
+                          </SidebarMenuSubItem>
+                        ))}
+                      {members &&
+                        members.length > SIDEBAR_MEMBER_PREVIEW_COUNT && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton
+                              asChild
+                              className="text-muted-foreground"
+                            >
+                              <Link
+                                href={`/organizations/${organizationId}?tab=members`}
+                              >
+                                <span>Show more</span>
+                                <ArrowRight className="ml-auto" />
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                     </SidebarMenuSub>
                   </ScrollArea>
                 </CollapsibleContent>

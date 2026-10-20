@@ -21,10 +21,6 @@ export const INVITATION_SORT_FIELDS = [
 
 export type InvitationSortField = (typeof INVITATION_SORT_FIELDS)[number];
 
-export const INVITATION_SORT_ORDERS = ["asc", "desc"] as const;
-
-export type InvitationSortOrder = (typeof INVITATION_SORT_ORDERS)[number];
-
 export function toInvitationStatus(value: string): InvitationStatus | null {
   return (INVITATION_STATUSES as readonly string[]).includes(value)
     ? (value as InvitationStatus)

@@ -1,8 +1,21 @@
 import { headers } from "next/headers";
 import z from "zod";
+import {
+  TEAM_SORT_FIELDS,
+  type TeamSortField,
+} from "@/app/(organization)/organizations/[organizationId]/constants";
+import { type Prisma } from "@/generated/prisma/client";
 import { MembershipRole } from "@/generated/prisma/enums";
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+  SORT_ORDERS,
+  type SortOrder,
+} from "@/lib/app/constants";
 import { auth, type User } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
+import { clampPage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { updateTeamSchema } from "@/lib/schema";
 import { createSlug } from "@/lib/utils";
@@ -14,6 +27,18 @@ import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
 import { requireMemberMiddleware } from "../middlewares/member";
 import { requireOrganizationMiddleware } from "../middlewares/organization";
+
+function toTeamOrderBy(
+  sortBy: TeamSortField,
+  sortOrder: SortOrder
+): Prisma.TeamOrderByWithRelationInput {
+  switch (sortBy) {
+    case "name":
+      return { name: sortOrder };
+    default:
+      return { createdAt: sortOrder };
+  }
+}
 
 export const createTeam = base
   .use(requireAuthMiddleware)
@@ -130,6 +155,11 @@ export const listTeams = base
   .input(
     z.object({
       organizationId: z.string(),
+      page: z.number().int().min(1).optional(),
+      perPage: z.number().int().min(1).max(MAX_PER_PAGE).optional(),
+      search: z.string().optional(),
+      sortBy: z.enum([...TEAM_SORT_FIELDS]).optional(),
+      sortOrder: z.enum([...SORT_ORDERS]).optional(),
     })
   )
   .output(
@@ -142,45 +172,124 @@ export const listTeams = base
           createdAt: z.date(),
           updatedAt: z.date().nullable().optional(),
           totalMembers: z.number(),
+          members: z.array(
+            z.object({
+              id: z.string(),
+              name: z.string(),
+              image: z.string().nullable(),
+            })
+          ),
         })
       ),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
     })
   )
-  .handler(async ({ context, input }) => {
-    const teams = await prisma.team.findMany({
-      where: {
-        organizationId: input.organizationId,
-        teammembers: {
-          some: {
-            userId: context.user.id,
+  .handler(async ({ context, input, errors }) => {
+    const search = input.search?.trim();
+    const where: Prisma.TeamWhereInput = {
+      organizationId: input.organizationId,
+      teammembers: {
+        some: {
+          userId: context.user.id,
+        },
+      },
+      ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+    };
+    const orderBy = toTeamOrderBy(
+      input.sortBy ?? "createdAt",
+      input.sortOrder ?? "desc"
+    );
+    const select = {
+      id: true,
+      name: true,
+      slug: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: {
+        select: { teammembers: true },
+      },
+      teammembers: {
+        take: 3,
+        orderBy: { createdAt: "asc" },
+        select: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
           },
         },
       },
-      orderBy: {
-        createdAt: "desc", // newest teams first
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: { teammembers: true, messages: true },
-        },
-      },
-    });
+    } as const;
 
-    return {
-      teams: teams.map((team) => ({
+    const toTeams = (
+      rows: {
+        id: string;
+        name: string;
+        slug: string;
+        createdAt: Date;
+        updatedAt: Date | null;
+        _count: { teammembers: number };
+        teammembers: {
+          user: { id: string; name: string; image: string | null };
+        }[];
+      }[]
+    ) =>
+      rows.map((team) => ({
         id: team.id,
         name: team.name,
         slug: team.slug,
         createdAt: team.createdAt,
         updatedAt: team.updatedAt,
         totalMembers: team._count.teammembers ?? 0,
-      })),
-    };
+        members: team.teammembers.map((member) => ({
+          id: member.user.id,
+          name: member.user.name,
+          image: member.user.image ?? null,
+        })),
+      }));
+
+    try {
+      if (input.page === undefined && input.perPage === undefined) {
+        const rows = await prisma.team.findMany({ where, orderBy, select });
+
+        return {
+          teams: toTeams(rows),
+          total: rows.length,
+          page: DEFAULT_PAGE,
+          perPage: rows.length,
+          pageCount: 1,
+        };
+      }
+
+      const perPage = input.perPage ?? DEFAULT_PER_PAGE;
+      const total = await prisma.team.count({ where });
+      const pageCount = Math.max(Math.ceil(total / perPage), 1);
+      const page = clampPage(input.page ?? DEFAULT_PAGE, pageCount);
+      const rows = await prisma.team.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * perPage,
+        take: perPage,
+        select,
+      });
+
+      return {
+        teams: toTeams(rows),
+        total,
+        page,
+        perPage,
+        pageCount,
+      };
+    } catch (error: unknown) {
+      throw errors.BAD_REQUEST({
+        message: errorMessage(error, "Failed to list teams"),
+      });
+    }
   });
 
 export const getTeam = base

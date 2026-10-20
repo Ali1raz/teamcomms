@@ -16,8 +16,9 @@ import { ServerDataGrid } from "@/components/data-grid/server-data-grid";
 import { useServerDataGrid } from "@/components/data-grid/use-server-data-grid";
 import { DataGridColumnVisibility } from "@/components/reui/data-grid/data-grid-column-visibility";
 import { Button } from "@/components/ui/button";
+import { PER_PAGE_OPTIONS } from "@/lib/app/constants";
 import { orpc } from "@/lib/orpc";
-import { clampPage, PER_PAGE_OPTIONS } from "@/lib/pagination";
+import { clampPage } from "@/lib/pagination";
 import { InviteOrganizationDialog } from "../../../_components/invite-organization-dialog";
 import { toInvitationSortField } from "../constants";
 import {
@@ -88,13 +89,23 @@ export function InvitationList({ organizationId }: { organizationId: string }) {
     (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
       const [first] = next;
+
+      if (!first) {
+        setFilters({
+          sortBy: filters.sortBy,
+          sortOrder: filters.sortOrder === "desc" ? "asc" : "desc",
+          page: 1,
+        });
+        return;
+      }
+
       setFilters({
-        sortBy: first ? toInvitationSortField(first.id) : null,
-        sortOrder: first ? (first.desc ? "desc" : "asc") : null,
+        sortBy: toInvitationSortField(first.id),
+        sortOrder: first.desc ? "desc" : "asc",
         page: 1,
       });
     },
-    [sorting, setFilters]
+    [filters.sortBy, filters.sortOrder, sorting, setFilters]
   );
 
   const columns = useMemo(

@@ -107,7 +107,7 @@ export function RightSidebar({
     [onlineusers]
   );
 
-  if (!threadId) return null;
+  if (!threadId || !teamId) return null;
 
   return (
     <RealtimeThreadPRovider threadId={threadId}>

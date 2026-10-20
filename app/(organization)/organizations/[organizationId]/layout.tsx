@@ -24,7 +24,11 @@ export default async function OrganizationLayout({
         input: { organizationId: organizationId },
       })
     ),
-    queryClient.prefetchQuery(orpc.organization.members.list.queryOptions()),
+    queryClient.prefetchQuery(
+      orpc.organization.members.list.queryOptions({
+        input: { organizationId },
+      })
+    ),
   ]);
   return (
     <SidebarProvider defaultOpenRight={false}>
