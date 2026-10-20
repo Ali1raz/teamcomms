@@ -22,12 +22,12 @@ export default async function TeamIdPage(
   const { teamId } = await params;
 
   return (
-    <section className="h-full flex w-full flex-col">
-      <div className="flex-1 my-4 min-h-0">
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+      <div className="my-4 min-h-0 flex-1">
         <MessageList />
       </div>
 
-      <div className="sticky bottom-0 shrink-0 bg-background p-2 pb-3 pt-0">
+      <div className="shrink-0 bg-background p-2 pb-3 pt-0">
         <MessageInput teamId={teamId} />
       </div>
     </section>
