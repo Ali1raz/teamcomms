@@ -56,7 +56,7 @@ export function OrganizationTabs({
   }
 
   return (
-    <div className="flex h-full w-full max-w-5xl flex-col gap-4 p-4 sm:p-6">
+    <div className="flex w-full max-w-5xl flex-col gap-4 p-4 sm:p-6">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-2xl font-semibold tracking-tight">
