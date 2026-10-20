@@ -3,7 +3,10 @@
 @import "shadcn/tailwind.css";
 @import "uploadthing/tw/v4";
 
-@plugin "@tailwindcss/typography";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "fumadocs-ui/css/generated/glass.css";
+
 @source "../node_modules/@uploadthing/react/dist";
 
 @custom-variant dark (&:is(.dark *));

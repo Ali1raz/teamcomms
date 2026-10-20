@@ -6,6 +6,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { Analytics } from "@vercel/analytics/next";
+import { RootProvider } from "fumadocs-ui/provider/next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { extractRouterConfig } from "uploadthing/server";
 import { Providers } from "@/components/providers";
@@ -101,7 +102,9 @@ export default function RootLayout({
         >
           <NuqsAdapter>
             <Providers>
-              <TooltipProvider>{children}</TooltipProvider>
+              <TooltipProvider>
+                <RootProvider theme={{ enabled: false }}>{children}</RootProvider>
+              </TooltipProvider>
             </Providers>
           </NuqsAdapter>
         </ThemeProvider>

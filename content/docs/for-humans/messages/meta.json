@@ -1,0 +1,9 @@
+{
+  "title": "Messages",
+  "defaultOpen": true,
+  "pages": [
+    "sending-messages",
+    "editing-and-deleting-messages",
+    "reacting-to-messages"
+  ]
+}

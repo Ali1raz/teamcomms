@@ -1,0 +1,135 @@
+---
+title: For Developers
+description: Docs about TeamComms for developers
+---
+
+## Getting Started
+
+Prerequisites
+
+- Node.js 20+
+- pnpm
+- PostgreSQL database
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Ali1raz/team-comms.git
+cd team-comms
+```
+
+### 2. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Fill in your .env:
+
+```bash
+# Database
+
+DATABASE_URL="postgresql://user:password@localhost:5432/team-comms?schema=public"
+
+# Auth
+
+BETTER_AUTH_SECRET=your_secret_here
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+
+# Email (Nodemailer)
+
+NODEMAILER_USER=your_email@gmail.com
+NODEMAILER_APP_PASSWORD=your_app_password
+
+# GitHub OAuth (optional)
+
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# Security
+
+ARCJET_KEY=your_arcjet_key
+ARCJET_ENV=development
+
+# File Uploads
+
+UPLOADTHING_TOKEN=your_uploadthing_token
+UPLOADTHING_SECRET_KEY=your_uploadthing_secret_key
+
+# AI (via OpenRouter)
+
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
+
+### 4. Set up the database
+
+```bash
+pnpm db:migrate
+```
+
+Optionally seed some starter data:
+
+```bash
+pnpm db:seed
+```
+
+### 5. Run the development server
+
+Start the Next.js app:
+
+```bash
+pnpm dev
+```
+
+Realtime runs on Cloudflare Workers (PartyServer), so log in to Wrangler and start the worker alongside Next.js:
+
+```bash
+# Log in to your Cloudflare account
+pnpm dlx wrangler login
+
+# Generate Cloudflare/Wrangler types
+pnpm wrangler:types
+
+# Serve the realtime worker locally (run in a separate terminal)
+pnpm wrangler:dev
+```
+
+- App: [http://localhost:3000](http://localhost:3000)
+- Realtime worker: [http://localhost:8787](http://localhost:8787)
+
+### Database Scripts
+
+```bash
+# Run Prisma migrations
+pnpm db:migrate
+# Push schema changes without migration
+pnpm db:push
+# Regenerate Prisma client
+pnpm db:generate
+# Push + generate in one step
+pnpm db:sync
+# Open Prisma Studio
+pnpm db:studio
+# Seed the database
+pnpm db:seed
+```
+
+## Explore the Codebase
+
+- [Directory Structure](/docs/for-developers/directory-structure) — high-level map of the project folders.
+- [Knowledge Graph](/docs/for-developers/knowledge-graph) — query the codebase with graphify.
+
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss what you'd like to change.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes
+4. Open a Pull Request

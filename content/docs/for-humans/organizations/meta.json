@@ -1,0 +1,9 @@
+{
+  "title": "Organizations",
+  "defaultOpen": true,
+  "pages": [
+    "creating-organizations",
+    "leaving-an-organization",
+    "deleting-an-organization"
+  ]
+}
