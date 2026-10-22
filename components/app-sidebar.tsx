@@ -1,26 +1,40 @@
 "use client";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, ChevronRight, Hash, MoreVertical } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronRight,
+  Hash,
+  MoreVertical,
+  Plus,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
 import { InviteOrganizationDialog } from "@/app/(organization)/organizations/_components/invite-organization-dialog";
+import { CreateChannelDialog } from "@/components/channels/create-channel-dialog";
+import { DeleteChannelDialog } from "@/components/channels/delete-channel-dialog";
+import { RenameChannelDialog } from "@/components/channels/rename-channel-dialog";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
 import { RemoveMemberDialog } from "@/components/remove-member-dialog";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { UpdateMemberRoleDialog } from "@/components/update-member-role-dialog";
+import { useOrganizationRole } from "@/hooks/use-organization-role";
 import { usePresence } from "@/hooks/use-presence";
 import { SIDEBAR_MEMBER_PREVIEW_COUNT } from "@/lib/app/constants";
 import type { ClientOutputs } from "@/lib/orpc";
@@ -83,9 +97,17 @@ export function AppSidebar({
     data: { currentOrganization },
   } = useSuspenseQuery(orpc.organization.list.queryOptions());
 
-  const { teamId } = useParams<{ teamId: string }>();
+  const { teamId, channelId } = useParams<{
+    teamId?: string;
+    channelId?: string;
+  }>();
 
-  const canManageOrganization = !!user && user.role !== "member";
+  const channelsQuery = useQuery(
+    orpc.channel.list.queryOptions({ input: { organizationId } })
+  );
+  const channels = channelsQuery.data?.channels ?? [];
+
+  const canManageOrganization = useOrganizationRole() !== "member";
 
   return (
     <Sidebar {...props}>
@@ -101,7 +123,7 @@ export function AppSidebar({
           )}
 
           {canManageOrganization && (
-            <SidebarMenuItem className="flex sm:hidden">
+            <SidebarMenuItem className="flex md:hidden">
               <SidebarMenuButton asChild className="shrink-0">
                 <InviteOrganizationDialog
                   organizationId={organizationId}
@@ -114,111 +136,232 @@ export function AppSidebar({
           )}
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="flex flex-col overflow-hidden h-full">
-        {/* Teams */}
-        <SidebarGroup className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <SidebarMenu className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <Collapsible
-              defaultOpen
-              className="group/collapsible flex-1 min-h-0 flex flex-col overflow-hidden"
-            >
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton>
-                  Teams
-                  <ChevronRight className="ml-auto transition-transform duration-100 group-data-[state=open]/collapsible:rotate-90" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              {/* Keep flex sizing on a stable wrapper so Radix's internal content div cannot break scroll height propagation. */}
-              <SidebarMenuItem className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className="flex-1 min-h-0">
-                  <CollapsibleContent className="h-full overflow-hidden">
-                    <ScrollArea className="h-full">
-                      <SidebarMenuSub>
-                        {teams?.map((ch) => (
-                          <SidebarMenuSubItem
-                            key={ch.id}
-                            className="flex items-center justify-center flex-row"
-                          >
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={teamId === ch.id}
-                              className="text-muted-foreground flex-1"
-                            >
-                              <Link
-                                href={`/organizations/${organizationId}/team/${ch.id}`}
-                                title={ch.name}
-                              >
-                                <Hash className="size-4 shrink-0" />
-                                <span className="truncate max-w-[12ch]">
-                                  {ch.name}
-                                </span>
-                              </Link>
-                            </SidebarMenuSubButton>
+      <SidebarContent>
+        {/* Channels */}
+        <SidebarGroup className="border-b">
+          <SidebarMenu>
+            <Collapsible asChild defaultOpen className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton>
+                    Channels
+                    <ChevronRight className="ml-auto transition-transform duration-100 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
 
+                {canManageOrganization && (
+                  <CreateChannelDialog organizationId={organizationId}>
+                    <SidebarMenuAction asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-5"
+                      >
+                        <Plus />
+                        <span className="sr-only">Create channel</span>
+                      </Button>
+                    </SidebarMenuAction>
+                  </CreateChannelDialog>
+                )}
+
+                <CollapsibleContent>
+                  <ScrollArea className="h-56">
+                    <SidebarMenuSub>
+                      {channelsQuery.isPending && (
+                        <>
+                          <SidebarMenuSkeleton showIcon />
+                          <SidebarMenuSkeleton showIcon />
+                          <SidebarMenuSkeleton showIcon />
+                        </>
+                      )}
+
+                      {!channelsQuery.isPending &&
+                        !channelsQuery.isError &&
+                        channels.length === 0 && (
+                          <SidebarMenuSubItem>
+                            <p className="px-2 py-1 text-xs text-muted-foreground">
+                              No channels yet.
+                            </p>
                             {canManageOrganization && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="p-1"
-                                  >
-                                    <MoreVertical />
-                                    <span className="sr-only">More</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-48">
-                                  <UpdateTeamDialog team={ch}>
-                                    <DropdownMenuItem
-                                      onSelect={(e) => e.preventDefault()}
-                                    >
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </UpdateTeamDialog>
-                                  <AddMemberToTeam
-                                    organizationId={organizationId}
-                                    teamId={ch.id}
-                                  >
-                                    <DropdownMenuItem
-                                      onSelect={(e) => e.preventDefault()}
-                                    >
-                                      Add Member
-                                    </DropdownMenuItem>
-                                  </AddMemberToTeam>
-                                  <DropdownMenuItem asChild>
-                                    <Link
-                                      href={`/organizations/${organizationId}/team/${ch.id}/members`}
-                                    >
-                                      Manage Members
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DeleteTeamDialog team={ch}>
-                                    <DropdownMenuItem
-                                      onSelect={(e) => e.preventDefault()}
-                                      variant="destructive"
-                                    >
-                                      Delete team
-                                    </DropdownMenuItem>
-                                  </DeleteTeamDialog>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <CreateChannelDialog
+                                organizationId={organizationId}
+                              >
+                                <Button type="button" variant="ghost" size="sm">
+                                  Create a channel
+                                </Button>
+                              </CreateChannelDialog>
                             )}
                           </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </ScrollArea>
-                  </CollapsibleContent>
-                </div>
+                        )}
+
+                      {channels.map((channel) => (
+                        <SidebarMenuSubItem
+                          key={channel.id}
+                          className="flex flex-row items-center"
+                        >
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={channelId === channel.id}
+                            className="text-muted-foreground flex-1"
+                          >
+                            <Link
+                              href={`/organizations/${organizationId}/channel/${channel.id}`}
+                              title={channel.name}
+                              aria-current={
+                                channelId === channel.id ? "page" : undefined
+                              }
+                            >
+                              <Hash className="size-4 shrink-0" />
+                              <span className="max-w-[12ch] truncate">
+                                {channel.name}
+                              </span>
+                            </Link>
+                          </SidebarMenuSubButton>
+
+                          {canManageOrganization && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="p-1"
+                                >
+                                  <MoreVertical />
+                                  <span className="sr-only">
+                                    Actions for {channel.name}
+                                  </span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="w-48">
+                                <RenameChannelDialog channel={channel}>
+                                  <DropdownMenuItem
+                                    onSelect={(event) => event.preventDefault()}
+                                  >
+                                    Rename
+                                  </DropdownMenuItem>
+                                </RenameChannelDialog>
+                                <DropdownMenuSeparator />
+                                <DeleteChannelDialog channel={channel}>
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onSelect={(event) => event.preventDefault()}
+                                  >
+                                    Delete channel
+                                  </DropdownMenuItem>
+                                </DeleteChannelDialog>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </ScrollArea>
+                </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* Members */}
-        <SidebarGroup className="shrink-0 flex flex-col border-t bg-accent/40 pb-4">
+        {/* Teams */}
+        <SidebarGroup>
           <SidebarMenu>
-            <Collapsible defaultOpen className="group/collapsible">
+            <Collapsible asChild defaultOpen className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton>
+                    Teams
+                    <ChevronRight className="ml-auto transition-transform duration-100 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {teams?.map((ch) => (
+                      <SidebarMenuSubItem
+                        key={ch.id}
+                        className="flex items-center justify-center flex-row"
+                      >
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={teamId === ch.id}
+                          className="text-muted-foreground flex-1"
+                        >
+                          <Link
+                            href={`/organizations/${organizationId}/team/${ch.id}`}
+                            title={ch.name}
+                          >
+                            <Users className="size-4 shrink-0" />
+                            <span className="truncate max-w-[12ch]">
+                              {ch.name}
+                            </span>
+                          </Link>
+                        </SidebarMenuSubButton>
+
+                        {canManageOrganization && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="p-1"
+                              >
+                                <MoreVertical />
+                                <span className="sr-only">
+                                  Actions for {ch.name}
+                                </span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-48">
+                              <UpdateTeamDialog team={ch}>
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  Edit
+                                </DropdownMenuItem>
+                              </UpdateTeamDialog>
+                              <AddMemberToTeam
+                                organizationId={organizationId}
+                                teamId={ch.id}
+                              >
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  Add Member
+                                </DropdownMenuItem>
+                              </AddMemberToTeam>
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/organizations/${organizationId}/team/${ch.id}/members`}
+                                >
+                                  Manage Members
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DeleteTeamDialog team={ch}>
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                  variant="destructive"
+                                >
+                                  Delete team
+                                </DropdownMenuItem>
+                              </DeleteTeamDialog>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t bg-muted/40 p-0">
+        <SidebarGroup>
+          <SidebarMenu>
+            <Collapsible asChild defaultOpen className="group/collapsible">
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton>
@@ -227,71 +370,69 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <ScrollArea className="max-h-64">
-                    <SidebarMenuSub className="flex gap-2">
-                      {members
-                        ?.slice(0, SIDEBAR_MEMBER_PREVIEW_COUNT)
-                        .map((member) => (
-                          <SidebarMenuSubItem
-                            key={member.id}
-                            className="flex items-start gap-3 p-2 rounded-md hover:bg-accent truncate"
-                          >
-                            <UserImage
-                              name={member.name}
-                              image={member.image}
-                              className="size-8 object-cover"
-                              isOnline={
-                                !!member.id && onlineUserIds.has(member.id)
-                              }
-                              showOnline={true}
-                            />
-                            <div className="flex flex-col flex-1 gap-1">
-                              <div className="flex items-center justify-between">
-                                <span className="leading-none max-w-[10ch]">
-                                  {member.name}
-                                </span>
-                                <MemberRoleBadge role={member.role} />
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="text-sm max-w-[10ch] leading-none truncate text-muted-foreground">
-                                  {member.email}
-                                </span>
-                                {member.id !== user?.id &&
-                                  canManageOrganization && (
-                                    <MemberActionsDropdown
-                                      user={member}
-                                      organizationId={organizationId}
-                                      className="ml-auto px-1"
-                                    />
-                                  )}
-                              </div>
+                  <SidebarMenuSub className="flex gap-2">
+                    {members
+                      ?.slice(0, SIDEBAR_MEMBER_PREVIEW_COUNT)
+                      .map((member) => (
+                        <SidebarMenuSubItem
+                          key={member.id}
+                          className="flex items-start gap-3 rounded-md p-2 hover:bg-accent"
+                        >
+                          <UserImage
+                            name={member.name}
+                            image={member.image}
+                            className="size-8 object-cover"
+                            isOnline={
+                              !!member.id && onlineUserIds.has(member.id)
+                            }
+                            showOnline={true}
+                          />
+                          <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <div className="flex min-w-0 items-center justify-between gap-2">
+                              <span className="min-w-0 max-w-[10ch] truncate leading-none">
+                                {member.name}
+                              </span>
+                              <MemberRoleBadge role={member.role} />
                             </div>
-                          </SidebarMenuSubItem>
-                        ))}
-                      {members &&
-                        members.length > SIDEBAR_MEMBER_PREVIEW_COUNT && (
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              className="text-muted-foreground"
+                            <div className="flex min-w-0 items-center gap-1">
+                              <span className="min-w-0 max-w-[10ch] truncate text-sm leading-none text-muted-foreground">
+                                {member.email}
+                              </span>
+                              {member.id !== user?.id &&
+                                canManageOrganization && (
+                                  <MemberActionsDropdown
+                                    user={member}
+                                    organizationId={organizationId}
+                                    className="ml-auto px-1"
+                                  />
+                                )}
+                            </div>
+                          </div>
+                        </SidebarMenuSubItem>
+                      ))}
+                    {members &&
+                      members.length > SIDEBAR_MEMBER_PREVIEW_COUNT && (
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            className="text-muted-foreground"
+                          >
+                            <Link
+                              href={`/organizations/${organizationId}?tab=members`}
                             >
-                              <Link
-                                href={`/organizations/${organizationId}?tab=members`}
-                              >
-                                <span>Show more</span>
-                                <ArrowRight className="ml-auto" />
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        )}
-                    </SidebarMenuSub>
-                  </ScrollArea>
+                              <span>Show more</span>
+                              <ArrowRight className="ml-auto" />
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )}
+                  </SidebarMenuSub>
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
           </SidebarMenu>
         </SidebarGroup>
-      </SidebarContent>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
@@ -311,6 +452,7 @@ function MemberActionsDropdown({
       <DropdownMenuTrigger asChild>
         <Button className={cn(className)} variant="outline" size="sm">
           <MoreVertical />
+          <span className="sr-only">Actions for {user.name}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>

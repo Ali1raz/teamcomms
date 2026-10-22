@@ -2,15 +2,19 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useOrganizationRole } from "@/hooks/use-organization-role";
 import { orpc } from "@/lib/orpc";
 import type { OrganizationTab } from "../constants";
 import {
+  toChannelQueryInput,
   toOrganizationMemberQueryInput,
   toTeamQueryInput,
+  useChannelFilters,
   useOrganizationMemberFilters,
   useOrganizationTab,
   useTeamFilters,
 } from "../search-params";
+import { ChannelTable } from "./channels/channel-table";
 import { LeaveOrganizationDialog } from "./leave-organization-dialog";
 import { MemberTable } from "./members/member-table";
 import { OrganizationSettingsForm } from "./organization-settings-form";
@@ -25,6 +29,7 @@ export function OrganizationTabs({
   const [tab, setTab] = useOrganizationTab();
   const [memberFilters] = useOrganizationMemberFilters();
   const [teamFilters, setTeamFilters] = useTeamFilters();
+  const [channelFilters, setChannelFilters] = useChannelFilters();
 
   const { data: organizationData } = useQuery(
     orpc.organization.list.queryOptions()
@@ -32,14 +37,22 @@ export function OrganizationTabs({
   const organization = organizationData?.organizations.find(
     (item) => item.id === organizationId
   );
-  const canManageOrganization =
-    !!organization && organization.role !== "member";
+  const canManageOrganization = useOrganizationRole() !== "member";
 
   function prefetchTab(nextTab: OrganizationTab) {
     if (nextTab === "teams") {
       void queryClient.prefetchQuery(
         orpc.team.list.queryOptions({
           input: toTeamQueryInput(organizationId, teamFilters),
+        })
+      );
+      return;
+    }
+
+    if (nextTab === "channels") {
+      void queryClient.prefetchQuery(
+        orpc.channel.list.queryOptions({
+          input: toChannelQueryInput(organizationId, channelFilters),
         })
       );
       return;
@@ -55,6 +68,7 @@ export function OrganizationTabs({
   function handleTabChange(value: string) {
     const nextTab = value as OrganizationTab;
     void setTeamFilters(null);
+    void setChannelFilters(null);
     void setTab(nextTab);
   }
 
@@ -89,6 +103,13 @@ export function OrganizationTabs({
             Teams
           </TabsTrigger>
           <TabsTrigger
+            value="channels"
+            onPointerEnter={() => prefetchTab("channels")}
+            onFocus={() => prefetchTab("channels")}
+          >
+            Channels
+          </TabsTrigger>
+          <TabsTrigger
             value="members"
             onPointerEnter={() => prefetchTab("members")}
             onFocus={() => prefetchTab("members")}
@@ -102,6 +123,9 @@ export function OrganizationTabs({
 
         <TabsContent value="teams">
           <TeamTable organizationId={organizationId} />
+        </TabsContent>
+        <TabsContent value="channels">
+          <ChannelTable organizationId={organizationId} />
         </TabsContent>
         <TabsContent value="members">
           <MemberTable organizationId={organizationId} />

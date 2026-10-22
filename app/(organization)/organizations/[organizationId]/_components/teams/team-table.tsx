@@ -13,6 +13,7 @@ import { ServerDataGrid } from "@/components/data-grid/server-data-grid";
 import { useServerDataGrid } from "@/components/data-grid/use-server-data-grid";
 import { DataGridColumnVisibility } from "@/components/reui/data-grid/data-grid-column-visibility";
 import { Button } from "@/components/ui/button";
+import { useOrganizationRole } from "@/hooks/use-organization-role";
 import { PER_PAGE_OPTIONS } from "@/lib/app/constants";
 import { orpc } from "@/lib/orpc";
 import { clampPage } from "@/lib/pagination";
@@ -36,12 +37,10 @@ export function TeamTable({ organizationId }: { organizationId: string }) {
     placeholderData: keepPreviousData,
   });
 
-  const { data: user } = useQuery(orpc.user.get.queryOptions());
-
   const teams = data?.teams ?? [];
   const pageCount = data?.pageCount ?? 1;
   const total = data?.total ?? 0;
-  const canManageOrganization = !!user && user.role !== "member";
+  const canManageOrganization = useOrganizationRole() !== "member";
   const isRefreshing = isFetching && !isPending;
   const isLoading = isPending || isFetching || isFilterPending;
   const isFiltered = hasActiveTeamFilters(filters);

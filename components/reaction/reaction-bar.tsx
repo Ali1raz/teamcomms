@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  type InfiniteData,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { GroupedReactionSchemaType } from "@/app/(organization)/organizations/schema";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -16,7 +11,9 @@ import {
 } from "@/components/ui/tooltip";
 import { authClient } from "@/lib/auth-client";
 import { type client, orpc } from "@/lib/orpc";
+import type { InfiniteMessages } from "@/lib/types";
 import { cn, groupReactions } from "@/lib/utils";
+import { useRealtimeConversation } from "../conversation-realtime-provider";
 import { ReactionEmojiPicker } from "./reaction-emoji-picker";
 import {
   replaceReactionsInMessageList,
@@ -29,9 +26,6 @@ interface ReactionBarProps {
   reactions: GroupedReactionSchemaType[];
 }
 
-// Shape of a single message.list page as stored in the infinite query cache.
-type MessagePage = Awaited<ReturnType<typeof client.message.list>>;
-type InfiniteMessages = InfiniteData<MessagePage, string | undefined>;
 type ThreadData = Awaited<ReturnType<typeof client.message.threads.list>>;
 
 // Partial query keys matching every cached message.list / threads.list query.
@@ -94,7 +88,7 @@ function updateThreadDataReactions(
 
 export function ReactionBar({ messageId, reactions }: ReactionBarProps) {
   const queryClient = useQueryClient();
-  const { send } = useRealtimeTeam();
+  const { send } = useRealtimeConversation();
   const { data: session } = authClient.useSession();
   const currentUserId = session?.user?.id ?? "";
 

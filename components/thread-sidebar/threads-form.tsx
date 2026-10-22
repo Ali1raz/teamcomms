@@ -6,19 +6,21 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import type { InfiniteMessages } from "@/app/(organization)/organizations/[organizationId]/_components/message-item";
-import { Messagecomponser } from "@/app/(organization)/organizations/[organizationId]/_components/message-omposer";
+import { MessageComposer } from "@/app/(organization)/organizations/[organizationId]/_components/message-composer";
 import {
   type CreateMessageType,
   createMessageSchema,
 } from "@/app/(organization)/organizations/schema";
+import { useConversationErrorRecovery } from "@/hooks/use-conversation-error-recovery";
+import type { ConversationScope } from "@/lib/conversation";
+import { conversationKey } from "@/lib/conversation";
 import { type client, orpc } from "@/lib/orpc";
+import type { InfiniteMessages } from "@/lib/types";
+import { useRealtimeConversation } from "../conversation-realtime-provider";
 import { useRealtimeThread } from "../realtime-thread-provider";
-import { useRealtimeTeam } from "../team-realtime-provider";
 import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup } from "../ui/field";
 
@@ -26,24 +28,23 @@ type ThreadsData = Awaited<ReturnType<typeof client.message.threads.list>>;
 type ThreadItem = ThreadsData["threads"][number];
 
 interface ThreadsFormProps {
+  scope: ConversationScope;
   threadId: string;
   editingThread: ThreadItem | null;
   onCancelEdit: () => void;
 }
 
 export function ThreadsForm({
+  scope,
   threadId,
   editingThread,
   onCancelEdit,
 }: ThreadsFormProps) {
   const [composerVersion, setComposerVersion] = useState(0);
-  const { teamId } = useParams<{
-    teamId: string;
-    organizationId: string;
-  }>();
   const queryClient = useQueryClient();
 
-  const { send } = useRealtimeTeam();
+  const { send } = useRealtimeConversation();
+  const recoverFromDeletedChannel = useConversationErrorRecovery(scope);
 
   const { send: sendThread } = useRealtimeThread();
 
@@ -51,7 +52,7 @@ export function ThreadsForm({
     input: { threadId },
   });
 
-  const messageListKey = ["message.list", teamId];
+  const messageListKey = conversationKey(scope);
 
   const {
     data: { user: currentUser },
@@ -61,7 +62,7 @@ export function ThreadsForm({
     resolver: zodResolver(createMessageSchema),
     defaultValues: {
       content: editingThread?.content ?? "",
-      teamId,
+      scope,
       imageUrl: editingThread?.imageUrl ?? undefined,
       threadId,
     },
@@ -75,12 +76,12 @@ export function ThreadsForm({
   useEffect(() => {
     form.reset({
       content: editingThread?.content ?? "",
-      teamId,
+      scope,
       imageUrl: editingThread?.imageUrl ?? undefined,
       threadId,
     });
     // Keep the composer inputs synced with whichever reply is currently focused.
-  }, [editingThread, teamId, threadId, form]);
+  }, [editingThread, scope, threadId, form]);
 
   const createThreadMutation = useMutation(
     orpc.message.create.mutationOptions({
@@ -150,7 +151,7 @@ export function ThreadsForm({
       onSuccess: (data) => {
         form.reset({
           content: "",
-          teamId,
+          scope,
           imageUrl: undefined,
           threadId,
         });
@@ -193,6 +194,7 @@ export function ThreadsForm({
         if (context?.prevMessageListData) {
           queryClient.setQueryData(messageListKey, context.prevMessageListData);
         }
+        if (recoverFromDeletedChannel(error)) return;
         toast.error("Something bad happened, please try again!", {
           description: error instanceof Error ? error.message : null,
         });
@@ -259,7 +261,7 @@ export function ThreadsForm({
         onCancelEdit();
         form.reset({
           content: "",
-          teamId,
+          scope,
           imageUrl: undefined,
           threadId,
         });
@@ -293,6 +295,8 @@ export function ThreadsForm({
 
     createThreadMutation.mutate({
       ...values,
+      scope,
+      threadId,
       imageUrl: values.imageUrl ?? undefined,
     });
   }
@@ -315,7 +319,7 @@ export function ThreadsForm({
                 onCancelEdit();
                 form.reset({
                   content: "",
-                  teamId,
+                  scope,
                   imageUrl: undefined,
                   threadId,
                 });
@@ -335,7 +339,7 @@ export function ThreadsForm({
               name="content"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <Messagecomponser
+                  <MessageComposer
                     key={composerKey}
                     field={field}
                     imageUrl={imageField.value}

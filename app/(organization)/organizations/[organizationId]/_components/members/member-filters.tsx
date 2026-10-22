@@ -15,10 +15,7 @@ import {
 } from "@/components/ui/select";
 import { MembershipRole } from "@/generated/prisma/enums";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import {
-  DEFAULT_MEMBER_SORT_FIELD,
-  DEFAULT_MEMBER_SORT_ORDER,
-} from "../../constants";
+
 import { toMembershipRole } from "../../invitations/constants";
 import {
   hasActiveOrganizationMemberFilters,
@@ -55,9 +52,7 @@ export function MemberFilters() {
   }, [search, debouncedSearch, filters.search, setFilters]);
 
   const isFiltered = hasActiveOrganizationMemberFilters(filters);
-  const isSorted =
-    filters.sortBy !== DEFAULT_MEMBER_SORT_FIELD ||
-    filters.sortOrder !== DEFAULT_MEMBER_SORT_ORDER;
+  const isSorted = filters.sortBy !== "name" || filters.sortOrder !== "desc";
 
   function reset() {
     setSearch("");

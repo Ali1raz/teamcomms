@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { lastLoginMethod, organization } from "better-auth/plugins";
 import { SendEmail } from "@/app/action";
+import { provisionDefaultChannels } from "@/lib/channel-provisioning";
 import { env } from "@/lib/env";
 import { ac, roles } from "./permissions";
 import { prisma } from "./prisma";
@@ -105,6 +106,17 @@ export const auth = betterAuth({
         });
       },
       organizationHooks: {
+        afterCreateOrganization: async ({ organization }) => {
+          try {
+            await provisionDefaultChannels(organization.id);
+          } catch (error) {
+            // Org creation already succeeded; the seed repairs orgs with zero channels.
+            console.error(
+              "[afterCreateOrganization]: failed to provision channels",
+              error
+            );
+          }
+        },
         beforeCreateTeam: async ({ team }) => {
           return {
             data: {

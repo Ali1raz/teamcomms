@@ -25,7 +25,9 @@ import {
   SidebarRail,
   useSidebarWithSide,
 } from "@/components/ui/sidebar";
+import { useConversationScope } from "@/hooks/use-conversation-scope";
 import { usePresence } from "@/hooks/use-presence";
+import { conversationRoomId } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
 import { formatRelativeTime } from "@/lib/utils";
 import type { RealtimeUserSchemaType } from "@/realtime/schema";
@@ -55,24 +57,23 @@ export function RightSidebar({
 }: ComponentProps<typeof Sidebar> & { width?: string }) {
   const { threadId, setThreadId } = useThread();
   const { setOpen, isMobile, setOpenMobile } = useSidebarWithSide("right");
-  const { teamId, organizationId } = useParams<{
-    teamId: string;
-    organizationId: string;
-  }>();
-  const prevTeamIdRef = useRef(teamId);
+  const { organizationId } = useParams<{ organizationId: string }>();
+  const scope = useConversationScope();
+  const roomId = scope ? conversationRoomId(scope) : null;
+  const prevRoomIdRef = useRef(roomId);
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (prevTeamIdRef.current === teamId) return;
-    prevTeamIdRef.current = teamId;
+    if (prevRoomIdRef.current === roomId) return;
+    prevRoomIdRef.current = roomId;
     setThreadId(null);
     if (isMobile) {
       setOpenMobile(false);
     } else {
       setOpen(false);
     }
-  }, [teamId, isMobile, setThreadId, setOpen, setOpenMobile]);
+  }, [roomId, isMobile, setThreadId, setOpen, setOpenMobile]);
 
   const threadsQueryOptions = orpc.message.threads.list.queryOptions({
     input: { threadId: threadId ?? "" },
@@ -108,7 +109,7 @@ export function RightSidebar({
     [onlineusers]
   );
 
-  if (!threadId || !teamId) return null;
+  if (!threadId || !scope) return null;
 
   return (
     <RealtimeThreadPRovider threadId={threadId}>
@@ -208,6 +209,7 @@ export function RightSidebar({
                 {data.threads.map((thread) => (
                   <ThreadItem
                     key={thread.id}
+                    scope={scope}
                     thread={thread}
                     threadId={threadId}
                     editingThreadId={editingThreadId}
@@ -227,6 +229,7 @@ export function RightSidebar({
             <Suspense fallback={null}>
               <ThreadsForm
                 key={threadId}
+                scope={scope}
                 threadId={threadId}
                 editingThread={selectedEditingThread}
                 onCancelEdit={() => setEditingThreadId(null)}

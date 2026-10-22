@@ -3,8 +3,10 @@ import { client, orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { OrganizationTabs } from "./_components/organization-tabs";
 import {
+  loadChannelSearchParams,
   loadOrganizationMemberSearchParams,
   loadTeamSearchParams,
+  toChannelQueryInput,
   toOrganizationMemberQueryInput,
   toTeamQueryInput,
 } from "./search-params";
@@ -29,6 +31,7 @@ export default async function Page(
   const { organizationId } = await params;
   const memberFilters = await loadOrganizationMemberSearchParams(searchParams);
   const teamFilters = await loadTeamSearchParams(searchParams);
+  const channelFilters = await loadChannelSearchParams(searchParams);
 
   const queryClient = getQueryClient();
   await Promise.all([
@@ -36,6 +39,11 @@ export default async function Page(
     queryClient.prefetchQuery(
       orpc.team.list.queryOptions({
         input: toTeamQueryInput(organizationId, teamFilters),
+      })
+    ),
+    queryClient.prefetchQuery(
+      orpc.channel.list.queryOptions({
+        input: toChannelQueryInput(organizationId, channelFilters),
       })
     ),
     queryClient.prefetchQuery(

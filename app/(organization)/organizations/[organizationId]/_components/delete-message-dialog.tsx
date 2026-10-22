@@ -2,10 +2,9 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
+import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,8 +16,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useRequiredConversationScope } from "@/hooks/use-conversation-scope";
+import { conversationKey } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
-import type { InfiniteMessages } from "./message-item";
+import type { InfiniteMessages } from "@/lib/types";
 
 interface DeleteMessageDialogProps {
   messageId: string;
@@ -29,13 +30,13 @@ export function DeleteMessageDialog({
   messageId,
   children,
 }: DeleteMessageDialogProps) {
-  const { teamId } = useParams<{ teamId: string }>();
+  const scope = useRequiredConversationScope();
   const queryClient = useQueryClient();
-  const { send } = useRealtimeTeam();
+  const { send } = useRealtimeConversation();
   const [open, setOpen] = useState(false);
 
   // Must stay in sync with the key used in MessageList and EditMessageForm.
-  const messageListKey = ["message.list", teamId];
+  const messageListKey = conversationKey(scope);
 
   const deleteMessageMutation = useMutation(
     orpc.message.delete.mutationOptions({

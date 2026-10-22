@@ -29,9 +29,10 @@ export const generateThreadSummary = base
     const parentMessage = await prisma.message.findFirst({
       where: {
         threadId: input.threadId,
-        team: {
-          organizationId: context.organization.id,
-        },
+        OR: [
+          { team: { organizationId: context.organization.id } },
+          { channel: { organizationId: context.organization.id } },
+        ],
       },
       select: {
         id: true,
@@ -49,9 +50,10 @@ export const generateThreadSummary = base
     const parent = await prisma.message.findFirst({
       where: {
         id: threadId,
-        team: {
-          organizationId: context.organization.id,
-        },
+        OR: [
+          { team: { organizationId: context.organization.id } },
+          { channel: { organizationId: context.organization.id } },
+        ],
       },
       select: {
         id: true,
@@ -109,8 +111,6 @@ export const generateThreadSummary = base
     }
 
     const compiled = lines.join("\n");
-    console.log("=========");
-    console.log("Replies", replies.length);
 
     // Run PII check here because middleware cannot access the parsed/compiled text.
     // This prevents sensitive data (CC numbers, phone numbers) from being sent to the AI.
