@@ -2,11 +2,11 @@
 
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronsUpDown } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CreateOrganizationDialog } from "@/app/(organization)/organizations/_components/create-organization-dialog";
+import { OrganizationAvatar } from "@/components/general/organization-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/lib/orpc";
-import { cn, getOrganizationColor } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -73,25 +73,10 @@ export function OrganizationSwitcher() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="w-full px-4 py-5 mt-2">
-              {activeOrganization.logo ? (
-                <div className="flex aspect-square size-5 shrink-0 items-center justify-center overflow-hidden rounded-md">
-                  <Image
-                    alt="logo"
-                    src={activeOrganization.logo}
-                    width={20}
-                    height={20}
-                    unoptimized
-                    className="size-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    "aspect-square size-5 shrink-0 rounded-md",
-                    getOrganizationColor(activeOrganization.id)
-                  )}
-                />
-              )}
+              <OrganizationAvatar
+                organization={activeOrganization}
+                className="size-5 rounded-md"
+              />
               <span className="min-w-0 flex-1 truncate font-medium">
                 {activeOrganization.name}
               </span>
@@ -119,25 +104,10 @@ export function OrganizationSwitcher() {
                 )}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="flex aspect-square size-5 shrink-0 items-center justify-center overflow-hidden rounded-md">
-                    {org.logo ? (
-                      <Image
-                        alt="logo"
-                        src={org.logo}
-                        width={20}
-                        height={20}
-                        unoptimized
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className={cn(
-                          "aspect-square size-5 shrink-0 rounded-md",
-                          getOrganizationColor(org.id)
-                        )}
-                      />
-                    )}
-                  </div>
+                  <OrganizationAvatar
+                    organization={org}
+                    className="size-5 rounded-md"
+                  />
                   <span className="truncate">{org.name}</span>
                 </div>
                 {org.id === activeId && (

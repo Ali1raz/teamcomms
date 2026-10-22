@@ -23,8 +23,11 @@ import { auth, type FullOrg, type User } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { clampPage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { createSlug } from "@/lib/utils";
-import { createOrganizationSchema } from "../(organization)/organizations/schema";
+import { createSlug, getOrganizationColor } from "@/lib/utils";
+import {
+  createOrganizationSchema,
+  updateOrganizationSchema,
+} from "../(organization)/organizations/schema";
 import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
@@ -64,7 +67,11 @@ export const listOrganizations = base
   .handler(async ({ context }) => {
     const [data, currentOrganization, memberRoles, counts] = await Promise.all([
       auth.api.listOrganizations({ headers: await headers() }),
-      auth.api.getFullOrganization({ headers: await headers() }),
+      // A session can outlive the organization it was last active in. Treat
+      // that as no active organization instead of failing the whole list.
+      auth.api
+        .getFullOrganization({ headers: await headers() })
+        .catch(() => null),
       prisma.member.findMany({
         where: { userId: context.user.id },
         select: { organizationId: true, role: true },
@@ -126,15 +133,15 @@ export const createOrganization = base
   )
   .handler(async ({ context, input, errors }) => {
     const slug = createSlug(input.name);
-    console.log("Creating organization with slug:", slug);
 
-    let data: Awaited<ReturnType<typeof auth.api.createOrganization>>;
+    let data;
 
     try {
       data = await auth.api.createOrganization({
         body: {
           name: input.name,
           slug: slug,
+          logo: input.logo ?? getOrganizationColor(slug),
           userId: context.user.id,
           keepCurrentActiveOrganization: false,
         },
@@ -166,16 +173,8 @@ export const updateOrganization = base
     tags: ["Organization"],
   })
   .input(
-    z.object({
+    updateOrganizationSchema.extend({
       organizationId: z.string(),
-      name: z.string().trim().min(1, "Organization name is required"),
-      description: z
-        .string()
-        .trim()
-        .max(500, "Description must be less than 500 chars")
-        .nullable()
-        .optional(),
-      logo: z.string().nullable().optional(),
     })
   )
   .output(
@@ -189,8 +188,10 @@ export const updateOrganization = base
   )
   .handler(async ({ input, errors }) => {
     const slug = createSlug(input.name);
+    const logo =
+      input.logo?.trim() || getOrganizationColor(input.organizationId);
 
-    let data: Awaited<ReturnType<typeof auth.api.updateOrganization>>;
+    let data;
     try {
       data = await auth.api.updateOrganization({
         body: {
@@ -198,7 +199,7 @@ export const updateOrganization = base
             name: input.name,
             slug,
             description: input.description ?? "",
-            logo: input.logo ?? undefined,
+            logo,
           },
           organizationId: input.organizationId,
         },

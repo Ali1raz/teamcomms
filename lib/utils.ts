@@ -67,6 +67,19 @@ export function getOrganizationColor(id: string) {
   return COLOR_COMBOS[colorIndex];
 }
 
+/**
+ * Organization logos are either an uploaded URL or one of the existing color
+ * combos assigned when no file was provided. Hex values are kept for orgs
+ * created by the earlier fallback so they still render as colors.
+ */
+export function isOrganizationColor(
+  logo: string | null | undefined
+): logo is string {
+  if (!logo) return false;
+
+  return COLOR_COMBOS.includes(logo) || logo.startsWith("#");
+}
+
 export function createSlug(input: string) {
   // Derive a safe organization slug from user input and strip edge dashes.
   return input
