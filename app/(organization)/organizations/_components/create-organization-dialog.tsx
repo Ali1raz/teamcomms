@@ -28,6 +28,7 @@ import {
   type CreateOrganizationType,
   createOrganizationSchema,
 } from "../schema";
+import { OrganizationLogoField } from "./organization-logo-field";
 
 export function CreateOrganizationDialog({
   children,
@@ -39,6 +40,7 @@ export function CreateOrganizationDialog({
     resolver: zodResolver(createOrganizationSchema),
     defaultValues: {
       name: "",
+      logo: null,
     },
     mode: "onChange",
   });
@@ -46,6 +48,10 @@ export function CreateOrganizationDialog({
   const organizationName = useWatch({
     control: form.control,
     name: "name",
+  });
+  const organizationLogo = useWatch({
+    control: form.control,
+    name: "logo",
   });
   const slug = createSlug(organizationName ?? "");
   const queryClient = useQueryClient();
@@ -116,6 +122,13 @@ export function CreateOrganizationDialog({
               <FieldLabel htmlFor="slug">Slug</FieldLabel>
               <Input id="slug" value={slug} readOnly />
             </Field>
+            <OrganizationLogoField
+              value={organizationLogo}
+              onChange={(logo) =>
+                form.setValue("logo", logo, { shouldValidate: true })
+              }
+              disabled={createOrganizationMutation.isPending}
+            />
           </FieldGroup>
         </form>
 

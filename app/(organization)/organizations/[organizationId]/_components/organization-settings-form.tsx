@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { OrganizationLogoField } from "@/app/(organization)/organizations/_components/organization-logo-field";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -17,13 +18,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { orpc } from "@/lib/orpc";
-import { cn, createSlug, getOrganizationColor } from "@/lib/utils";
+import { createSlug } from "@/lib/utils";
 import {
   type UpdateOrganizationType,
   updateOrganizationSchema,
 } from "../../schema";
-import { AttachmentChip } from "./attachment-chip";
-import { ImageUploadDialog } from "./image-dialog";
 
 export function OrganizationSettingsForm({
   organizationId,
@@ -152,41 +151,14 @@ export function OrganizationSettingsForm({
             )}
           />
 
-          <Field>
-            <FieldLabel>Logo</FieldLabel>
-            <div className="flex items-end gap-3">
-              {watchedLogo ? (
-                <AttachmentChip
-                  url={watchedLogo}
-                  onDelete={() => form.setValue("logo", null)}
-                  onChangeComplete={(url) => form.setValue("logo", url)}
-                />
-              ) : (
-                <>
-                  <div
-                    className={cn(
-                      "size-24 object-cover shrink-0 rounded-full",
-                      getOrganizationColor(organizationId)
-                    )}
-                  />
-                  <ImageUploadDialog
-                    onUploadComplete={(url) => {
-                      form.setValue("logo", url, { shouldValidate: true });
-                    }}
-                  >
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={updateOrganizationMutation.isPending}
-                    >
-                      Upload Logo
-                    </Button>
-                  </ImageUploadDialog>
-                </>
-              )}
-            </div>
-          </Field>
+          <OrganizationLogoField
+            organizationId={organizationId}
+            value={watchedLogo}
+            onChange={(logo) =>
+              form.setValue("logo", logo, { shouldValidate: true })
+            }
+            disabled={updateOrganizationMutation.isPending}
+          />
         </FieldGroup>
 
         <Button

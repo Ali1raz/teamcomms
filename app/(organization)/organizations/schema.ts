@@ -3,6 +3,7 @@ import { MembershipRole } from "@/generated/prisma/enums";
 
 export const createOrganizationSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required"),
+  logo: z.string().nullable().optional(),
 });
 
 export type CreateOrganizationType = z.infer<typeof createOrganizationSchema>;

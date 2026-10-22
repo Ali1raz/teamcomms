@@ -9,7 +9,6 @@ import {
   MoreHorizontal,
   RefreshCcw,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -17,6 +16,7 @@ import { toast } from "sonner";
 import { DeleteOrganizationDialog } from "@/components/delete-organization-dialog";
 import { EmptyState } from "@/components/general/empty-state";
 import { MemberRoleBadge } from "@/components/general/member-role-badge";
+import { OrganizationAvatar } from "@/components/general/organization-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +40,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/lib/orpc";
-import { cn, getOrganizationColor } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export function OrganizationList() {
   const [isPending, startTransition] = useTransition();
@@ -126,25 +126,10 @@ export function OrganizationList() {
               )}
             >
               <CardHeader className="flex gap-2 items-start">
-                {ws.logo ? (
-                  <div className="flex aspect-square size-6 shrink-0 items-center justify-center overflow-hidden rounded-md">
-                    <Image
-                      alt={ws.name}
-                      src={ws.logo}
-                      width={20}
-                      height={20}
-                      unoptimized
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className={cn(
-                      "aspect-square size-5 shrink-0 rounded-md",
-                      getOrganizationColor(ws.id)
-                    )}
-                  />
-                )}
+                <OrganizationAvatar
+                  organization={ws}
+                  className="size-6 rounded-md"
+                />
                 <div className="space-y-1">
                   <CardTitle>
                     <h1 className="line-clamp-1 truncate">
