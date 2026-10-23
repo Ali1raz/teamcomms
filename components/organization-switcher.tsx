@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -121,8 +121,12 @@ export function OrganizationSwitcher() {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="my-4" asChild>
               <CreateOrganizationDialog>
-                <Button onClick={(e) => e.stopPropagation()} className="w-full">
-                  Create Organization
+                <Button
+                  variant="ghost"
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full"
+                >
+                  <PlusIcon className="size-4" /> Create Organization
                 </Button>
               </CreateOrganizationDialog>
             </DropdownMenuItem>

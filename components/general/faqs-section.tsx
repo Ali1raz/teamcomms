@@ -17,7 +17,7 @@ export function FaqsSection() {
         <p className="text-muted-foreground">Your questions answered here.</p>
       </div>
 
-      <Accordion className="space-y-2" collapsible type="single">
+      <Accordion className="space-y-4" collapsible type="single">
         {faqs.map((item) => (
           <AccordionItem
             className="border-b-0!"
@@ -28,7 +28,9 @@ export function FaqsSection() {
               {item.title}
             </AccordionTrigger>
 
-            <AccordionContent className="p-4">{item.content}</AccordionContent>
+            <AccordionContent className="p-4 mb-2">
+              {item.content}
+            </AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
