@@ -1,15 +1,11 @@
 import { generateJSON } from "@tiptap/react";
 import { renderToMarkdown } from "@tiptap/static-renderer/pm/markdown";
-import { type ClassValue, clsx } from "clsx";
 import Dompurify from "dompurify";
 import MarkdownIt from "markdown-it";
-import { twMerge } from "tailwind-merge";
 import { baseExtensions } from "@/components/editor/extensions";
 import { COLOR_COMBOS } from "./app/data";
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from "cn";
 
 export function getShortcutModifierLabel() {
   if (typeof navigator === "undefined") {
