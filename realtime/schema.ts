@@ -31,6 +31,7 @@ export const RealtimeMessageSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   teamId: z.string().nullable(),
+  channelId: z.string().nullable(),
   threadId: z.string().nullable(),
   content: z.string(),
   imageUrl: z.string().nullable().optional(),
@@ -45,7 +46,7 @@ export const RealtimeMessageSchema = z.object({
 
 export type RealtimeMessageSchemaType = z.infer<typeof RealtimeMessageSchema>;
 
-export const RealtimeTeamEventSchema = z.union([
+export const RealtimeConversationEventSchema = z.union([
   z.object({
     type: z.literal("message:created"),
     payload: z.object({ message: RealtimeMessageSchema }),
@@ -71,8 +72,8 @@ export const RealtimeTeamEventSchema = z.union([
   }),
 ]);
 
-export type RealtimeTeamEventSchemaType = z.infer<
-  typeof RealtimeTeamEventSchema
+export type RealtimeConversationEventSchemaType = z.infer<
+  typeof RealtimeConversationEventSchema
 >;
 
 export const RealtimeReplySchema = z.object({

@@ -1,10 +1,10 @@
 import { type Connection, routePartykitRequest, Server } from "partyserver";
 import { z } from "zod";
 import {
+  RealtimeConversationEventSchema,
   RealtimePresenceSchema,
   type RealtimePresenceSchemaType,
   RealtimeReplyEventSchema,
-  RealtimeTeamEventSchema,
   RealtimeUserSchema,
 } from "./schema";
 
@@ -58,7 +58,7 @@ export class ChatServer extends Server {
         }
       }
 
-      const event = RealtimeTeamEventSchema.safeParse(parsed);
+      const event = RealtimeConversationEventSchema.safeParse(parsed);
       if (event.success) {
         const payload = JSON.stringify(event.data);
 

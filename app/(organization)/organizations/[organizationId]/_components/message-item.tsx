@@ -1,6 +1,6 @@
 "use client";
 
-import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Edit2, MessagesSquare, MoreVertical, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
@@ -18,27 +18,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSidebarWithSide } from "@/components/ui/sidebar";
-import { type client, orpc } from "@/lib/orpc";
+import { orpc } from "@/lib/orpc";
 import { cn, formatRelativeTime } from "@/lib/utils";
+import type { MessageListItemType } from "../../schema";
 import { DeleteMessageDialog } from "./delete-message-dialog";
 import { EditMessageForm } from "./edit-message-form";
-
-export type messageType = Awaited<
-  ReturnType<typeof client.message.list>
->["messages"][number];
-
-export type MessagePage = {
-  messages: messageType[];
-  nextCursor: string | null;
-};
-export type InfiniteMessages = InfiniteData<MessagePage>;
 
 export function MessageItem({
   message,
   currentUserId,
   onlineUserIds,
 }: {
-  message: messageType;
+  message: MessageListItemType;
   currentUserId: string;
   onlineUserIds: Set<string>;
 }) {

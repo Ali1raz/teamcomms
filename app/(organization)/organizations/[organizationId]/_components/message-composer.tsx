@@ -19,7 +19,7 @@ interface iAppProps {
   submitLabel?: string;
 }
 
-export function Messagecomponser({
+export function MessageComposer({
   field,
   imageUrl,
   onImageChange,

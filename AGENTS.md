@@ -71,6 +71,7 @@ Before adding any enum, union type, or constant set:
 2. If one exists, import and use it.
 3. If it almost fits, extend the existing one in place. Don't create a parallel copy.
 4. Only create a new enum if nothing exists, and say so in your summary.
+5. Don't extract functions that are only used inside one file, use inline instead.
 
 ### Bad
 

@@ -91,7 +91,8 @@ model Organization {
   members     Member[]
   invitations Invitation[]
 
-  teams Team[]
+  teams    Team[]
+  channels Channel[]
 
   @@unique([slug])
   @@map("organization")
@@ -155,6 +156,21 @@ model Team {
   @@map("team")
 }
 
+model Channel {
+  id             String       @id @default(uuid())
+  name           String
+  slug           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  messages       Message[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("channel")
+}
+
 model TeamMember {
   id        String    @id @default(uuid())
   teamId    String
@@ -179,8 +195,12 @@ model Message {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teamId String
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  teamId String?
+  team   Team?   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   parentMessage Message? @relation("MessageThread", fields: [threadId], references: [id], onDelete: Cascade)
   threadId      String?
@@ -190,6 +210,7 @@ model Message {
   reactions MessageReaction[]
 
   @@index([teamId])
+  @@index([channelId])
   @@index([userId])
   @@map("message")
 }

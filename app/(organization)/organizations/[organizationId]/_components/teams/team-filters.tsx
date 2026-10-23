@@ -5,10 +5,6 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import {
-  DEFAULT_TEAM_SORT_FIELD,
-  DEFAULT_TEAM_SORT_ORDER,
-} from "../../constants";
 import { hasActiveTeamFilters, useTeamFilters } from "../../search-params";
 
 export function TeamFilters() {
@@ -37,9 +33,7 @@ export function TeamFilters() {
   }, [search, debouncedSearch, filters.search, setFilters]);
 
   const isFiltered = hasActiveTeamFilters(filters);
-  const isSorted =
-    filters.sortBy !== DEFAULT_TEAM_SORT_FIELD ||
-    filters.sortOrder !== DEFAULT_TEAM_SORT_ORDER;
+  const isSorted = filters.sortBy !== "name" || filters.sortOrder !== "desc";
 
   function reset() {
     setSearch("");

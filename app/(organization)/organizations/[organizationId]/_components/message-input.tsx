@@ -3,7 +3,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  type InfiniteData,
   useMutation,
   useQueryClient,
   useSuspenseQuery,
@@ -11,38 +10,36 @@ import {
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
+import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
-import type { client } from "@/lib/orpc";
+import { useConversationErrorRecovery } from "@/hooks/use-conversation-error-recovery";
+import type { ConversationScope } from "@/lib/conversation";
+import { conversationKey } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
-import { type CreateMessageType, createMessageSchema } from "../../schema";
-import { Messagecomponser } from "./message-omposer";
+import type { InfiniteMessages } from "@/lib/types";
+import {
+  type CreateMessageType,
+  createMessageSchema,
+  type MessageListItemType,
+} from "../../schema";
+import { MessageComposer } from "./message-composer";
 
-// ---------------------------------------------------------------------------
-// Types inferred directly from the oRPC client so they stay in sync with the
-// server schema without any manual duplication.
-// ---------------------------------------------------------------------------
-
-/** Shape of a single page returned by the message.list procedure. */
-type MessagePage = Awaited<ReturnType<typeof client.message.list>>;
-
-/** Shape of a single message item inside a page. */
-type MessageItem = MessagePage["messages"][number];
-
-interface IAppPops {
-  teamId: string;
+interface MessageInputProps {
+  scope: ConversationScope;
 }
 
-export function MessageInput({ teamId }: IAppPops) {
+export function MessageInput({ scope }: MessageInputProps) {
   const [editorKey, setEditorKey] = useState(0);
 
-  const { send } = useRealtimeTeam();
+  const { send } = useRealtimeConversation();
+  const recoverFromDeletedChannel = useConversationErrorRecovery(scope);
+  const messageListKey = conversationKey(scope);
 
   const form = useForm<CreateMessageType>({
     resolver: zodResolver(createMessageSchema),
     defaultValues: {
       content: "",
-      teamId: teamId,
+      scope,
       imageUrl: undefined,
     },
     mode: "onChange",
@@ -63,18 +60,17 @@ export function MessageInput({ teamId }: IAppPops) {
       onMutate: async (variables) => {
         // Stop any outgoing refetches so they don't overwrite the optimistic update.
         await queryclient.cancelQueries({
-          queryKey: ["message.list", teamId],
+          queryKey: messageListKey,
         });
 
         // Snapshot the current cache so we can roll back on error.
-        const prevData = queryclient.getQueryData<
-          InfiniteData<MessagePage, string | undefined>
-        >(["message.list", teamId]);
+        const prevData =
+          queryclient.getQueryData<InfiniteMessages>(messageListKey);
 
         // Build a fake message that matches MessageItem exactly so the UI
         // renders it immediately without waiting for the server round-trip.
         const tempId = `optimistic-${crypto.randomUUID()}`;
-        const optimisticMessage: MessageItem = {
+        const optimisticMessage: MessageListItemType = {
           id: tempId,
           content: variables.content,
           imageUrl: variables.imageUrl ?? null,
@@ -87,9 +83,7 @@ export function MessageInput({ teamId }: IAppPops) {
             id: currentUser.id,
             name: currentUser.name,
             email: currentUser.email,
-            image:
-              currentUser.image ??
-              `https://avatar.vercel.sh/${currentUser.name ?? "U"}`,
+            image: currentUser.image ?? null,
           },
         };
 
@@ -97,9 +91,7 @@ export function MessageInput({ teamId }: IAppPops) {
         // The raw cache stores pages newest-first (orderBy: createdAt DESC),
         // so index-0 is the most-recent page — exactly where the new message belongs.
         if (prevData) {
-          queryclient.setQueryData<
-            InfiniteData<MessagePage, string | undefined>
-          >(["message.list", teamId], {
+          queryclient.setQueryData<InfiniteMessages>(messageListKey, {
             ...prevData,
             pages: [
               {
@@ -121,9 +113,7 @@ export function MessageInput({ teamId }: IAppPops) {
       onSuccess: (createdMessage, _variables, context) => {
         // Swap the fake optimistic ID for the real server-assigned ID
         if (context?.tempId) {
-          queryclient.setQueryData<
-            InfiniteData<MessagePage, string | undefined>
-          >(["message.list", teamId], (old) => {
+          queryclient.setQueryData<InfiniteMessages>(messageListKey, (old) => {
             if (!old) return old;
             return {
               ...old,
@@ -145,13 +135,12 @@ export function MessageInput({ teamId }: IAppPops) {
         }
 
         setEditorKey((prev) => prev + 1);
-        form.reset({ teamId, content: "", imageUrl: undefined });
+        form.reset({ scope, content: "", imageUrl: undefined });
         form.setValue("imageUrl", undefined);
 
-        // Invalidate using the same raw key the infinite query is stored under
-        // (not the oRPC-generated key, which differs from what MessageList uses).
+        // Invalidate using the same key the infinite query is stored under.
         queryclient.invalidateQueries({
-          queryKey: ["message.list", teamId],
+          queryKey: messageListKey,
         });
 
         send({
@@ -175,8 +164,9 @@ export function MessageInput({ teamId }: IAppPops) {
       onError: (error, _variables, context) => {
         // Roll back to the pre-optimistic snapshot if we have one.
         if (context?.prevData) {
-          queryclient.setQueryData(["message.list", teamId], context.prevData);
+          queryclient.setQueryData(messageListKey, context.prevData);
         }
+        if (recoverFromDeletedChannel(error)) return;
         toast.error("Something bad happened, please try again!", {
           description: error instanceof Error ? error.message : null,
         });
@@ -187,6 +177,8 @@ export function MessageInput({ teamId }: IAppPops) {
   function onSubmit(values: CreateMessageType) {
     createMessageMutation.mutate({
       ...values,
+      // The route scope can change while this form stays mounted; always send to the current one.
+      scope,
       imageUrl: imageUrl ?? undefined,
     });
   }
@@ -199,7 +191,7 @@ export function MessageInput({ teamId }: IAppPops) {
           name="content"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <Messagecomponser
+              <MessageComposer
                 key={editorKey}
                 field={field}
                 imageUrl={imageUrl}

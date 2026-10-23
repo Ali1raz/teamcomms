@@ -1,4 +1,11 @@
 import { generateCompose, generateThreadSummary } from "./ai";
+import {
+  createChannel,
+  deleteChannel,
+  getChannel,
+  listChannels,
+  updateChannel,
+} from "./channel";
 import { getInvitionDEtails } from "./invitations";
 import { inviteMember } from "./members";
 import {
@@ -63,6 +70,13 @@ export const router = {
       add: addMembersToTeam,
       remove: removeMemberFromTeam,
     },
+  },
+  channel: {
+    create: createChannel,
+    list: listChannels,
+    get: getChannel,
+    update: updateChannel,
+    delete: deleteChannel,
   },
   message: {
     create: createMessage,

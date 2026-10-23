@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { client } from "@/lib/orpc";
-import { MessageList } from "../../_components/MessageList";
-import { MessageInput } from "../../_components/messaeg-input";
+import { ConversationView } from "../../_components/conversation-view";
 
 export async function generateMetadata(
   props: PageProps<"/organizations/[organizationId]/team/[teamId]">
@@ -21,15 +20,5 @@ export default async function TeamIdPage(
   const { params } = props;
   const { teamId } = await params;
 
-  return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="my-4 min-h-0 flex-1">
-        <MessageList />
-      </div>
-
-      <div className="shrink-0 bg-background p-2 pb-3 pt-0">
-        <MessageInput teamId={teamId} />
-      </div>
-    </section>
-  );
+  return <ConversationView scope={{ kind: "team", teamId }} />;
 }

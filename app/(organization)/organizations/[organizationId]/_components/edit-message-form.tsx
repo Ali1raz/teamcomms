@@ -1,49 +1,40 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  type InfiniteData,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { useParams } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
 import { Editor } from "@/components/editor/editor";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { useRequiredConversationScope } from "@/hooks/use-conversation-scope";
+import { conversationKey } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
+import type { InfiniteMessages } from "@/lib/types";
 import { getShortcutModifierLabel } from "@/lib/utils";
 import {
+  type MessageListItemType,
   type UpdateMessageSchemaType,
   updateMessageSchema,
 } from "../../schema";
 import { AttachmentChip } from "./attachment-chip";
 import { ImageUploadDialog } from "./image-dialog";
-import type { messageType } from "./message-item";
 
 interface EditMessageFormProps {
-  message: messageType;
+  message: MessageListItemType;
   onCancel: () => void;
   onSave: () => void;
 }
-
-// Shape of a single page from the message.list procedure.
-type MessagePage = {
-  messages: messageType[];
-  nextCursor: string | null;
-};
-type InfiniteMessages = InfiniteData<MessagePage>;
 
 export function EditMessageForm({
   message,
   onCancel,
   onSave,
 }: EditMessageFormProps) {
-  const { teamId } = useParams<{ teamId: string }>();
-  const { send } = useRealtimeTeam();
+  const scope = useRequiredConversationScope();
+  const { send } = useRealtimeConversation();
 
   const form = useForm<UpdateMessageSchemaType>({
     resolver: zodResolver(updateMessageSchema),
@@ -58,9 +49,8 @@ export function EditMessageForm({
 
   const queryClient = useQueryClient();
 
-  // The raw key that MessageList.tsx registers its infinite query under.
-  // Must stay in sync with the `queryKey` option passed to infiniteOptions there.
-  const messageListKey = ["message.list", teamId];
+  // Must stay in sync with the key MessageList registers its infinite query under.
+  const messageListKey = conversationKey(scope);
 
   const updateMessageMutation = useMutation(
     orpc.message.update.mutationOptions({
@@ -117,6 +107,7 @@ export function EditMessageForm({
               createdAt: update.message.createdAt,
               updatedAt: update.message.updatedAt,
               teamId: update.message.teamId,
+              channelId: update.message.channelId,
               threadId: update.message.threadId,
               content: update.message.content,
               imageUrl: update.message.imageUrl ?? null,

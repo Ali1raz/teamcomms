@@ -1,5 +1,5 @@
 "use client";
-import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import usePartySocket from "partysocket/react";
 import {
   createContext,
@@ -8,46 +8,45 @@ import {
   useMemo,
   useRef,
 } from "react";
+import type { MessageListItemType } from "@/app/(organization)/organizations/schema";
 import {
   replaceReactionsInMessageList,
   replaceReactionsInThread,
 } from "@/components/reaction/reactions";
 import { authClient } from "@/lib/auth-client";
+import {
+  type ConversationScope,
+  conversationKey,
+  conversationRoomId,
+} from "@/lib/conversation";
 import { type client, orpc } from "@/lib/orpc";
+import type { InfiniteMessages } from "@/lib/types";
 import { groupReactions } from "@/lib/utils";
 import {
-  type RealtimeMessageSchemaType,
-  RealtimeTeamEventSchema,
-  type RealtimeTeamEventSchemaType,
+  RealtimeConversationEventSchema,
+  type RealtimeConversationEventSchemaType,
 } from "@/realtime/schema";
 
-interface RealtimeTeamContextProps {
-  teamId: string;
+interface ConversationRealtimeProviderProps {
+  scope: ConversationScope;
   children: ReactNode;
 }
-
-type MessageListPage = {
-  messages: RealtimeMessageSchemaType[];
-  nextCursor?: string;
-};
-type InfiniteMessages = InfiniteData<MessageListPage>;
 
 // Partial key matching every cached threads.list query (any thread).
 const threadListKey = orpc.message.threads.list.key({ type: "query" });
 type ThreadQueryData = Awaited<ReturnType<typeof client.message.threads.list>>;
 
-type RealtimeTeamContextValue = {
-  send: (e: RealtimeTeamEventSchemaType) => void;
+type RealtimeConversationContextValue = {
+  send: (e: RealtimeConversationEventSchemaType) => void;
 };
 
-const RealtimeTeamContext = createContext<RealtimeTeamContextValue | null>(
-  null
-);
+const RealtimeConversationContext =
+  createContext<RealtimeConversationContextValue | null>(null);
 
-export const RealtimeTeamProvider = ({
-  teamId,
+export const ConversationRealtimeProvider = ({
+  scope,
   children,
-}: RealtimeTeamContextProps) => {
+}: ConversationRealtimeProviderProps) => {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const currentUserId = session?.user?.id ?? "";
@@ -55,43 +54,49 @@ export const RealtimeTeamProvider = ({
   // events that were missed while the socket was offline.
   const hasOpenedRef = useRef(false);
 
+  const messageListKey = useMemo(() => conversationKey(scope), [scope]);
+  const room = useMemo(() => conversationRoomId(scope), [scope]);
+
   const socket = usePartySocket({
     host: process.env.NEXT_PUBLIC_PARTYKIT_HOST || "http://localhost:8787",
-    room: teamId,
+    room,
     party: "chat",
     onOpen() {
       if (!hasOpenedRef.current) {
         hasOpenedRef.current = true;
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ["message.list", teamId] });
+      queryClient.invalidateQueries({ queryKey: messageListKey });
       queryClient.invalidateQueries({ queryKey: threadListKey });
     },
     onMessage(event) {
       try {
         const data = JSON.parse(event.data);
-        const res = RealtimeTeamEventSchema.safeParse(data);
+        const res = RealtimeConversationEventSchema.safeParse(data);
         if (res.error) {
-          console.log("Failed to parse message:", res.error);
           return;
         }
         const eventData = res.data;
 
         if (eventData.type === "message:created") {
           const raw = eventData.payload.message;
-          const mapped = {
-            ...raw,
+          const mapped: MessageListItemType = {
+            id: raw.id,
+            content: raw.content,
+            imageUrl: raw.imageUrl ?? null,
+            createdAt: raw.createdAt,
             repliesCount: raw.repliesCount ?? 0,
             reactions: [],
+            user: raw.user,
           };
 
           queryClient.setQueryData<InfiniteMessages>(
-            ["message.list", teamId],
+            messageListKey,
             (oldMessages) => {
               if (!oldMessages)
                 return {
                   pageParams: [undefined],
-                  pages: [{ messages: [mapped], nextCursor: undefined }],
+                  pages: [{ messages: [mapped], nextCursor: null }],
                 } as InfiniteMessages;
 
               const first = oldMessages.pages[0];
@@ -109,69 +114,65 @@ export const RealtimeTeamProvider = ({
 
         if (eventData.type === "message:updated") {
           const updated = eventData.payload.message;
-          // replace message in infinite list
-          queryClient.setQueryData<InfiniteMessages>(
-            ["message.list", teamId],
-            (old) => {
-              if (!old) return old;
-              const pages = old.pages.map((page) => ({
-                ...page,
-                messages: page.messages.map((message) =>
-                  message.id === updated.id
-                    ? { ...message, ...updated }
-                    : message
-                ),
-              }));
-              return { ...old, pages };
-            }
-          );
+          // Patch only mutable fields so absent realtime values cannot wipe
+          // repliesCount or reactions.
+          const patch = {
+            content: updated.content,
+            imageUrl: updated.imageUrl ?? null,
+            createdAt: updated.createdAt,
+          };
+
+          queryClient.setQueryData<InfiniteMessages>(messageListKey, (old) => {
+            if (!old) return old;
+            const pages = old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((message) =>
+                message.id === updated.id ? { ...message, ...patch } : message
+              ),
+            }));
+            return { ...old, pages };
+          });
           return;
         }
 
         if (eventData.type === "message:reply:increment") {
           const { messageId, delta } = eventData.payload;
 
-          queryClient.setQueryData<InfiniteMessages>(
-            ["message.list", teamId],
-            (old) => {
-              if (!old) return old;
-              const pages = old.pages.map((page) => ({
-                ...page,
-                messages: page.messages.map((message) =>
-                  message.id === messageId
-                    ? {
-                        ...message,
-                        repliesCount: Math.max(
-                          0,
-                          Number(message.repliesCount ?? 0) + Number(delta)
-                        ),
-                      }
-                    : message
-                ),
-              }));
+          queryClient.setQueryData<InfiniteMessages>(messageListKey, (old) => {
+            if (!old) return old;
+            const pages = old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((message) =>
+                message.id === messageId
+                  ? {
+                      ...message,
+                      repliesCount: Math.max(
+                        0,
+                        Number(message.repliesCount ?? 0) + Number(delta)
+                      ),
+                    }
+                  : message
+              ),
+            }));
 
-              return { ...old, pages };
-            }
-          );
+            return { ...old, pages };
+          });
           return;
         }
 
         if (eventData.type === "message:deleted") {
           const { messageId } = eventData.payload;
 
-          queryClient.setQueryData<InfiniteMessages>(
-            ["message.list", teamId],
-            (old) => {
-              if (!old) return old;
-              return {
-                ...old,
-                pages: old.pages.map((page) => ({
-                  ...page,
-                  messages: page.messages.filter((msg) => msg.id !== messageId),
-                })),
-              };
-            }
-          );
+          queryClient.setQueryData<InfiniteMessages>(messageListKey, (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page) => ({
+                ...page,
+                messages: page.messages.filter((msg) => msg.id !== messageId),
+              })),
+            };
+          });
           return;
         }
 
@@ -184,9 +185,8 @@ export const RealtimeTeamProvider = ({
 
           // Replace only the reactions for the matching message in the list
           // cache; every other field stays untouched.
-          queryClient.setQueryData<InfiniteMessages>(
-            ["message.list", teamId],
-            (old) => replaceReactionsInMessageList(old, messageId, grouped)
+          queryClient.setQueryData<InfiniteMessages>(messageListKey, (old) =>
+            replaceReactionsInMessageList(old, messageId, grouped)
           );
 
           // The same message also lives in the open thread's query
@@ -198,12 +198,12 @@ export const RealtimeTeamProvider = ({
           return;
         }
       } catch {
-        console.log("[RealtimeTeamProvider]: Something went wrong");
+        // A dropped realtime frame must not spam the console.
       }
     },
   });
 
-  const value = useMemo<RealtimeTeamContextValue>(
+  const value = useMemo<RealtimeConversationContextValue>(
     () => ({
       send: (e) => socket.send(JSON.stringify(e)),
     }),
@@ -211,15 +211,17 @@ export const RealtimeTeamProvider = ({
   );
 
   return (
-    <RealtimeTeamContext.Provider value={value}>
+    <RealtimeConversationContext.Provider value={value}>
       {children}
-    </RealtimeTeamContext.Provider>
+    </RealtimeConversationContext.Provider>
   );
 };
 
-export function useRealtimeTeam(): RealtimeTeamContextValue {
-  const ctx = useContext(RealtimeTeamContext);
+export function useRealtimeConversation(): RealtimeConversationContextValue {
+  const ctx = useContext(RealtimeConversationContext);
   if (!ctx)
-    throw new Error("useRealtimeTeam must be used within RealtimeTeamProvider");
+    throw new Error(
+      "useRealtimeConversation must be used within ConversationRealtimeProvider"
+    );
   return ctx;
 }

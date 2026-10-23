@@ -1,35 +1,26 @@
 "use client";
 
-import {
-  type InfiniteData,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { ImageZoom } from "@/components/kibo-ui/image-zoom";
-import { Card, CardAction, CardContent } from "@/components/ui/card";
+import type { ConversationScope } from "@/lib/conversation";
+import { conversationKey } from "@/lib/conversation";
 import { type client, orpc } from "@/lib/orpc";
+import type { InfiniteMessages } from "@/lib/types";
 import { cn, formatRelativeTime } from "@/lib/utils";
+import { useRealtimeConversation } from "../conversation-realtime-provider";
 import { RenderJSONtoHTML } from "../editor/render-content";
 import { ExpandableContent } from "../general/expandable-content";
 import { UserImage } from "../general/user-avatar";
 import { ReactionBar } from "../reaction/reaction-bar";
 import { useRealtimeThread } from "../realtime-thread-provider";
-import { useRealtimeTeam } from "../team-realtime-provider";
 import { ThreadActionsDropdown } from "./thread-actions-dropdown";
 
 type ThreadsData = Awaited<ReturnType<typeof client.message.threads.list>>;
-type MessageListPage = {
-  messages: {
-    id: string;
-    repliesCount: number;
-  }[];
-  nextCursor?: string;
-};
 
 export function ThreadItem({
+  scope,
   thread,
   threadId,
   editingThreadId,
@@ -39,6 +30,7 @@ export function ThreadItem({
   onlineUserIds,
   organizationUserId,
 }: {
+  scope: ConversationScope;
   thread: ThreadsData["threads"][number];
   threadId: string;
   editingThreadId: string | null;
@@ -48,19 +40,15 @@ export function ThreadItem({
   onlineUserIds: Set<string>;
   organizationUserId: string | undefined;
 }) {
-  const { teamId } = useParams<{
-    teamId: string;
-    organizationId: string;
-  }>();
   const queryClient = useQueryClient();
-  const { send } = useRealtimeTeam();
+  const { send } = useRealtimeConversation();
   const { send: sendThread } = useRealtimeThread();
 
   const threadsQueryOptions = orpc.message.threads.list.queryOptions({
     input: { threadId },
   });
 
-  const messageListKey = ["message.list", teamId];
+  const messageListKey = conversationKey(scope);
 
   const deleteThreadMutation = useMutation(
     orpc.message.delete.mutationOptions({
@@ -74,9 +62,7 @@ export function ThreadItem({
           threadsQueryOptions.queryKey
         );
         const prevMessageListData =
-          queryClient.getQueryData<InfiniteData<MessageListPage>>(
-            messageListKey
-          );
+          queryClient.getQueryData<InfiniteMessages>(messageListKey);
 
         queryClient.setQueryData<ThreadsData>(
           threadsQueryOptions.queryKey,
@@ -91,26 +77,23 @@ export function ThreadItem({
           }
         );
 
-        queryClient.setQueryData<InfiniteData<MessageListPage>>(
-          messageListKey,
-          (old) => {
-            if (!old) return old;
-            return {
-              ...old,
-              pages: old.pages.map((page) => ({
-                ...page,
-                messages: page.messages.map((message) =>
-                  message.id === threadId
-                    ? {
-                        ...message,
-                        repliesCount: Math.max(0, message.repliesCount - 1),
-                      }
-                    : message
-                ),
-              })),
-            };
-          }
-        );
+        queryClient.setQueryData<InfiniteMessages>(messageListKey, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((message) =>
+                message.id === threadId
+                  ? {
+                      ...message,
+                      repliesCount: Math.max(0, message.repliesCount - 1),
+                    }
+                  : message
+              ),
+            })),
+          };
+        });
 
         return { prevThreadData, prevMessageListData };
       },
