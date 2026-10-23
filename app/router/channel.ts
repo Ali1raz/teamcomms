@@ -1,15 +1,11 @@
 import z from "zod";
-import {
-  CHANNEL_SORT_FIELDS,
-  type ChannelSortField,
-} from "@/app/(organization)/organizations/[organizationId]/constants";
+import { CHANNEL_SORT_FIELDS } from "@/app/(organization)/organizations/[organizationId]/constants";
 import { Prisma } from "@/generated/prisma/client";
 import {
   DEFAULT_PAGE,
   DEFAULT_PER_PAGE,
   MAX_PER_PAGE,
   SORT_ORDERS,
-  type SortOrder,
 } from "@/lib/app/constants";
 import { errorMessage } from "@/lib/error-message";
 import { clampPage } from "@/lib/pagination";
@@ -52,60 +48,6 @@ const channelListOutput = channelOutput.extend({
   totalMessages: z.number(),
 });
 
-type ChannelListRow = Prisma.ChannelGetPayload<{
-  select: typeof channelListSelect;
-}>;
-
-function toChannelOrderBy(
-  sortBy: ChannelSortField,
-  sortOrder: SortOrder
-): Prisma.ChannelOrderByWithRelationInput {
-  switch (sortBy) {
-    case "createdAt":
-      return { createdAt: sortOrder };
-    case "totalMessages":
-      return { messages: { _count: sortOrder } };
-    default:
-      return { name: sortOrder };
-  }
-}
-
-function toChannelList(rows: ChannelListRow[]) {
-  return rows.map(({ _count, ...channel }) => ({
-    ...channel,
-    totalMessages: _count.messages,
-  }));
-}
-
-function isPrismaError(error: unknown, code: string) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError && error.code === code
-  );
-}
-
-type ErrorHelpers = {
-  FORBIDDEN: (options: { message: string }) => Error;
-  BAD_REQUEST: (options: { message: string }) => Error;
-};
-
-function assertCanManageChannels(role: string, errors: ErrorHelpers) {
-  if (!["owner", "admin"].includes(role)) {
-    throw errors.FORBIDDEN({
-      message: "Only admins and owners can manage channels",
-    });
-  }
-}
-
-function assertActiveOrganization(
-  inputOrganizationId: string,
-  activeOrganizationId: string,
-  errors: ErrorHelpers
-) {
-  if (inputOrganizationId !== activeOrganizationId) {
-    throw errors.BAD_REQUEST({ message: "You recently switched organization" });
-  }
-}
-
 export const listChannels = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
@@ -138,56 +80,59 @@ export const listChannels = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    assertActiveOrganization(
-      input.organizationId,
-      context.organization.id,
-      errors
-    );
+    if (input.organizationId !== context.organization.id) {
+      throw errors.BAD_REQUEST({
+        message: "You recently switched organization",
+      });
+    }
 
     const search = input.search?.trim();
     const where: Prisma.ChannelWhereInput = {
       organizationId: context.organization.id,
       ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
     };
-    const orderBy = toChannelOrderBy(
-      input.sortBy ?? "createdAt",
-      input.sortOrder ?? "desc"
-    );
+    const sortOrder = input.sortOrder ?? "desc";
+    const sortBy = input.sortBy ?? "createdAt";
+    const orderBy: Prisma.ChannelOrderByWithRelationInput =
+      sortBy === "createdAt"
+        ? { createdAt: sortOrder }
+        : sortBy === "totalMessages"
+          ? { messages: { _count: sortOrder } }
+          : { name: sortOrder };
 
     try {
-      if (input.page === undefined && input.perPage === undefined) {
-        const rows = await prisma.channel.findMany({
-          where,
-          orderBy,
-          select: channelListSelect,
-        });
-
-        return {
-          channels: toChannelList(rows),
-          total: rows.length,
-          page: DEFAULT_PAGE,
-          perPage: rows.length,
-          pageCount: 1,
-        };
-      }
-
-      const perPage = input.perPage ?? DEFAULT_PER_PAGE;
-      const total = await prisma.channel.count({ where });
-      const pageCount = Math.max(Math.ceil(total / perPage), 1);
-      const page = clampPage(input.page ?? DEFAULT_PAGE, pageCount);
+      const paginate = input.page !== undefined || input.perPage !== undefined;
+      const perPage = paginate
+        ? (input.perPage ?? DEFAULT_PER_PAGE)
+        : undefined;
+      const total = paginate
+        ? await prisma.channel.count({ where })
+        : undefined;
+      const pageCount =
+        total !== undefined && perPage !== undefined
+          ? Math.max(Math.ceil(total / perPage), 1)
+          : 1;
+      const page =
+        perPage !== undefined
+          ? clampPage(input.page ?? DEFAULT_PAGE, pageCount)
+          : DEFAULT_PAGE;
       const rows = await prisma.channel.findMany({
         where,
         orderBy,
-        skip: (page - 1) * perPage,
-        take: perPage,
         select: channelListSelect,
+        ...(perPage !== undefined
+          ? { skip: (page - 1) * perPage, take: perPage }
+          : {}),
       });
 
       return {
-        channels: toChannelList(rows),
-        total,
+        channels: rows.map(({ _count, ...channel }) => ({
+          ...channel,
+          totalMessages: _count.messages,
+        })),
+        total: total ?? rows.length,
         page,
-        perPage,
+        perPage: perPage ?? rows.length,
         pageCount,
       };
     } catch (error: unknown) {
@@ -242,12 +187,17 @@ export const createChannel = base
   .input(createChannelSchema)
   .output(z.object({ channel: channelOutput }))
   .handler(async ({ context, input, errors }) => {
-    assertCanManageChannels(context.member.role, errors);
-    assertActiveOrganization(
-      input.organizationId,
-      context.organization.id,
-      errors
-    );
+    if (!["owner", "admin"].includes(context.member.role)) {
+      throw errors.FORBIDDEN({
+        message: "Only admins and owners can manage channels",
+      });
+    }
+
+    if (input.organizationId !== context.organization.id) {
+      throw errors.BAD_REQUEST({
+        message: "You recently switched organization",
+      });
+    }
 
     try {
       const channel = await prisma.channel.create({
@@ -261,7 +211,10 @@ export const createChannel = base
 
       return { channel };
     } catch (error: unknown) {
-      if (isPrismaError(error, "P2002")) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
         throw errors.BAD_REQUEST({
           message: "A channel with this name already exists",
         });
@@ -288,7 +241,11 @@ export const updateChannel = base
   .input(updateChannelSchema)
   .output(z.object({ channel: channelOutput }))
   .handler(async ({ context, input, errors }) => {
-    assertCanManageChannels(context.member.role, errors);
+    if (!["owner", "admin"].includes(context.member.role)) {
+      throw errors.FORBIDDEN({
+        message: "Only admins and owners can manage channels",
+      });
+    }
 
     const existingChannel = await prisma.channel.findFirst({
       where: {
@@ -314,13 +271,19 @@ export const updateChannel = base
 
       return { channel };
     } catch (error: unknown) {
-      if (isPrismaError(error, "P2002")) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
         throw errors.BAD_REQUEST({
           message: "A channel with this name already exists",
         });
       }
 
-      if (isPrismaError(error, "P2025")) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
         throw errors.NOT_FOUND({ message: "Channel not found" });
       }
 
@@ -350,7 +313,11 @@ export const deleteChannel = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    assertCanManageChannels(context.member.role, errors);
+    if (!["owner", "admin"].includes(context.member.role)) {
+      throw errors.FORBIDDEN({
+        message: "Only admins and owners can manage channels",
+      });
+    }
 
     const existingChannel = await prisma.channel.findFirst({
       where: {
@@ -367,7 +334,10 @@ export const deleteChannel = base
     try {
       await prisma.channel.delete({ where: { id: existingChannel.id } });
     } catch (error: unknown) {
-      if (isPrismaError(error, "P2025")) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
         throw errors.NOT_FOUND({ message: "Channel not found" });
       }
 

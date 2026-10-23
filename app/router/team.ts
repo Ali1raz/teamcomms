@@ -1,9 +1,6 @@
 import { headers } from "next/headers";
 import z from "zod";
-import {
-  TEAM_SORT_FIELDS,
-  type TeamSortField,
-} from "@/app/(organization)/organizations/[organizationId]/constants";
+import { TEAM_SORT_FIELDS } from "@/app/(organization)/organizations/[organizationId]/constants";
 import { type Prisma } from "@/generated/prisma/client";
 import { MembershipRole } from "@/generated/prisma/enums";
 import {
@@ -11,7 +8,6 @@ import {
   DEFAULT_PER_PAGE,
   MAX_PER_PAGE,
   SORT_ORDERS,
-  type SortOrder,
 } from "@/lib/app/constants";
 import { auth, type User } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
@@ -27,18 +23,6 @@ import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
 import { requireMemberMiddleware } from "../middlewares/member";
 import { requireOrganizationMiddleware } from "../middlewares/organization";
-
-function toTeamOrderBy(
-  sortBy: TeamSortField,
-  sortOrder: SortOrder
-): Prisma.TeamOrderByWithRelationInput {
-  switch (sortBy) {
-    case "name":
-      return { name: sortOrder };
-    default:
-      return { createdAt: sortOrder };
-  }
-}
 
 export const createTeam = base
   .use(requireAuthMiddleware)
@@ -198,10 +182,11 @@ export const listTeams = base
       },
       ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
     };
-    const orderBy = toTeamOrderBy(
-      input.sortBy ?? "createdAt",
-      input.sortOrder ?? "desc"
-    );
+    const sortOrder = input.sortOrder ?? "desc";
+    const orderBy: Prisma.TeamOrderByWithRelationInput =
+      (input.sortBy ?? "createdAt") === "name"
+        ? { name: sortOrder }
+        : { createdAt: sortOrder };
     const select = {
       id: true,
       name: true,
@@ -226,63 +211,46 @@ export const listTeams = base
       },
     } as const;
 
-    const toTeams = (
-      rows: {
-        id: string;
-        name: string;
-        slug: string;
-        createdAt: Date;
-        updatedAt: Date | null;
-        _count: { teammembers: number };
-        teammembers: {
-          user: { id: string; name: string; image: string | null };
-        }[];
-      }[]
-    ) =>
-      rows.map((team) => ({
-        id: team.id,
-        name: team.name,
-        slug: team.slug,
-        createdAt: team.createdAt,
-        updatedAt: team.updatedAt,
-        totalMembers: team._count.teammembers ?? 0,
-        members: team.teammembers.map((member) => ({
-          id: member.user.id,
-          name: member.user.name,
-          image: member.user.image ?? null,
-        })),
-      }));
-
     try {
-      if (input.page === undefined && input.perPage === undefined) {
-        const rows = await prisma.team.findMany({ where, orderBy, select });
-
-        return {
-          teams: toTeams(rows),
-          total: rows.length,
-          page: DEFAULT_PAGE,
-          perPage: rows.length,
-          pageCount: 1,
-        };
-      }
-
-      const perPage = input.perPage ?? DEFAULT_PER_PAGE;
-      const total = await prisma.team.count({ where });
-      const pageCount = Math.max(Math.ceil(total / perPage), 1);
-      const page = clampPage(input.page ?? DEFAULT_PAGE, pageCount);
+      const paginate = input.page !== undefined || input.perPage !== undefined;
+      const perPage = paginate
+        ? (input.perPage ?? DEFAULT_PER_PAGE)
+        : undefined;
+      const total = paginate ? await prisma.team.count({ where }) : undefined;
+      const pageCount =
+        total !== undefined && perPage !== undefined
+          ? Math.max(Math.ceil(total / perPage), 1)
+          : 1;
+      const page =
+        perPage !== undefined
+          ? clampPage(input.page ?? DEFAULT_PAGE, pageCount)
+          : DEFAULT_PAGE;
       const rows = await prisma.team.findMany({
         where,
         orderBy,
-        skip: (page - 1) * perPage,
-        take: perPage,
         select,
+        ...(perPage !== undefined
+          ? { skip: (page - 1) * perPage, take: perPage }
+          : {}),
       });
 
       return {
-        teams: toTeams(rows),
-        total,
+        teams: rows.map((team) => ({
+          id: team.id,
+          name: team.name,
+          slug: team.slug,
+          createdAt: team.createdAt,
+          updatedAt: team.updatedAt,
+          totalMembers: team._count.teammembers ?? 0,
+          members: team.teammembers.map((teamMember) => ({
+            id: teamMember.user.id,
+            name: teamMember.user.name,
+            image: teamMember.user.image ?? null,
+          })),
+        })),
+        total: total ?? rows.length,
         page,
-        perPage,
+        perPage: perPage ?? rows.length,
         pageCount,
       };
     } catch (error: unknown) {
@@ -315,7 +283,6 @@ export const getTeam = base
     })
   )
   .handler(async ({ input, context, errors }) => {
-    console.log("[team.get]: called for", input.teamId);
     const team = await prisma.team.findUnique({
       where: { id: input.teamId },
       select: {
@@ -370,7 +337,6 @@ export const deleteTeam = base
         headers: await headers(),
       });
     } catch (error: unknown) {
-      console.log(error);
       throw errors.BAD_REQUEST({
         message: errorMessage(error, "Failed to delete team"),
       });
