@@ -1,4 +1,5 @@
 "use client";
+
 import {
   type BaseLayoutProps,
   isLinkItemActive,
@@ -8,7 +9,12 @@ import { usePathname } from "fumadocs-core/framework";
 import Link from "fumadocs-core/link";
 import { type ComponentProps, type FC, type ReactNode, useState } from "react";
 import { cn } from "../../lib/utils";
-
+import {
+  LanguageSelect,
+  type LanguageSelectProps,
+  LanguageSelectText,
+  type LanguageSelectTextProps,
+} from "./slots/language-select";
 import {
   FullSearchTrigger,
   type FullSearchTriggerProps,
@@ -84,6 +90,12 @@ export interface BaseSlots {
         full: FC<FullSearchTriggerProps>;
       }
     | false;
+  languageSelect:
+    | {
+        root: FC<LanguageSelectProps>;
+        text: FC<LanguageSelectTextProps>;
+      }
+    | false;
 }
 
 export interface BaseSlotsProps<P extends BaseLayoutProps = BaseLayoutProps>
@@ -148,7 +160,10 @@ export function baseSlots({ useProps }: { useProps: () => BaseSlotsProps }) {
           navTitle: slots.navTitle ?? InlineNavTitle,
           themeSwitch:
             themeSwitchEnabled && (slots.themeSwitch ?? InlineThemeSwitch),
-
+          languageSelect: slots.languageSelect ?? {
+            root: LanguageSelect,
+            text: LanguageSelectText,
+          },
           searchTrigger:
             searchToggleEnabled &&
             (slots.searchTrigger ?? {

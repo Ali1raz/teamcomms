@@ -1,0 +1,131 @@
+"use client";
+import { useTabsGroups, useTreePath } from "@fumadocs/base-ui/contexts/tree";
+import {
+  isLayoutTabActive,
+  type LayoutTab,
+} from "@fumadocs/base-ui/layouts/shared";
+import { usePathname } from "fumadocs-core/framework";
+import Link from "fumadocs-core/link";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { type ComponentProps, type ReactNode, useMemo, useState } from "react";
+import { cn } from "../../../lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
+import { useSidebar } from "../base";
+
+export type SidebarTabWithProps = LayoutTab;
+
+/**
+ * Renders the given tabs as a dropdown per tabs group, one for each root folder on the
+ * current page's path, letting users switch between root folders of the same type.
+ */
+export function SidebarTabsDropdown({
+  options,
+  placeholder,
+  ...props
+}: {
+  placeholder?: ReactNode;
+  options: LayoutTab[];
+} & ComponentProps<"button">) {
+  const groups = useTabsGroups(options);
+
+  return groups.map((group, i) => (
+    <Dropdown
+      key={i}
+      options={group.options}
+      placeholder={placeholder}
+      {...props}
+    />
+  ));
+}
+
+function Dropdown({
+  options,
+  placeholder,
+  ...props
+}: {
+  placeholder?: ReactNode;
+  options: LayoutTab[];
+} & ComponentProps<"button">) {
+  const [open, setOpen] = useState(false);
+  const { closeOnRedirect } = useSidebar();
+  const pathname = usePathname();
+  const path = useTreePath();
+
+  const selected = useMemo(() => {
+    return options.findLast((item) => isLayoutTabActive(item, path, pathname));
+  }, [options, path, pathname]);
+
+  const onClick = () => {
+    closeOnRedirect.current = false;
+    setOpen(false);
+  };
+
+  const item = selected ? (
+    <>
+      <div className="size-9 shrink-0 empty:hidden md:size-5">
+        {selected.icon}
+      </div>
+      <div>
+        <p className="text-sm font-medium">{selected.title}</p>
+        <p className="text-sm text-fd-muted-foreground empty:hidden md:hidden">
+          {selected.description}
+        </p>
+      </div>
+    </>
+  ) : (
+    placeholder
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      {item && (
+        <PopoverTrigger
+          {...props}
+          className={cn(
+            "flex items-center gap-2 rounded-lg p-2 border bg-fd-secondary/50 text-start text-fd-secondary-foreground transition-colors hover:bg-fd-accent data-[popup-open]:bg-fd-accent data-[popup-open]:text-fd-accent-foreground",
+            props.className
+          )}
+        >
+          {item}
+          <ChevronsUpDown className="shrink-0 ms-auto size-4 text-fd-muted-foreground" />
+        </PopoverTrigger>
+      )}
+      <PopoverContent className="flex flex-col gap-1 w-(--anchor-width) p-1 fd-scroll-container">
+        {options.map((item) => {
+          const isActive = selected && item.url === selected.url;
+          if (!isActive && item.unlisted) return;
+
+          return (
+            <Link
+              key={item.url}
+              href={item.url}
+              onClick={onClick}
+              {...item.props}
+              className={cn(
+                "flex items-center gap-2 rounded-lg p-1.5 hover:bg-fd-accent hover:text-fd-accent-foreground",
+                item.props?.className
+              )}
+            >
+              <div className="shrink-0 size-9 md:mb-auto md:size-5 empty:hidden">
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-sm font-medium leading-none">{item.title}</p>
+                <p className="text-[0.8125rem] text-fd-muted-foreground mt-1 empty:hidden">
+                  {item.description}
+                </p>
+              </div>
+
+              <Check
+                className={cn(
+                  "shrink-0 ms-auto size-3.5 text-fd-primary",
+                  !isActive && "invisible"
+                )}
+              />
+            </Link>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
+  );
+}
