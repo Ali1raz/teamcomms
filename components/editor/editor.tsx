@@ -28,6 +28,9 @@ export function Editor({
       return baseExtensions;
     }
 
+    // Swap the static base Mention extension for one wired to `mentionsQuery`
+    // so typing "@" triggers the member-suggestion dropdown instead of the
+    // no-op default configured in `baseExtensions`.
     return [
       ...baseExtensions.filter((extension) => extension.name !== "mention"),
       Mention.configure({
