@@ -16,6 +16,8 @@ export const env = createEnv({
     UPLOADTHING_TOKEN: z.string().min(1),
     UPLOADTHING_SECRET_KEY: z.string().min(1),
     OPENROUTER_API_KEY: z.string().min(1),
+    INNGEST_EVENT_KEY: z.string().optional(),
+    INNGEST_SIGNING_KEY: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),

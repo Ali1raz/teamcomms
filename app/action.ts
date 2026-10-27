@@ -1,6 +1,14 @@
-"use server";
+import "server-only";
 import { env } from "@/lib/env";
 import { transporter } from "@/lib/nodemailer";
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
 
 const styles = {
   container:
@@ -34,11 +42,12 @@ export async function SendEmail({
     subject,
     html: `
       <div style="${styles.container}">
-        <h1 style="${styles.header}">${subject}</h1>
-        <p style="${styles.paragraph}">${meta.description}</p>
+        <h1 style="${styles.header}">${escapeHtml(subject)}</h1>
+        <p style="${styles.paragraph}">${escapeHtml(meta.description)}</p>
         ${
-          meta.link &&
-          `<a href="${meta.link}" style="${styles.link}">Click here</a>`
+          meta.link
+            ? `<a href="${escapeHtml(meta.link)}" style="${styles.link}">Click here</a>`
+            : ""
         }
       </div>
     `,

@@ -2,6 +2,7 @@ import z from "zod";
 import type { Message } from "@/generated/prisma/client";
 import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
 import type { ConversationScopeType } from "@/lib/conversation";
+import { inngest } from "@/lib/inngest/client";
 import { analyzeContent, validMentionIds } from "@/lib/mentions";
 import { prisma } from "@/lib/prisma";
 import { groupReactions } from "@/lib/utils";
@@ -141,6 +142,19 @@ export const createMessage = base
       });
       return created;
     });
+
+    if (mentionedUserIds.length) {
+      try {
+        await inngest.send({
+          id: `message-users-mentioned-${message.id}`, // dedupes duplicate sends
+          name: "message/users.mentioned",
+          data: { messageId: message.id, mentionedUserIds },
+        });
+      } catch (error) {
+        // The message is already saved; a queue failure must not fail the send.
+        console.error("Failed to queue mention emails", error);
+      }
+    }
 
     return { ...message, mentionedUserIds };
   });
@@ -289,6 +303,11 @@ export const updateMessage = base
         id: true,
         userId: true,
         teamId: true,
+        mentions: {
+          select: {
+            userId: true,
+          },
+        },
       },
     });
 
@@ -306,6 +325,11 @@ export const updateMessage = base
       authorId: context.user.id,
       candidateIds: analyzed?.candidateMentionIds ?? [],
     });
+
+    const previousIds = new Set(message.mentions.map((m) => m.userId));
+    const newlyMentionedIds = mentionedUserIds.filter(
+      (id) => !previousIds.has(id)
+    );
 
     const updatedMessage = await prisma.$transaction(async (tx) => {
       const updated = await tx.message.update({
@@ -326,6 +350,21 @@ export const updateMessage = base
       });
       return updated;
     });
+
+    if (newlyMentionedIds.length) {
+      try {
+        await inngest.send({
+          id: `message-users-mentioned-${input.messageId}-${updatedMessage.updatedAt.getTime()}`,
+          name: "message/users.mentioned",
+          data: {
+            messageId: updatedMessage.id,
+            mentionedUserIds: newlyMentionedIds,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to queue mention emails", error);
+      }
+    }
 
     return {
       message: updatedMessage,

@@ -81,7 +81,9 @@ const aj = arcjet({
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth|/rpc).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api/auth|api/inngest|/rpc).*)",
+  ],
 };
 
 // Pass any existing middleware with the optional existingMiddleware prop
