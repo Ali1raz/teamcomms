@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { client } from "@/lib/orpc";
+import { client, orpc } from "@/lib/orpc";
+import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { ConversationView } from "../../_components/conversation-view";
 
 export async function generateMetadata(
@@ -20,5 +21,17 @@ export default async function TeamIdPage(
   const { params } = props;
   const { teamId } = await params;
 
-  return <ConversationView scope={{ kind: "team", teamId }} />;
+  const queryClient = getQueryClient();
+  await Promise.all([
+    queryClient.prefetchQuery(
+      orpc.user.mention.queryOptions({ input: { teamId } })
+    ),
+    queryClient.prefetchQuery(orpc.user.get.queryOptions()),
+  ]);
+
+  return (
+    <HydrateClient client={queryClient}>
+      <ConversationView scope={{ kind: "team", teamId }} />
+    </HydrateClient>
+  );
 }

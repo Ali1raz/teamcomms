@@ -2,6 +2,7 @@ import z from "zod";
 import type { Message } from "@/generated/prisma/client";
 import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
 import type { ConversationScopeType } from "@/lib/conversation";
+import { analyzeContent, validMentionIds } from "@/lib/mentions";
 import { prisma } from "@/lib/prisma";
 import { groupReactions } from "@/lib/utils";
 import {
@@ -59,14 +60,21 @@ export const createMessage = base
     tags: ["message"],
   })
   .input(createMessageSchema)
-  .output(z.custom<Message>())
+  .output(z.custom<Message & { mentionedUserIds: string[] }>())
   .handler(async ({ context, input, errors }) => {
     // Run the PII check here because the middleware layer cannot see parsed input.
+    const analyzed = analyzeContent(input.content);
+    if (!analyzed || (!analyzed.plainText && !input.imageUrl)) {
+      throw errors.BAD_REQUEST({ message: "Message content is required" });
+    }
+
     const sensitiveInfoDecision = await sensitiveInfoAj().protect(
       context.request,
       {
         userId: context.user.id,
-        sensitiveInfoValue: input.content,
+        // image-only messages have no plain text; fall back to the raw content
+        // so the PII check still runs on whatever text exists.
+        sensitiveInfoValue: analyzed.plainText ?? input.content,
       }
     );
 
@@ -109,17 +117,32 @@ export const createMessage = base
       }
     }
 
-    const message = await prisma.message.create({
-      data: {
-        content: input.content,
-        imageUrl: input.imageUrl,
-        userId: context.user.id,
-        threadId: input.threadId,
-        ...scopeWhere,
-      },
+    const mentionedUserIds = await validMentionIds({
+      teamId: input.scope.kind === "team" ? input.scope.teamId : null,
+      organizationId: context.organization.id,
+      authorId: context.user.id,
+      candidateIds: analyzed?.candidateMentionIds ?? [],
     });
 
-    return message;
+    const message = await prisma.$transaction(async (tx) => {
+      const created = await tx.message.create({
+        data: {
+          content: input.content,
+          imageUrl: input.imageUrl,
+          userId: context.user.id,
+          threadId: input.threadId,
+          ...scopeWhere,
+          mentions: {
+            createMany: {
+              data: mentionedUserIds.map((userId) => ({ userId })),
+            },
+          },
+        },
+      });
+      return created;
+    });
+
+    return { ...message, mentionedUserIds };
   });
 
 export const listMessages = base
@@ -229,11 +252,18 @@ export const updateMessage = base
   )
   .handler(async ({ context, input, errors }) => {
     // Run the PII check here because the middleware layer cannot see parsed input.
+    const analyzed = analyzeContent(input.content);
+    if (!analyzed || (!analyzed.plainText && !input.imageUrl)) {
+      throw errors.BAD_REQUEST({ message: "Message content is required" });
+    }
+
     const sensitiveInfoDecision = await sensitiveInfoAj().protect(
       context.request,
       {
         userId: context.user.id,
-        sensitiveInfoValue: input.content,
+        // image-only messages have no plain text; fall back to the raw content
+        // so the PII check still runs on whatever text exists.
+        sensitiveInfoValue: analyzed.plainText ?? input.content,
       }
     );
 
@@ -258,6 +288,7 @@ export const updateMessage = base
       select: {
         id: true,
         userId: true,
+        teamId: true,
       },
     });
 
@@ -269,15 +300,31 @@ export const updateMessage = base
       throw errors.FORBIDDEN();
     }
 
-    const updatedMessage = await prisma.message.update({
-      where: {
-        id: input.messageId,
-      },
-      data: {
-        content: input.content,
-        // Preserve attachment edits from the message editor instead of silently dropping them.
-        imageUrl: input.imageUrl,
-      },
+    const mentionedUserIds = await validMentionIds({
+      teamId: message.teamId ?? null,
+      organizationId: context.organization.id,
+      authorId: context.user.id,
+      candidateIds: analyzed?.candidateMentionIds ?? [],
+    });
+
+    const updatedMessage = await prisma.$transaction(async (tx) => {
+      const updated = await tx.message.update({
+        where: {
+          id: input.messageId,
+        },
+        data: {
+          content: input.content,
+          // Preserve attachment edits from the message editor instead of silently dropping them.
+          imageUrl: input.imageUrl,
+          mentions: {
+            deleteMany: {},
+            createMany: {
+              data: mentionedUserIds.map((userId) => ({ userId })),
+            },
+          },
+        },
+      });
+      return updated;
     });
 
     return {

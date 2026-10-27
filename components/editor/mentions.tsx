@@ -1,15 +1,15 @@
 "use client";
 
+import { type MentionNodeAttrs } from "@tiptap/extension-mention";
+import { type EditorView } from "@tiptap/pm/view";
 import { ReactRenderer } from "@tiptap/react";
 import {
+  type SuggestionKeyDownProps,
   type SuggestionOptions,
   type SuggestionProps,
-  type SuggestionKeyDownProps,
 } from "@tiptap/suggestion";
-import { type EditorView } from "@tiptap/pm/view";
-import { Component } from "react";
 import { Loader2 } from "lucide-react";
-import { type MentionNodeAttrs } from "@tiptap/extension-mention";
+import { Component } from "react";
 import { UserImage } from "@/components/general/user-avatar";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,9 @@ import { cn } from "@/lib/utils";
 function closeSuggestion(view: EditorView) {
   const suggestionPlugin = view.state.plugins.find((plugin) => {
     const state = plugin.getState(view.state) as
-      { active?: boolean; decorationId?: string | null } | null | undefined;
+      | { active?: boolean; decorationId?: string | null }
+      | null
+      | undefined;
     return !!state && "active" in state && "decorationId" in state;
   });
 

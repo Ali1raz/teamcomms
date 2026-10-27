@@ -109,6 +109,7 @@ export const messageListItemSchema = z.object({
   createdAt: z.date(),
   repliesCount: z.number(),
   reactions: z.array(GroupedReactionSchema),
+  mentionedUserIds: z.array(z.string()).optional(),
   user: z.object({
     id: z.string(),
     name: z.string(),

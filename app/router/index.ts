@@ -37,11 +37,12 @@ import {
   removeMemberFromTeam,
   updateTeam,
 } from "./team";
-import { getCurrentUser } from "./user";
+import { getCurrentUser, listMentionUsers } from "./user";
 
 export const router = {
   user: {
     get: getCurrentUser,
+    mention: listMentionUsers,
   },
   organization: {
     list: listOrganizations,

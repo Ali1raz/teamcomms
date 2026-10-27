@@ -1,19 +1,18 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
 import { Editor } from "@/components/editor/editor";
 import type { MentionUser } from "@/components/editor/mentions";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useRequiredConversationScope } from "@/hooks/use-conversation-scope";
+import { useMentionUsers } from "@/hooks/use-mention-users";
 import { conversationKey } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
 import type { InfiniteMessages } from "@/lib/types";
@@ -39,7 +38,8 @@ export function EditMessageForm({
 }: EditMessageFormProps) {
   const scope = useRequiredConversationScope();
   const { send } = useRealtimeConversation();
-  const { teamId } = useParams();
+
+  const { users } = useMentionUsers(scope);
 
   const form = useForm<UpdateMessageSchemaType>({
     resolver: zodResolver(updateMessageSchema),
@@ -54,19 +54,15 @@ export function EditMessageForm({
 
   const queryClient = useQueryClient();
 
-  const { data: membersData } = useQuery(
-    orpc.team.members.list.queryOptions({ input: { teamId } })
-  );
-
   const mentionsQuery = useCallback(
     (query: string) => {
-      const members = membersData?.members;
-      if (!members?.length) {
+      const membersList = users;
+      if (!membersList?.length) {
         return [];
       }
 
       const normalizedQuery = query.toLowerCase();
-      return members
+      return membersList
         .filter(
           (member) =>
             member.name.toLowerCase().includes(normalizedQuery) ||
@@ -82,7 +78,7 @@ export function EditMessageForm({
           })
         );
     },
-    [membersData]
+    [users]
   );
 
   // Must stay in sync with the key MessageList registers its infinite query under.
