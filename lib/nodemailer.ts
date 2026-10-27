@@ -1,5 +1,5 @@
-import { env } from "@/lib/env";
 import nodemailer from "nodemailer";
+import { env } from "@/lib/env";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",

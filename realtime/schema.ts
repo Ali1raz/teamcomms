@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RawReactionSchema } from "@/app/(organization)/organizations/schema";
 
 export const RealtimeUserSchema = z.object({
   id: z.string(),
@@ -30,10 +31,11 @@ export const RealtimeMessageSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   teamId: z.string().nullable(),
+  channelId: z.string().nullable(),
   threadId: z.string().nullable(),
   content: z.string(),
   imageUrl: z.string().nullable().optional(),
-  _count: z.object({ replies: z.number() }).optional(),
+  repliesCount: z.number().optional(),
   user: z.object({
     id: z.string(),
     name: z.string(),
@@ -44,7 +46,7 @@ export const RealtimeMessageSchema = z.object({
 
 export type RealtimeMessageSchemaType = z.infer<typeof RealtimeMessageSchema>;
 
-export const RealtimeTeamEventSchema = z.union([
+export const RealtimeConversationEventSchema = z.union([
   z.object({
     type: z.literal("message:created"),
     payload: z.object({ message: RealtimeMessageSchema }),
@@ -61,10 +63,17 @@ export const RealtimeTeamEventSchema = z.union([
     type: z.literal("message:deleted"),
     payload: z.object({ messageId: z.string() }),
   }),
+  z.object({
+    type: z.literal("reaction:updated"),
+    payload: z.object({
+      messageId: z.string(),
+      reactions: z.array(RawReactionSchema),
+    }),
+  }),
 ]);
 
-export type RealtimeTeamEventSchemaType = z.infer<
-  typeof RealtimeTeamEventSchema
+export type RealtimeConversationEventSchemaType = z.infer<
+  typeof RealtimeConversationEventSchema
 >;
 
 export const RealtimeReplySchema = z.object({

@@ -1,25 +1,20 @@
 "use client";
 
 import { useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { MessageItem } from "./message-item";
-import { orpc } from "@/lib/orpc";
+import { Ban, ChevronDownIcon, ChevronsDownIcon, Hash } from "lucide-react";
 import { useParams } from "next/navigation";
-import { Ban, ChevronDownIcon, ChevronsDownIcon } from "lucide-react";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RealtimeUserSchemaType } from "@/realtime/schema";
 import { usePresence } from "@/hooks/use-presence";
+import type { ConversationScope } from "@/lib/conversation";
+import { conversationKey, conversationRoomId } from "@/lib/conversation";
+import { orpc } from "@/lib/orpc";
+import type { RealtimeUserSchemaType } from "@/realtime/schema";
+import { MessageItem } from "./message-item";
 
-export function MessageList() {
-  const { teamId } = useParams<{ teamId: string }>();
+export function MessageList({ scope }: { scope: ConversationScope }) {
   const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -27,13 +22,15 @@ export function MessageList() {
   const [newMessages, setNewMessages] = useState<boolean>(false);
   const lastItemRef = useRef<string | undefined>(undefined);
 
+  const roomId = conversationRoomId(scope);
+
   const infiniteOptions = orpc.message.list.infiniteOptions({
     input: (pageParams: string | undefined) => ({
-      teamId,
+      scope,
       cursor: pageParams,
       limit: 30,
     }),
-    queryKey: ["message.list", teamId],
+    queryKey: conversationKey(scope),
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     select: (data) => ({
@@ -51,9 +48,10 @@ export function MessageList() {
     data,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage,
     isFetching,
     isLoading,
+    error,
+    refetch,
   } = useInfiniteQuery({
     ...infiniteOptions,
     staleTime: 30_000, // 30 seconds
@@ -64,8 +62,11 @@ export function MessageList() {
     data: { user },
   } = useSuspenseQuery(orpc.organization.list.queryOptions());
 
-  const isNearBottom = (el: HTMLDivElement) =>
-    el.scrollHeight - el.scrollTop - el.clientHeight <= 80;
+  const isNearBottom = useCallback(
+    (el: HTMLDivElement) =>
+      el.scrollHeight - el.scrollTop - el.clientHeight <= 80,
+    []
+  );
 
   const handleScroll = () => {
     const el = ref.current;
@@ -76,10 +77,6 @@ export function MessageList() {
       const prevScrollHeight = el.scrollHeight;
       const prevScrollTop = el.scrollTop;
       fetchNextPage().then(() => {
-        console.log("===\nfetched next page", {
-          hasNextPage,
-          isFetchingNextPage,
-        });
         // After loading new messages, adjust scroll to maintain position
         const newScrollHeight = el.scrollHeight;
         el.scrollTop = newScrollHeight - prevScrollHeight + prevScrollTop;
@@ -95,6 +92,15 @@ export function MessageList() {
   const messages = useMemo(() => {
     return data?.pages.flatMap((page) => page.messages) ?? [];
   }, [data]);
+
+  // A new conversation owns a fresh scroll state.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: roomId intentionally triggers a reset, it is not read in the effect.
+  useEffect(() => {
+    setHasInitialScrolled(false);
+    setIsAtBottom(false);
+    setNewMessages(false);
+    lastItemRef.current = undefined;
+  }, [roomId]);
 
   useEffect(() => {
     if (messages.length && !hasInitialScrolled) {
@@ -168,7 +174,7 @@ export function MessageList() {
       }
     }
     lastItemRef.current = lastId;
-  }, [messages]);
+  }, [messages, isNearBottom]);
 
   const scrollToBottom = () => {
     const el = ref.current;
@@ -195,26 +201,36 @@ export function MessageList() {
     [onlineusers]
   );
 
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center p-4" role="alert">
+        <EmptyState
+          icon={Ban}
+          title="Could not load messages"
+          description={error.message}
+          action={
+            <Button type="button" variant="outline" onClick={() => refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   if ((!messages || messages?.length === 0) && !isFetching) {
     return (
-      <div className="flex items-center justify-center h-full p-4">
-        <Empty className="h-full bg-muted/40">
-          <EmptyHeader>
-            <EmptyMedia
-              variant="icon"
-              className="bg-muted rounded-full size-28"
-            >
-              <Ban className="sm:size-14 size-8" />
-            </EmptyMedia>
-            <EmptyTitle className="sm:text-4xl sm:mt-6 mt-4 text-2xl">
-              No messages
-            </EmptyTitle>
-            <EmptyDescription className="sm:w-xl w-sm sm:text-lg text-xs">
-              There are no messages in this team yet. Start the conversation by
-              sending a new message!
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+      <div className="flex h-full items-center justify-center p-4">
+        <EmptyState
+          icon={scope.kind === "channel" ? Hash : Ban}
+          iconClassName="size-8 sm:size-14"
+          title="No messages"
+          description={
+            scope.kind === "channel"
+              ? "There are no messages in this channel yet. Start the conversation by sending a new message!"
+              : "There are no messages in this team yet. Start the conversation by sending a new message!"
+          }
+        />
       </div>
     );
   }
@@ -223,7 +239,10 @@ export function MessageList() {
     return (
       <div className="flex flex-col gap-6 w-full h-full">
         {[...Array(10)].map((_, i) => (
-          <div key={i} className="flex px-4 items-start gap-2 w-full">
+          <div
+            key={`skeleton-${i}`}
+            className="flex px-4 items-start gap-2 w-full"
+          >
             <Skeleton className="rounded-full size-10" />
             <div className="flex flex-col gap-2 w-full">
               <div className="flex mb-4 items-center gap-4">
@@ -243,11 +262,7 @@ export function MessageList() {
 
   return (
     <div className="relative h-full">
-      <div
-        ref={ref}
-        onScroll={handleScroll}
-        className="h-full overflow-y-auto px-2 space-y-1"
-      >
+      <div ref={ref} onScroll={handleScroll} className="h-full overflow-y-auto">
         {messages?.map((msg) => (
           <MessageItem
             key={msg.id}
@@ -263,8 +278,8 @@ export function MessageList() {
         {!isAtBottom && (
           <Button
             type="button"
-            size="sm"
-            className="size-8 rounded-full hover:shadow-xl transition-all duration-100"
+            size="icon-sm"
+            aria-label="Scroll to latest messages"
             onClick={scrollToBottom}
           >
             <ChevronDownIcon className="size-4" />
@@ -272,11 +287,7 @@ export function MessageList() {
         )}
 
         {newMessages && !isAtBottom && (
-          <Button
-            type="button"
-            onClick={scrollToBottom}
-            className="rounded-full shadow-md"
-          >
+          <Button type="button" size="sm" onClick={scrollToBottom}>
             <ChevronsDownIcon className="size-4" /> New messages
           </Button>
         )}

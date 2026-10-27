@@ -1,18 +1,40 @@
-import { auth, FullOrg, User } from "@/lib/auth";
 import { headers } from "next/headers";
 import z from "zod";
-import { base } from "../middlewares/bast";
-import { requireAuthMiddleware } from "../middlewares/auth";
-import { createOrganizationSchema } from "../(organization)/organizations/schema";
-import { createAvatarUrl, createSlug } from "@/lib/utils";
-import { errorMessage } from "@/lib/error-message";
-import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
-import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
+import {
+  MEMBER_SORT_FIELDS,
+  type MemberSortField,
+} from "@/app/(organization)/organizations/[organizationId]/constants";
+import {
+  INVITATION_SORT_FIELDS,
+  INVITATION_STATUSES,
+  type InvitationSortField,
+  toMembershipRole,
+} from "@/app/(organization)/organizations/[organizationId]/invitations/constants";
+import { type Prisma } from "@/generated/prisma/client";
 import { MembershipRole } from "@/generated/prisma/enums";
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+  SORT_ORDERS,
+  type SortOrder,
+} from "@/lib/app/constants";
+import { auth, type FullOrg, type User } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
+import { clampPage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { requireMemberMiddleware } from "../middlewares/member";
+import { createSlug, getOrganizationColor } from "@/lib/utils";
+import {
+  createOrganizationSchema,
+  updateOrganizationSchema,
+} from "../(organization)/organizations/schema";
+import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
+import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
+import { requireAuthMiddleware } from "../middlewares/auth";
+import { base } from "../middlewares/bast";
+import { requireMemberMiddleware } from "../middlewares/member";
+import { requireOrganizationMiddleware } from "../middlewares/organization";
 
 export const listOrganizations = base
   .use(requireAuthMiddleware)
@@ -31,6 +53,7 @@ export const listOrganizations = base
           id: z.string(),
           name: z.string(),
           slug: z.string(),
+          description: z.string().nullable().optional(),
           logo: z.string().nullable().optional(),
           role: z.enum([...Object.values(MembershipRole)]),
           totalMembers: z.number(),
@@ -44,7 +67,11 @@ export const listOrganizations = base
   .handler(async ({ context }) => {
     const [data, currentOrganization, memberRoles, counts] = await Promise.all([
       auth.api.listOrganizations({ headers: await headers() }),
-      auth.api.getFullOrganization({ headers: await headers() }),
+      // A session can outlive the organization it was last active in. Treat
+      // that as no active organization instead of failing the whole list.
+      auth.api
+        .getFullOrganization({ headers: await headers() })
+        .catch(() => null),
       prisma.member.findMany({
         where: { userId: context.user.id },
         select: { organizationId: true, role: true },
@@ -73,6 +100,7 @@ export const listOrganizations = base
         id: org.id,
         name: org.name,
         slug: org.slug,
+        description: org.description ?? null,
         logo: org.logo,
         role: roleMap.get(org.id) ?? "member",
         totalMembers: countMap.get(org.id)?.members ?? 0,
@@ -105,7 +133,6 @@ export const createOrganization = base
   )
   .handler(async ({ context, input, errors }) => {
     const slug = createSlug(input.name);
-    console.log("Creating organization with slug:", slug);
 
     let data;
 
@@ -114,7 +141,7 @@ export const createOrganization = base
         body: {
           name: input.name,
           slug: slug,
-          logo: createAvatarUrl(slug),
+          logo: input.logo ?? getOrganizationColor(slug),
           userId: context.user.id,
           keepCurrentActiveOrganization: false,
         },
@@ -146,10 +173,8 @@ export const updateOrganization = base
     tags: ["Organization"],
   })
   .input(
-    z.object({
+    updateOrganizationSchema.extend({
       organizationId: z.string(),
-      name: z.string().trim().min(1, "Organization name is required"),
-      logo: z.string().nullable().optional(),
     })
   )
   .output(
@@ -157,11 +182,14 @@ export const updateOrganization = base
       id: z.string(),
       name: z.string(),
       slug: z.string(),
+      description: z.string().nullable().optional(),
       logo: z.string().nullable().optional(),
     })
   )
   .handler(async ({ input, errors }) => {
     const slug = createSlug(input.name);
+    const logo =
+      input.logo?.trim() || getOrganizationColor(input.organizationId);
 
     let data;
     try {
@@ -170,7 +198,8 @@ export const updateOrganization = base
           data: {
             name: input.name,
             slug,
-            logo: input.logo ?? undefined,
+            description: input.description ?? "",
+            logo,
           },
           organizationId: input.organizationId,
         },
@@ -192,6 +221,7 @@ export const updateOrganization = base
       id: data.id,
       name: data.name,
       slug: data.slug,
+      description: data.description ?? null,
       logo: data.logo,
     };
   });
@@ -206,7 +236,17 @@ export const listOrganizationMembers = base
     summary: "List all members of a organization",
     tags: ["Organization"],
   })
-  .input(z.void())
+  .input(
+    z.object({
+      organizationId: z.string(),
+      page: z.number().int().min(1).optional(),
+      perPage: z.number().int().min(1).max(MAX_PER_PAGE).optional(),
+      search: z.string().optional(),
+      role: z.enum([...Object.values(MembershipRole)]).optional(),
+      sortBy: z.enum([...MEMBER_SORT_FIELDS]).optional(),
+      sortOrder: z.enum([...SORT_ORDERS]).optional(),
+    })
+  )
   .output(
     z.object({
       members: z.array(
@@ -218,45 +258,104 @@ export const listOrganizationMembers = base
           role: z.enum([...Object.values(MembershipRole)]),
         })
       ),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
     })
   )
-  .handler(async ({ context, errors }) => {
-    let organizationmembers;
-    try {
-      organizationmembers = await prisma.member.findMany({
-        where: {
-          organizationId: context.organization.id,
-        },
-        select: {
-          role: true,
-
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-            },
-          },
-        },
+  .handler(async ({ context, input, errors }) => {
+    if (input.organizationId !== context.organization.id) {
+      throw errors.BAD_REQUEST({
+        message: "You recently switched organization",
       });
+    }
+
+    const search = input.search?.trim();
+    const where: Prisma.MemberWhereInput = {
+      organizationId: input.organizationId,
+      ...(input.role ? { role: input.role } : {}),
+      ...(search
+        ? {
+            OR: [
+              { user: { name: { contains: search, mode: "insensitive" } } },
+              { user: { email: { contains: search, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    };
+    const orderBy = toMemberOrderBy(
+      input.sortBy ?? "name",
+      input.sortOrder ?? "asc"
+    );
+    const select = {
+      role: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    } as const;
+
+    const toMembers = (
+      rows: {
+        role: MembershipRole | null;
+        user: {
+          id: string;
+          name: string;
+          email: string;
+          image: string | null;
+        };
+      }[]
+    ) =>
+      rows.map((member) => ({
+        id: member.user.id,
+        name: member.user.name,
+        email: member.user.email,
+        image: member.user.image ?? null,
+        role: member.role ?? "member",
+      }));
+
+    try {
+      if (input.page === undefined && input.perPage === undefined) {
+        const rows = await prisma.member.findMany({ where, orderBy, select });
+
+        return {
+          members: toMembers(rows),
+          total: rows.length,
+          page: DEFAULT_PAGE,
+          perPage: rows.length,
+          pageCount: 1,
+        };
+      }
+
+      const perPage = input.perPage ?? DEFAULT_PER_PAGE;
+      const total = await prisma.member.count({ where });
+      const pageCount = Math.max(Math.ceil(total / perPage), 1);
+      const page = clampPage(input.page ?? DEFAULT_PAGE, pageCount);
+      const rows = await prisma.member.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * perPage,
+        take: perPage,
+        select,
+      });
+
+      return {
+        members: toMembers(rows),
+        total,
+        page,
+        perPage,
+        pageCount,
+      };
     } catch (error: unknown) {
       throw errors.BAD_REQUEST({
         message: errorMessage(error, "Failed to list organization members"),
       });
     }
-
-    const members = organizationmembers.map((member) => ({
-      id: member.user.id,
-      name: member.user.name,
-      email: member.user.email,
-      image: member.user.image ?? null,
-      role: member.role ?? "member",
-    }));
-
-    return {
-      members,
-    };
   });
 
 export const updateOrganizationMemberRole = base
@@ -318,6 +417,38 @@ export const updateOrganizationMemberRole = base
     }
   });
 
+function toMemberOrderBy(
+  sortBy: MemberSortField,
+  sortOrder: SortOrder
+): Prisma.MemberOrderByWithRelationInput {
+  switch (sortBy) {
+    case "email":
+      return { user: { email: sortOrder } };
+    case "role":
+      return { role: sortOrder };
+    default:
+      return { user: { name: sortOrder } };
+  }
+}
+
+function toInvitationOrderBy(
+  sortBy: InvitationSortField,
+  sortOrder: SortOrder
+): Prisma.InvitationOrderByWithRelationInput {
+  switch (sortBy) {
+    case "email":
+      return { email: sortOrder };
+    case "role":
+      return { role: sortOrder };
+    case "status":
+      return { status: sortOrder };
+    case "expiresAt":
+      return { expiresAt: sortOrder };
+    default:
+      return { createdAt: sortOrder };
+  }
+}
+
 export const listOrganizationInvitations = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
@@ -331,6 +462,18 @@ export const listOrganizationInvitations = base
   .input(
     z.object({
       organizationId: z.string(),
+      page: z.number().int().min(1).default(DEFAULT_PAGE),
+      perPage: z
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_PER_PAGE)
+        .default(DEFAULT_PER_PAGE),
+      search: z.string().optional(),
+      status: z.enum([...INVITATION_STATUSES]).optional(),
+      role: z.enum([...Object.values(MembershipRole)]).optional(),
+      sortBy: z.enum([...INVITATION_SORT_FIELDS]).default("createdAt"),
+      sortOrder: z.enum([...SORT_ORDERS]).default("desc"),
     })
   )
   .output(
@@ -340,7 +483,7 @@ export const listOrganizationInvitations = base
           id: z.string(),
           organizationId: z.string(),
           email: z.string(),
-          role: z.enum(MembershipRole),
+          role: z.enum(MembershipRole).nullish(),
           status: z.string(),
           expiresAt: z.coerce.date(),
           createdAt: z.coerce.date(),
@@ -367,6 +510,10 @@ export const listOrganizationInvitations = base
             .nullable(),
         })
       ),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
     })
   )
   .handler(async ({ context, input, errors }) => {
@@ -376,62 +523,88 @@ export const listOrganizationInvitations = base
       });
     }
 
-    let data;
+    const search = input.search?.trim();
 
-    try {
-      data = await auth.api.listInvitations({
-        query: {
-          organizationId: context.organization.id,
-        },
-        headers: await headers(),
-      });
-    } catch (error: unknown) {
-      throw errors.INTERNAL_SERVER_ERROR({
-        message: errorMessage(error, "Failed to list invitations"),
-      });
-    }
+    const where: Prisma.InvitationWhereInput = {
+      organizationId: context.organization.id,
+      ...(input.status ? { status: input.status } : {}),
+      ...(input.role ? { role: input.role } : {}),
+      ...(search
+        ? {
+            OR: [
+              { email: { contains: search, mode: "insensitive" } },
+              { user: { name: { contains: search, mode: "insensitive" } } },
+              { user: { email: { contains: search, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    };
 
-    const inviterIds = [...new Set(data.map((inv) => inv.inviterId))];
-    const teamIds = data.map((inv) => inv.teamId).filter(Boolean) as string[];
-    const emails = data.map((inv) => inv.email);
+    const page = await (async () => {
+      try {
+        const total = await prisma.invitation.count({ where });
+        const pageCount = Math.max(Math.ceil(total / input.perPage), 1);
+        const safePage = clampPage(input.page, pageCount);
 
-    const [inviters, teams, invitedUsers] = await Promise.all([
-      prisma.user.findMany({
-        where: { id: { in: inviterIds } },
-        select: { id: true, name: true, email: true, image: true },
-      }),
-      prisma.team.findMany({
-        where: { id: { in: teamIds } },
-        select: { id: true, name: true, slug: true },
-      }),
-      prisma.user.findMany({
-        where: { email: { in: emails } },
-        select: { id: true, name: true, email: true, image: true },
-      }),
-    ]);
+        const rows = await prisma.invitation.findMany({
+          where,
+          orderBy: toInvitationOrderBy(input.sortBy, input.sortOrder),
+          skip: (safePage - 1) * input.perPage,
+          take: input.perPage,
+          select: {
+            id: true,
+            organizationId: true,
+            email: true,
+            role: true,
+            status: true,
+            expiresAt: true,
+            createdAt: true,
+            user: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+            team: { select: { id: true, name: true, slug: true } },
+          },
+        });
 
-    const inviterMap = new Map(inviters.map((u) => [u.id, u]));
-    const teamMap = new Map(teams.map((t) => [t.id, t]));
-    const invitedUserMap = new Map(invitedUsers.map((u) => [u.email, u]));
+        const emails = rows.map((row) => row.email);
+        const invitedUsers = await prisma.user.findMany({
+          where: { email: { in: emails } },
+          select: { id: true, name: true, email: true, image: true },
+        });
+        const invitedUserMap = new Map(
+          invitedUsers.map((user) => [user.email, user])
+        );
 
-    const sorted = [...data].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+        return {
+          total,
+          pageCount,
+          page: safePage,
+          rows: rows.map((invitation) => ({
+            id: invitation.id,
+            organizationId: invitation.organizationId,
+            email: invitation.email,
+            role: toMembershipRole(invitation.role),
+            status: invitation.status,
+            expiresAt: invitation.expiresAt,
+            createdAt: invitation.createdAt,
+            inviter: invitation.user,
+            invitedUser: invitedUserMap.get(invitation.email) ?? null,
+            team: invitation.team,
+          })),
+        };
+      } catch (error: unknown) {
+        throw errors.INTERNAL_SERVER_ERROR({
+          message: errorMessage(error, "Failed to list invitations"),
+        });
+      }
+    })();
 
     return {
-      invitations: sorted.map((inv) => ({
-        id: inv.id,
-        organizationId: inv.organizationId,
-        email: inv.email,
-        role: inv.role,
-        status: inv.status,
-        expiresAt: inv.expiresAt,
-        createdAt: inv.createdAt,
-        inviter: inviterMap.get(inv.inviterId)!,
-        invitedUser: invitedUserMap.get(inv.email) ?? null,
-        team: inv.teamId ? (teamMap.get(inv.teamId) ?? null) : null,
-      })),
+      invitations: page.rows,
+      total: page.total,
+      page: page.page,
+      perPage: input.perPage,
+      pageCount: page.pageCount,
     };
   });
 

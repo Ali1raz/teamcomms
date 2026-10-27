@@ -1,5 +1,6 @@
 "use client";
 
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,8 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CancelInvitationDialog } from "@/app/(organization)/organizations/[organizationId]/invitations/_components/cancel-invitation-dialog";
-import { MoreHorizontal } from "lucide-react";
+import { CancelInvitationDialog } from "./cancel-invitation-dialog";
 
 export function InvitationTableActionsDropdown({
   invitationId,

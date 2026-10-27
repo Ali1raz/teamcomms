@@ -1,8 +1,6 @@
 "use client";
 
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { Button } from "@/components/ui/button";
 import {
   ArrowUpRight,
   Ban,
@@ -11,18 +9,16 @@ import {
   MoreHorizontal,
   RefreshCcw,
 } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { DeleteOrganizationDialog } from "@/components/delete-organization-dialog";
+import { EmptyState } from "@/components/general/empty-state";
+import { MemberRoleBadge } from "@/components/general/member-role-badge";
+import { OrganizationAvatar } from "@/components/general/organization-avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -32,9 +28,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import Image from "next/image";
-import { cn, getOrganizationColor } from "@/lib/utils";
-import { MemberRoleBadge } from "@/components/general/member-role-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,10 +37,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DeleteOrganizationDialog } from "@/components/delete-organization-dialog";
-import { UpdateOrganizationDialog } from "./update-organization-dialog";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/lib/orpc";
+import { cn } from "@/lib/utils";
 
 export function OrganizationList() {
   const [isPending, startTransition] = useTransition();
@@ -90,7 +83,7 @@ export function OrganizationList() {
   }
 
   return (
-    <div className="flex w-full mx-auto mt-10 max-w-4xl flex-col gap-4">
+    <div className="flex w-full mx-auto mt-10 flex-col gap-4">
       <Button
         onClick={() => refetch()}
         disabled={isFetching || isPending}
@@ -104,24 +97,14 @@ export function OrganizationList() {
         {isFetching ? "Refreshing..." : "Refresh"}
       </Button>
       {(!organizations || organizations?.length === 0) && !isFetching && (
-        <div className="flex items-center justify-center h-full">
-          <Empty className="h-full bg-muted/40 py-24">
-            <EmptyHeader>
-              <EmptyMedia
-                variant="icon"
-                className="bg-muted rounded-full size-28"
-              >
-                <Ban className="sm:size-14 size-8" />
-              </EmptyMedia>
-              <EmptyTitle className="sm:text-4xl sm:mt-6 mt-4 text-2xl">
-                No organizations found.
-              </EmptyTitle>
-              <EmptyDescription className="sm:w-xl w-sm sm:text-lg text-xs">
-                There are no organizations. Start by creating a new organization
-                and inviting friends to start chatting.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+        <div className="flex h-full items-center justify-center">
+          <EmptyState
+            className="py-24"
+            icon={Ban}
+            iconClassName="size-8 sm:size-14"
+            title="No organizations found."
+            description="There are no organizations. Start by creating a new organization and inviting friends to start chatting."
+          />
         </div>
       )}
 
@@ -143,25 +126,10 @@ export function OrganizationList() {
               )}
             >
               <CardHeader className="flex gap-2 items-start">
-                {ws.logo ? (
-                  <div className="size-8 relative overflow-hidden rounded-full">
-                    <Image
-                      alt={ws.name}
-                      src={ws.logo}
-                      width={20}
-                      height={20}
-                      unoptimized
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className={cn(
-                      "size-8 rounded-full transition-all duration-100",
-                      getOrganizationColor(ws.id)
-                    )}
-                  />
-                )}
+                <OrganizationAvatar
+                  organization={ws}
+                  className="size-6 rounded-md"
+                />
                 <div className="space-y-1">
                   <CardTitle>
                     <h1 className="line-clamp-1 truncate">
@@ -213,17 +181,13 @@ export function OrganizationList() {
                         )}
                         {ws.role !== "member" && (
                           <>
-                            <UpdateOrganizationDialog
-                              organizationId={ws.id}
-                              currentName={ws.name}
-                              currentLogo={ws.logo}
-                            >
-                              <DropdownMenuItem
-                                onSelect={(e) => e.preventDefault()}
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/organizations/${ws.id}?tab=settings`}
                               >
-                                Update Organization
-                              </DropdownMenuItem>
-                            </UpdateOrganizationDialog>
+                                Organization Settings
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DeleteOrganizationDialog organizationId={ws.id}>
                               <DropdownMenuItem

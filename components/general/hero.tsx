@@ -1,12 +1,13 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
-import Image from "next/image";
 import { motion } from "motion/react";
+import { type Route } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
 import DashboardImage from "@/public/image.png";
 import DashboardImageLight from "@/public/image-light.png";
-import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
 import { Skeleton } from "../ui/skeleton";
 
 const Hero = () => {
@@ -30,27 +31,38 @@ const Hero = () => {
             to keep teams in sync.
           </p>
 
-          {isPending ? (
-            <Skeleton className="w-24 h-10 bg-muted rounded-sm" />
-          ) : data ? (
+          <div className="flex gap-2">
+            {isPending ? (
+              <Skeleton className="w-24 h-10 bg-muted" />
+            ) : data ? (
+              <Link
+                className={buttonVariants({
+                  className: "w-fit",
+                })}
+                href="/organizations"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                className={buttonVariants({
+                  className: "w-fit",
+                })}
+                href="/login"
+              >
+                Get Started
+              </Link>
+            )}
             <Link
               className={buttonVariants({
-                className: "rounded-sm w-fit",
+                className: "w-fit",
+                variant: "outline",
               })}
-              href="/organizations"
+              href={"/docs" as Route}
             >
-              Dashboard
+              Read Docs
             </Link>
-          ) : (
-            <Link
-              className={buttonVariants({
-                className: "rounded-sm w-fit",
-              })}
-              href="/login"
-            >
-              Get Started
-            </Link>
-          )}
+          </div>
         </section>
       </section>
       <div className="relative my-18 pointer-events-none">
@@ -59,7 +71,7 @@ const Hero = () => {
           alt="Hero"
           width={1200}
           height={800}
-          className="w-auto h-auto max-w-7xl aspect-video object-fill object-top-left rounded-x dark:flex hidden"
+          className="h-75 w-full object-cover object-top-left md:h-auto md:max-w-7xl md:mx-auto rounded-x md:object-contain dark:flex hidden"
           priority
           // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
         />
@@ -68,7 +80,7 @@ const Hero = () => {
           alt="Hero"
           width={1200}
           height={800}
-          className="w-auto h-auto max-w-7xl aspect-video object-fill object-top-left rounded-x flex dark:hidden"
+          className="h-75 w-full object-cover object-top-left md:h-auto md:max-w-7xl md:mx-auto rounded-x md:object-contain flex dark:hidden"
           priority
           // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
         />

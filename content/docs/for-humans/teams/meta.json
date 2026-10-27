@@ -1,0 +1,10 @@
+{
+  "title": "Teams",
+  "defaultOpen": true,
+  "pages": [
+    "creating-teams",
+    "managing-team-members",
+    "renaming-a-team",
+    "deleting-a-team"
+  ]
+}

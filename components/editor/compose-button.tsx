@@ -1,10 +1,11 @@
 "use client";
 
-import { client } from "@/lib/orpc";
 import { useChat } from "@ai-sdk/react";
 import { eventIteratorToStream } from "@orpc/server";
 import { SparklesIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { client } from "@/lib/orpc";
+import { MessageResponse } from "../ai-elements/message";
 import { Button } from "../ui/button";
 import {
   Popover,
@@ -15,7 +16,6 @@ import {
   PopoverTrigger,
 } from "../ui/popover";
 import { Separator } from "../ui/separator";
-import { MessageResponse } from "../ai-elements/message";
 import { Skeleton } from "../ui/skeleton";
 
 interface ComposeButtonProps {

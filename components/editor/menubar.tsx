@@ -1,8 +1,7 @@
-import { Editor } from "@tiptap/react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { Toggle } from "../ui/toggle";
+import { type Editor, useEditorState } from "@tiptap/react";
 import {
   Bold,
+  ChevronsUpDown,
   Code,
   Italic,
   List,
@@ -12,11 +11,15 @@ import {
   Strikethrough,
   Undo2,
 } from "lucide-react";
-import { useEditorState } from "@tiptap/react";
-import { Separator } from "../ui/separator";
-import { Button } from "../ui/button";
-import { ComposeButton } from "./compose-button";
+import { useState } from "react";
 import { markdownToJson } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Separator } from "../ui/separator";
+import { Toggle } from "../ui/toggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { ComposeButton } from "./compose-button";
 
 interface iAppProps {
   editor: Editor | null;
@@ -36,6 +39,7 @@ export function Menubar({ editor }: iAppProps) {
         CodeBlockLowlight: editor.isActive("codeBlock"),
         // Track blockquote active state for the toggle button
         isBlockquote: editor.isActive("blockquote"),
+        isDetails: editor.isActive("details"),
         bulletList: editor.isActive("bulletList"),
         orderedList: editor.isActive("orderedList"),
         canUndo: editor.can().chain().focus().undo().run(),
@@ -52,6 +56,41 @@ export function Menubar({ editor }: iAppProps) {
     } catch {
       console.log("something went wrong");
     }
+  }
+
+  const [detailsPopoverOpen, setDetailsPopoverOpen] = useState(false);
+  const [detailsTitle, setDetailsTitle] = useState("");
+
+  function handleDetailsClick() {
+    if (!editor || editor.isActive("details")) {
+      editor?.chain().focus().unsetDetails().run();
+      return;
+    }
+    setDetailsPopoverOpen(true);
+  }
+
+  function insertDetails() {
+    if (!editor) return;
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "details",
+        attrs: { open: true },
+        content: [
+          {
+            type: "detailsSummary",
+            content: detailsTitle ? [{ type: "text", text: detailsTitle }] : [],
+          },
+          {
+            type: "detailsContent",
+            content: [{ type: "paragraph" }],
+          },
+        ],
+      })
+      .run();
+    setDetailsTitle("");
+    setDetailsPopoverOpen(false);
   }
 
   return (
@@ -140,6 +179,42 @@ export function Menubar({ editor }: iAppProps) {
             <p>Blockquote</p>
           </TooltipContent>
         </Tooltip>
+
+        <Popover
+          open={detailsPopoverOpen}
+          onOpenChange={(open) => {
+            setDetailsPopoverOpen(open);
+            if (!open) setDetailsTitle("");
+          }}
+        >
+          <PopoverTrigger asChild>
+            <Toggle
+              size="sm"
+              pressed={editorState?.isDetails ?? false}
+              onPressedChange={handleDetailsClick}
+              aria-label="Details block"
+            >
+              <ChevronsUpDown />
+            </Toggle>
+          </PopoverTrigger>
+          <PopoverContent className="w-64" align="start">
+            <Input
+              autoFocus
+              placeholder="Summary title"
+              value={detailsTitle}
+              onChange={(e) => setDetailsTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  insertDetails();
+                }
+              }}
+            />
+            <Button size="sm" className="w-full" onClick={insertDetails}>
+              Insert
+            </Button>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <Separator

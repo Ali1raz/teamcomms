@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronsUpDown } from "lucide-react";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { ChevronsUpDown, PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { CreateOrganizationDialog } from "@/app/(organization)/organizations/_components/create-organization-dialog";
+import { OrganizationAvatar } from "@/components/general/organization-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,17 +21,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { CreateOrganizationDialog } from "@/app/(organization)/organizations/_components/create-organization-dialog";
-import { Button } from "./ui/button";
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import Image from "next/image";
-import { cn, createAvatarUrl } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { orpc } from "@/lib/orpc";
+import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
-import { useState } from "react";
+import { Button } from "./ui/button";
 
 export function OrganizationSwitcher() {
   const queryClient = useQueryClient();
@@ -73,23 +73,14 @@ export function OrganizationSwitcher() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="w-full px-4 py-5 mt-2">
-              <div className="flex aspect-square size-5 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                <Image
-                  alt="logo"
-                  src={
-                    activeOrganization.logo ??
-                    createAvatarUrl(activeOrganization.name)
-                  }
-                  width={20}
-                  height={20}
-                  unoptimized
-                  className="w-full h-full object-cover rounded"
-                />
-              </div>
-              <span className="truncate font-medium line-clamp-1">
+              <OrganizationAvatar
+                organization={activeOrganization}
+                className="size-5 rounded-md"
+              />
+              <span className="min-w-0 flex-1 truncate font-medium">
                 {activeOrganization.name}
               </span>
-              <ChevronsUpDown className="ml-auto" />
+              <ChevronsUpDown className="shrink-0" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
@@ -112,21 +103,15 @@ export function OrganizationSwitcher() {
                   org.id === activeId && "bg-accent"
                 )}
               >
-                <div className="flex items-center gap-2">
-                  <div className="flex size-6 items-center justify-center rounded-xs border">
-                    <Image
-                      alt="logo"
-                      src={org.logo || createAvatarUrl(org.name)}
-                      width={20}
-                      height={20}
-                      unoptimized
-                      className="w-full h-full object-cover rounded"
-                    />
-                  </div>
-                  {org.name}
+                <div className="flex items-center gap-2 min-w-0">
+                  <OrganizationAvatar
+                    organization={org}
+                    className="size-5 rounded-md"
+                  />
+                  <span className="truncate">{org.name}</span>
                 </div>
                 {org.id === activeId && (
-                  <Badge className="bg-primary text-primary-foreground group-hover:text-primary-foreground!">
+                  <Badge className="shrink-0 bg-primary text-primary-foreground group-hover:text-primary-foreground!">
                     Active
                   </Badge>
                 )}
@@ -136,8 +121,12 @@ export function OrganizationSwitcher() {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="my-4" asChild>
               <CreateOrganizationDialog>
-                <Button onClick={(e) => e.stopPropagation()} className="w-full">
-                  Create Organization
+                <Button
+                  variant="ghost"
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full"
+                >
+                  <PlusIcon className="size-4" /> Create Organization
                 </Button>
               </CreateOrganizationDialog>
             </DropdownMenuItem>

@@ -1,0 +1,94 @@
+---
+title: Tech Stack
+description: Detailed look at every tool in TeamComms and why it was chosen
+---
+
+# Tech Stack
+
+This page documents the full stack behind TeamComms: what each tool does, why it was chosen, and how it compares to common alternatives.
+
+## Framework: Next.js 16
+
+**Why:** Next.js gave us a single codebase for both the React UI and the backend route handlers, so oRPC endpoints, auth callbacks, and upload webhooks all live beside the components that use them. App Router's server components and streaming keep the initial payload small while still supporting the realtime-heavy client.
+
+**Alternatives:** Remix/React Router offers great data loading but pushes you toward separate hosting conventions; Vite + React SPA is lighter but needs a hand-rolled server and BFF layer. Next.js was the fastest path with the richest ecosystem for everything else in this list.
+
+## Auth: Better Auth
+
+**Why:** Better Auth is a TypeScript-first auth library that plugs straight into Prisma with no external service, supporting email/password, sessions, and plugins. It runs entirely in our own database, which keeps user data in-house and avoids per-MAU pricing.
+
+> Thanks to the [Better Auth organization plugin](https://www.better-auth.com/docs/plugins/organization) for authentication, organizations, teams and invitations management.
+
+**Alternatives:** NextAuth/Auth.js is the incumbent but is more configuration-heavy and less plugin-friendly; Clerk and Auth0 are turnkey but add a vendor dependency and recurring cost. Better Auth balances control, cost, and developer experience.
+
+## API Layer: oRPC
+
+**Why:** oRPC provides end-to-end type safety between client and server without code generation, and integrates directly with TanStack Query for caching and optimistic updates. Procedures are plain TypeScript functions, so the API surface stays small and refactors are compiler-checked.
+
+**Alternatives:** tRPC is the closest equivalent and more mature, but oRPC offers first-class OpenAPI support, standard schema validation, and stronger contract-first patterns. GraphQL would add a schema/round-trip layer we don't need for a single TypeScript codebase.
+
+## Realtime: PartySocket / PartyServer
+
+**Why:** PartySocket is a thin, reconnecting WebSocket client backed by Cloudflare Durable Objects (via PartyServer), which gives each room a stateful, single-writer server with built-in hibernation. That fits chat rooms and presence perfectly without running our own socket infrastructure.
+
+**Alternatives:** Raw WebSockets require manual reconnection, rooms, and scaling; Pusher/Ably are hosted but add cost and vendor lock-in; Socket.IO has a heavier protocol and no edge-native durable state. PartyKit's Durable Object model keeps state close to the user at the edge.
+
+## Database: PostgreSQL with Prisma
+
+**Why:** Postgres is the safe, relational default for users, rooms, messages, and permissions, and Prisma gives us a typed client plus a declarative schema and migrations. The `@prisma/adapter-pg` driver adapter lets Prisma run over a standard `pg` pool, which keeps it portable across managed providers.
+
+**Alternatives:** Drizzle is lighter and SQL-first but has a less mature migration/Studio story; raw SQL is fastest at runtime but costs safety. Mongo would drop relational integrity we rely on for messaging and access control.
+
+## Driver: node-postgres (pg)
+
+**Why:** `pg` is the standard PostgreSQL driver for Node.js and backs Prisma through the `@prisma/adapter-pg` driver adapter. Using a plain connection pool keeps us portable across any Postgres host and lets us tune pooling independently of the ORM.
+
+**Alternatives:** `postgres.js` is a leaner, template-literal driver with great ergonomics but less Prisma adapter maturity; a serverless driver like Neon's avoids TCP cold starts but ties us to one provider. `pg` is the boring, universal choice that Prisma officially supports.
+
+## AI: Vercel AI SDK
+
+**Why:** The AI SDK gives us a unified streaming interface (`ai` + `@ai-sdk/react`) with `useChat`, tool calling, and provider abstraction. We route through OpenRouter so model choice is a config change, and Streamdown renders the streamed markdown safely.
+
+**Alternatives:** The OpenAI SDK locks you to one provider; LangChain is far heavier and oriented to complex chains we don't need. The AI SDK stays lean, streaming-native, and provider-agnostic.
+
+## UI: shadcn/ui, Base UI, Radix UI
+
+**Why:** shadcn/ui copies accessible, unstyled primitives into our repo so we own and can fully customize them. Base UI and Radix supply the underlying behavior and accessibility, and Tailwind CSS handles styling with a consistent design token system.
+
+**Alternatives:** MUI/Ant Design ship a fixed look and heavier runtime; Chakra is component-library-first rather than copy-in. shadcn/ui keeps the styling ours while inheriting battle-tested a11y behavior.
+
+## Editor: Tiptap
+
+**Why:** Tiptap is a headless ProseMirror editor with a rich extension ecosystem, so we can build collaborative rich-text messaging and compose exactly the toolbar we want. Its static renderer lets us render stored documents on the server without shipping the editor.
+
+**Alternatives:** Slate is flexible but requires more low-level work and has a smaller extension set; Lexical is fast but younger with fewer community extensions; Quill is opinionated and harder to extend. Tiptap hits the best balance of control and maturity.
+
+## Docs: Fumadocs
+
+**Why:** Fumadocs is a Next.js-native documentation framework built on the App Router, offering MDX content, navigation, search, and theming with almost no configuration. It shares the same React/Next stack, so this site lives inside the main app.
+
+**Alternatives:** Docusaurus is React-based but a separate build and app; Nextra is simpler but less flexible for custom layouts; Mintlify is hosted and paid. Fumadocs stays fully in-app and fully ours.
+
+## Files: UploadThing
+
+**Why:** UploadThing provides typed file uploads with a simple React hook and server router, handling storage, validation, and direct-to-storage transfers. We get image/document uploads in minutes without writing presigned-URL plumbing.
+
+**Alternatives:** S3 + presigned URLs is maximally flexible but requires custom validation and UI; Cloudinary excels at image transforms but is heavier for generic files. UploadThing optimizes for speed of integration.
+
+## Security: Arcjet
+
+**Why:** Arcjet adds rate limiting, bot detection, and prompt-injection protection as a drop-in middleware for Next.js routes. It protects our AI endpoints and auth flows with a few lines of config rather than custom rules.
+
+**Alternatives:** Cloudflare WAF/Turnstile covers the edge but needs separate wiring; hand-rolled rate limiting is fragile and per-instance. Arcjet brings security decisions into application code where they're context-aware.
+
+## Deployment: Vercel
+
+**Why:** Vercel is built by the Next.js team, so previews, edge/serverless functions, analytics, and environment handling work with zero configuration. It gives us instant preview deployments per PR and simple production rollouts.
+
+**Alternatives:** Self-hosting on a VPS or Docker gives full control but shifts ops onto us; Netlify and Cloudflare Pages are close but have varying Next.js feature parity. Vercel minimizes operational overhead for a Next.js app.
+
+## Tooling: Biome, TypeScript
+
+**Why:** Biome replaces ESLint and Prettier with one fast Rust-based tool for linting and formatting, wired through Husky and lint-staged on commit. TypeScript provides the end-to-end type safety that makes oRPC and Prisma so effective.
+
+**Alternatives:** ESLint + Prettier is the established combo but slower and multi-config; dprint is fast but formatting-only. Biome unifies the toolchain with near-instant feedback.

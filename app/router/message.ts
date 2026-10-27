@@ -1,17 +1,51 @@
 import z from "zod";
+import type { Message } from "@/generated/prisma/client";
+import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
+import type { ConversationScopeType } from "@/lib/conversation";
+import { prisma } from "@/lib/prisma";
+import { groupReactions } from "@/lib/utils";
+import {
+  createMessageSchema,
+  listMessagesSchema,
+  messageListItemSchema,
+  RawReactionSchema,
+  toggleReactionSchema,
+  updateMessageSchema,
+} from "../(organization)/organizations/schema";
+import { readsecurityMiddleware } from "../middlewares/arcjet/read";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
 import { requireOrganizationMiddleware } from "../middlewares/organization";
-import { prisma } from "@/lib/prisma";
-import {
-  createMessageSchema,
-  updateMessageSchema,
-} from "../(organization)/organizations/schema";
-import { Message } from "@/generated/prisma/client";
-import { readsecurityMiddleware } from "../middlewares/arcjet/read";
-import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
+
+async function findConversationInOrganization(
+  scope: ConversationScopeType,
+  organizationId: string
+) {
+  if (scope.kind === "team") {
+    return prisma.team.findFirst({
+      where: { id: scope.teamId, organizationId },
+      select: { id: true },
+    });
+  }
+  return prisma.channel.findFirst({
+    where: { id: scope.channelId, organizationId },
+    select: { id: true },
+  });
+}
+
+function messageScopeWhere(scope: ConversationScopeType) {
+  return scope.kind === "team"
+    ? { teamId: scope.teamId }
+    : { channelId: scope.channelId };
+}
+
+function organizationScopeWhere(organizationId: string) {
+  return {
+    OR: [{ team: { organizationId } }, { channel: { organizationId } }],
+  };
+}
 
 export const createMessage = base
   .use(requireAuthMiddleware)
@@ -49,66 +83,43 @@ export const createMessage = base
       });
     }
 
+    const conversation = await findConversationInOrganization(
+      input.scope,
+      context.organization.id
+    );
+
+    if (!conversation) {
+      throw errors.NOT_FOUND({ message: "Conversation not found" });
+    }
+
+    const scopeWhere = messageScopeWhere(input.scope);
+
     if (input.threadId) {
-      const prentMessage = await prisma.message.findFirst({
+      const parentMessage = await prisma.message.findFirst({
         where: {
           id: input.threadId,
-          team: {
-            organization: {
-              id: context.organization.id,
-            },
-          },
+          threadId: null,
+          ...scopeWhere,
         },
+        select: { id: true },
       });
 
-      if (
-        !prentMessage ||
-        prentMessage.teamId !== input.teamId ||
-        prentMessage.threadId !== null
-      ) {
-        throw errors.BAD_REQUEST();
+      if (!parentMessage) {
+        throw errors.BAD_REQUEST({ message: "Parent message not found" });
       }
     }
-
-    const team = await prisma.team.findFirst({
-      where: {
-        id: input.teamId,
-        organizationId: context.organization.id,
-      },
-      select: {
-        id: true,
-        organizationId: true,
-      },
-    });
-
-    if (!team) {
-      throw errors.FORBIDDEN();
-    }
-
-    if (team.organizationId !== context.organization.id) {
-      throw errors.FORBIDDEN();
-    }
-
-    console.log(
-      "Creating message in team:",
-      team.id,
-      "by user:",
-      context.user.name
-    );
 
     const message = await prisma.message.create({
       data: {
         content: input.content,
         imageUrl: input.imageUrl,
-        teamId: input.teamId,
         userId: context.user.id,
         threadId: input.threadId,
+        ...scopeWhere,
       },
     });
 
-    return {
-      ...message,
-    };
+    return message;
   });
 
 export const listMessages = base
@@ -122,58 +133,29 @@ export const listMessages = base
     summary: "List messages",
     tags: ["message"],
   })
-  .input(
-    z.object({
-      teamId: z.string(),
-      limit: z.number().min(1).max(100).default(30).optional(),
-      cursor: z.string().optional(),
-    })
-  )
+  .input(listMessagesSchema)
   .output(
     z.object({
-      messages: z.array(
-        z.object({
-          id: z.string(),
-          content: z.string(),
-          imageUrl: z.string().nullable().optional(),
-          createdAt: z.date(),
-          _count: z.object({
-            replies: z.number(),
-          }),
-          user: z.object({
-            id: z.string(),
-            name: z.string(),
-            email: z.string(),
-            image: z.string().nullable(),
-          }),
-        })
-      ),
+      messages: z.array(messageListItemSchema),
       nextCursor: z.string().nullable(),
     })
   )
   .handler(async ({ context, errors, input }) => {
-    const team = await prisma.team.findFirst({
-      where: {
-        id: input.teamId,
-        organizationId: context.organization.id,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const conversation = await findConversationInOrganization(
+      input.scope,
+      context.organization.id
+    );
 
-    if (!team) {
-      throw errors.FORBIDDEN();
+    if (!conversation) {
+      throw errors.NOT_FOUND({ message: "Conversation not found" });
     }
 
     const limit = input.limit;
 
-    console.log("===\n[listMessages]:", { limit, cursor: input.cursor });
-
     const messages = await prisma.message.findMany({
       where: {
-        teamId: team.id,
         threadId: null,
+        ...messageScopeWhere(input.scope),
       },
       ...(input.cursor
         ? {
@@ -196,6 +178,13 @@ export const listMessages = base
         imageUrl: true,
         createdAt: true,
         _count: { select: { replies: true } },
+        reactions: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -211,7 +200,11 @@ export const listMessages = base
       messages.length === limit ? messages[messages.length - 1].id : null;
 
     return {
-      messages: messages,
+      messages: messages.map(({ _count, reactions, ...message }) => ({
+        ...message,
+        repliesCount: _count.replies,
+        reactions: groupReactions(reactions, context.user.id),
+      })),
       nextCursor,
     };
   });
@@ -257,12 +250,10 @@ export const updateMessage = base
       });
     }
 
-    const message = await prisma.message.findUnique({
+    const message = await prisma.message.findFirst({
       where: {
         id: input.messageId,
-        team: {
-          organization: { id: context.organization.id },
-        },
+        ...organizationScopeWhere(context.organization.id),
       },
       select: {
         id: true,
@@ -318,13 +309,10 @@ export const deleteMessage = base
   )
   .handler(async ({ context, input, errors }) => {
     // Verify the message exists and belongs to the current organization
-    console.log(`[deleteMessage]:${input.messageId}`);
-    const message = await prisma.message.findUnique({
+    const message = await prisma.message.findFirst({
       where: {
         id: input.messageId,
-        team: {
-          organization: { id: context.organization.id },
-        },
+        ...organizationScopeWhere(context.organization.id),
       },
       select: {
         id: true,
@@ -350,6 +338,101 @@ export const deleteMessage = base
     return { id: input.messageId };
   });
 
+export const toggleReaction = base
+  .use(requireAuthMiddleware)
+  .use(requireOrganizationMiddleware)
+  .use(standardsecurityMiddleware)
+  .use(writesecurityMiddleware)
+  .route({
+    method: "POST",
+    path: "/messages/:messageId/reactions",
+    summary: "Toggle a reaction on a message",
+    tags: ["message"],
+  })
+  .input(toggleReactionSchema)
+  .output(
+    z.object({
+      messageId: z.string(),
+      reactions: z.array(RawReactionSchema),
+    })
+  )
+  .handler(async ({ context, input, errors }) => {
+    // Verify the message exists and belongs to the current organization
+    const message = await prisma.message.findFirst({
+      where: {
+        id: input.messageId,
+        ...organizationScopeWhere(context.organization.id),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!message) {
+      throw errors.NOT_FOUND();
+    }
+
+    const existing = await prisma.messageReaction.findUnique({
+      where: {
+        userId_messageId: {
+          userId: context.user.id,
+          messageId: input.messageId,
+        },
+      },
+      select: {
+        emoji: true,
+      },
+    });
+
+    // A user can only react once per message. Reacting again with the same
+    // emoji removes the reaction (toggle off); a different emoji swaps it.
+    // deleteMany + upsert keep these writes race-safe: a concurrent request
+    // can no longer trip the unique constraint between read and write.
+    if (existing?.emoji === input.emoji) {
+      await prisma.messageReaction.deleteMany({
+        where: {
+          userId: context.user.id,
+          messageId: input.messageId,
+        },
+      });
+    } else {
+      await prisma.messageReaction.upsert({
+        where: {
+          userId_messageId: {
+            userId: context.user.id,
+            messageId: input.messageId,
+          },
+        },
+        create: {
+          emoji: input.emoji,
+          userId: context.user.id,
+          messageId: input.messageId,
+        },
+        update: {
+          emoji: input.emoji,
+        },
+      });
+    }
+
+    const updated = await prisma.message.findUnique({
+      where: { id: input.messageId },
+      select: {
+        reactions: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
+      },
+    });
+
+    return {
+      messageId: input.messageId,
+      reactions: updated?.reactions ?? [],
+    };
+  });
+
 export const listThreads = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
@@ -368,47 +451,29 @@ export const listThreads = base
   )
   .output(
     z.object({
-      parent: z.object({
-        id: z.string(),
-        content: z.string(),
-        imageUrl: z.string().nullable(),
-        createdAt: z.date(),
-        user: z.object({
-          id: z.string(),
-          name: z.string(),
-          email: z.string(),
-          image: z.string().nullable(),
-        }),
-      }),
-      threads: z.array(
-        z.object({
-          id: z.string(),
-          content: z.string(),
-          imageUrl: z.string().nullable(),
-          createdAt: z.date(),
-          user: z.object({
-            id: z.string(),
-            name: z.string(),
-            email: z.string(),
-            image: z.string().nullable(),
-          }),
-        })
-      ),
+      parent: messageListItemSchema,
+      threads: z.array(messageListItemSchema),
     })
   )
   .handler(async ({ errors, input, context }) => {
-    const parent = await prisma.message.findUnique({
+    const parent = await prisma.message.findFirst({
       where: {
         id: input.threadId,
-        team: {
-          organization: { id: context.organization.id },
-        },
+        ...organizationScopeWhere(context.organization.id),
       },
       select: {
         id: true,
         content: true,
         imageUrl: true,
         createdAt: true,
+        _count: { select: { replies: true } },
+        reactions: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -425,6 +490,14 @@ export const listThreads = base
             content: true,
             imageUrl: true,
             createdAt: true,
+            _count: { select: { replies: true } },
+            reactions: {
+              orderBy: { createdAt: "asc" },
+              select: {
+                emoji: true,
+                userId: true,
+              },
+            },
             user: {
               select: {
                 id: true,
@@ -443,10 +516,18 @@ export const listThreads = base
     }
 
     // Destructure replies out so parent shape matches the output schema
-    const { replies, ...parentFields } = parent;
+    const { replies, _count, reactions, ...parentFields } = parent;
 
     return {
-      parent: parentFields,
-      threads: replies,
+      parent: {
+        ...parentFields,
+        repliesCount: _count.replies,
+        reactions: groupReactions(reactions, context.user.id),
+      },
+      threads: replies.map(({ _count, reactions, ...thread }) => ({
+        ...thread,
+        repliesCount: _count.replies,
+        reactions: groupReactions(reactions, context.user.id),
+      })),
     };
   });

@@ -1,20 +1,19 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogClose,
+  DialogFooter,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -23,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MembershipRole } from "@/generated/prisma/enums";
+import { orpc } from "@/lib/orpc";
 
 const ROLE_OPTIONS = Object.values(MembershipRole);
 
@@ -47,7 +47,9 @@ export function UpdateMemberRoleDialog({
     orpc.organization.members.updateRole.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: orpc.organization.members.list.queryKey(),
+          queryKey: orpc.organization.members.list.queryKey({
+            input: { organizationId },
+          }),
         });
         queryClient.invalidateQueries({
           queryKey: orpc.user.get.queryKey(),
@@ -89,7 +91,7 @@ export function UpdateMemberRoleDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-100">
+      <DialogContent className="sm:max-w-sm">
         <DialogTitle>Update Role</DialogTitle>
         <DialogDescription>
           Change the role of <span className="font-bold">{memberName}</span> in

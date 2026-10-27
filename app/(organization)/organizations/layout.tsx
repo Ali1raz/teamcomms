@@ -1,7 +1,5 @@
+import type { Metadata } from "next";
 import { SITE } from "@/lib/app/site";
-import { orpc } from "@/lib/orpc";
-import { getQueryClient } from "@/lib/query/hydration";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
@@ -10,15 +8,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function OrganizationLayout({
+export default function OrganizationLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const queryClient = getQueryClient();
-  await Promise.all([
-    queryClient.prefetchQuery(orpc.organization.members.list.queryOptions()),
-  ]);
-
   return <main>{children}</main>;
 }

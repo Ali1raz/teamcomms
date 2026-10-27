@@ -1,6 +1,5 @@
 "use client";
 
-import { Button, buttonVariants } from "@/components/ui/button";
 import { LogOut, Menu, X } from "lucide-react";
 import {
   AnimatePresence,
@@ -8,14 +7,16 @@ import {
   useMotionValueEvent,
   useScroll,
 } from "motion/react";
+import { type Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ThemeToggle } from "./theme-toggle";
-import Logo from "@/public/team-comms.png";
-import { authClient } from "@/lib/auth-client";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useSignOut } from "@/hooks/use-signout";
+import { authClient } from "@/lib/auth-client";
+import Logo from "@/public/team-comms.png";
 import { Skeleton } from "../ui/skeleton";
+import { ThemeToggle } from "./theme-toggle";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -115,9 +116,6 @@ const Navbar = () => {
           </section>
 
           <section className="flex flex-row items-center gap-2 lg:hidden">
-            {/* <Button className="rounded" size="default">
-              Book a call
-            </Button> */}
             <Button
               variant="ghost"
               size="icon"
@@ -169,14 +167,12 @@ const Navbar = () => {
                   {isPending ? (
                     <Skeleton className="w-full h-10 bg-muted rounded-sm" />
                   ) : data?.session ? (
-                    <>
-                      <Link
-                        href={"/organizations"}
-                        className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
-                      >
-                        Dasboard
-                      </Link>
-                    </>
+                    <Link
+                      href={"/organizations"}
+                      className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
+                    >
+                      Dashboard
+                    </Link>
                   ) : (
                     <Link
                       className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
@@ -185,6 +181,12 @@ const Navbar = () => {
                       Log In
                     </Link>
                   )}
+                  <Link
+                    href={"/docs" as Route}
+                    className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
+                  >
+                    Read Docs
+                  </Link>
                 </motion.div>
 
                 <motion.div

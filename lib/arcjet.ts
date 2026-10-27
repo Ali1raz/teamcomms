@@ -1,4 +1,3 @@
-import { env } from "@/lib/env";
 import arcjet, {
   detectBot,
   detectPromptInjection,
@@ -8,6 +7,7 @@ import arcjet, {
   shield,
   slidingWindow,
 } from "@arcjet/next";
+import { env } from "@/lib/env";
 
 export {
   detectBot,

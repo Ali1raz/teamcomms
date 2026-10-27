@@ -1,10 +1,10 @@
+import { headers } from "next/headers";
 import z from "zod/v3";
+import { auth } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
-import { errorMessage } from "@/lib/error-message";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 
 export const getInvitionDEtails = base
   .use(requireAuthMiddleware)
@@ -39,7 +39,7 @@ export const getInvitionDEtails = base
     })
   )
   .handler(async ({ input, errors }) => {
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.getInvitation>>;
     try {
       data = await auth.api.getInvitation({
         query: {

@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# fumadocs
+/.source
+
 # production
 /build
 
@@ -48,3 +51,6 @@ generated/
 worker-configuration.d.ts
 
 .eslintcache
+
+# graphify
+graphify-out/

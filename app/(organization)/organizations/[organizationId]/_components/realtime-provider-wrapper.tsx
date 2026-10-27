@@ -1,17 +1,19 @@
 "use client";
-import { useParams } from "next/navigation";
-import { RealtimeTeamProvider } from "@/components/team-realtime-provider";
+import { ConversationRealtimeProvider } from "@/components/conversation-realtime-provider";
+import { useConversationScope } from "@/hooks/use-conversation-scope";
 
 export function RealtimeProviderWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { teamId } = useParams<{ teamId?: string }>();
+  const scope = useConversationScope();
 
-  if (!teamId) return <>{children}</>;
+  if (!scope) return <>{children}</>;
 
   return (
-    <RealtimeTeamProvider teamId={teamId}>{children}</RealtimeTeamProvider>
+    <ConversationRealtimeProvider scope={scope}>
+      {children}
+    </ConversationRealtimeProvider>
   );
 }

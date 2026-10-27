@@ -1,19 +1,28 @@
+import { headers } from "next/headers";
 import z from "zod";
+import { TEAM_SORT_FIELDS } from "@/app/(organization)/organizations/[organizationId]/constants";
+import { type Prisma } from "@/generated/prisma/client";
+import { MembershipRole } from "@/generated/prisma/enums";
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+  SORT_ORDERS,
+} from "@/lib/app/constants";
+import { auth, type User } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
+import { clampPage } from "@/lib/pagination";
+import { prisma } from "@/lib/prisma";
+import { updateTeamSchema } from "@/lib/schema";
+import { createSlug } from "@/lib/utils";
 import { createTeamSchema } from "../(organization)/organizations/schema";
 import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
+import { readsecurityMiddleware } from "../middlewares/arcjet/read";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
-import { auth, type User } from "@/lib/auth";
-import { createSlug } from "@/lib/utils";
-import { errorMessage } from "@/lib/error-message";
-import { prisma } from "@/lib/prisma";
-import { readsecurityMiddleware } from "../middlewares/arcjet/read";
-import { headers } from "next/headers";
-import { MembershipRole } from "@/generated/prisma/enums";
-import { updateTeamSchema } from "@/lib/schema";
 import { requireMemberMiddleware } from "../middlewares/member";
+import { requireOrganizationMiddleware } from "../middlewares/organization";
 
 export const createTeam = base
   .use(requireAuthMiddleware)
@@ -46,7 +55,7 @@ export const createTeam = base
     }
 
     const slug = createSlug(input.name);
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.createTeam>>;
     try {
       data = await auth.api.createTeam({
         body: {
@@ -92,7 +101,7 @@ export const updateTeam = base
     }
 
     const slug = createSlug(input.name);
-    let data;
+    let data: Awaited<ReturnType<typeof auth.api.updateTeam>>;
     try {
       data = await auth.api.updateTeam({
         body: {
@@ -130,6 +139,11 @@ export const listTeams = base
   .input(
     z.object({
       organizationId: z.string(),
+      page: z.number().int().min(1).optional(),
+      perPage: z.number().int().min(1).max(MAX_PER_PAGE).optional(),
+      search: z.string().optional(),
+      sortBy: z.enum([...TEAM_SORT_FIELDS]).optional(),
+      sortOrder: z.enum([...SORT_ORDERS]).optional(),
     })
   )
   .output(
@@ -142,45 +156,108 @@ export const listTeams = base
           createdAt: z.date(),
           updatedAt: z.date().nullable().optional(),
           totalMembers: z.number(),
+          members: z.array(
+            z.object({
+              id: z.string(),
+              name: z.string(),
+              image: z.string().nullable(),
+            })
+          ),
         })
       ),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
     })
   )
-  .handler(async ({ context, input }) => {
-    const teams = await prisma.team.findMany({
-      where: {
-        organizationId: input.organizationId,
-        teammembers: {
-          some: {
-            userId: context.user.id,
+  .handler(async ({ context, input, errors }) => {
+    const search = input.search?.trim();
+    const where: Prisma.TeamWhereInput = {
+      organizationId: input.organizationId,
+      teammembers: {
+        some: {
+          userId: context.user.id,
+        },
+      },
+      ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+    };
+    const sortOrder = input.sortOrder ?? "desc";
+    const orderBy: Prisma.TeamOrderByWithRelationInput =
+      (input.sortBy ?? "createdAt") === "name"
+        ? { name: sortOrder }
+        : { createdAt: sortOrder };
+    const select = {
+      id: true,
+      name: true,
+      slug: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: {
+        select: { teammembers: true },
+      },
+      teammembers: {
+        take: 3,
+        orderBy: { createdAt: "asc" },
+        select: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
           },
         },
       },
-      orderBy: {
-        createdAt: "desc", // newest teams first
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: { teammembers: true, messages: true },
-        },
-      },
-    });
+    } as const;
 
-    return {
-      teams: teams.map((team) => ({
-        id: team.id,
-        name: team.name,
-        slug: team.slug,
-        createdAt: team.createdAt,
-        updatedAt: team.updatedAt,
-        totalMembers: team._count.teammembers ?? 0,
-      })),
-    };
+    try {
+      const paginate = input.page !== undefined || input.perPage !== undefined;
+      const perPage = paginate
+        ? (input.perPage ?? DEFAULT_PER_PAGE)
+        : undefined;
+      const total = paginate ? await prisma.team.count({ where }) : undefined;
+      const pageCount =
+        total !== undefined && perPage !== undefined
+          ? Math.max(Math.ceil(total / perPage), 1)
+          : 1;
+      const page =
+        perPage !== undefined
+          ? clampPage(input.page ?? DEFAULT_PAGE, pageCount)
+          : DEFAULT_PAGE;
+      const rows = await prisma.team.findMany({
+        where,
+        orderBy,
+        select,
+        ...(perPage !== undefined
+          ? { skip: (page - 1) * perPage, take: perPage }
+          : {}),
+      });
+
+      return {
+        teams: rows.map((team) => ({
+          id: team.id,
+          name: team.name,
+          slug: team.slug,
+          createdAt: team.createdAt,
+          updatedAt: team.updatedAt,
+          totalMembers: team._count.teammembers ?? 0,
+          members: team.teammembers.map((teamMember) => ({
+            id: teamMember.user.id,
+            name: teamMember.user.name,
+            image: teamMember.user.image ?? null,
+          })),
+        })),
+        total: total ?? rows.length,
+        page,
+        perPage: perPage ?? rows.length,
+        pageCount,
+      };
+    } catch (error: unknown) {
+      throw errors.BAD_REQUEST({
+        message: errorMessage(error, "Failed to list teams"),
+      });
+    }
   });
 
 export const getTeam = base
@@ -206,7 +283,6 @@ export const getTeam = base
     })
   )
   .handler(async ({ input, context, errors }) => {
-    console.log("[team.get]: called for", input.teamId);
     const team = await prisma.team.findUnique({
       where: { id: input.teamId },
       select: {
@@ -261,7 +337,6 @@ export const deleteTeam = base
         headers: await headers(),
       });
     } catch (error: unknown) {
-      console.log(error);
       throw errors.BAD_REQUEST({
         message: errorMessage(error, "Failed to delete team"),
       });

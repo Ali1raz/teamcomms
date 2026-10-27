@@ -23,6 +23,7 @@ model User {
 
   teammembers TeamMember[]
   messages    Message[]
+  reactions   MessageReaction[]
 
   @@map("user")
 }
@@ -83,13 +84,15 @@ model Organization {
   id          String       @id @default(uuid())
   name        String
   slug        String
+  description String?
   logo        String?
   createdAt   DateTime
   metadata    String?
   members     Member[]
   invitations Invitation[]
 
-  teams Team[]
+  teams    Team[]
+  channels Channel[]
 
   @@unique([slug])
   @@map("organization")
@@ -153,6 +156,21 @@ model Team {
   @@map("team")
 }
 
+model Channel {
+  id             String       @id @default(uuid())
+  name           String
+  slug           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  messages       Message[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("channel")
+}
+
 model TeamMember {
   id        String    @id @default(uuid())
   teamId    String
@@ -177,15 +195,39 @@ model Message {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teamId String
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  teamId String?
+  team   Team?   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   parentMessage Message? @relation("MessageThread", fields: [threadId], references: [id], onDelete: Cascade)
   threadId      String?
 
   replies Message[] @relation("MessageThread")
 
+  reactions MessageReaction[]
+
   @@index([teamId])
+  @@index([channelId])
   @@index([userId])
   @@map("message")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+  @@index([messageId])
+  @@index([userId])
+  @@map("messageReaction")
 }

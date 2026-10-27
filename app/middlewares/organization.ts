@@ -1,6 +1,6 @@
-import { auth, FullOrg } from "@/lib/auth";
-import { base } from "./bast";
 import { headers } from "next/headers";
+import { auth, type FullOrg } from "@/lib/auth";
+import { base } from "./bast";
 
 export const requireOrganizationMiddleware = base
   .$context<{

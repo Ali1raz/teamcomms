@@ -1,0 +1,9 @@
+{
+  "title": "Invitations",
+  "defaultOpen": true,
+  "pages": [
+    "creating-invitations",
+    "responding-to-invitations",
+    "managing-invitations"
+  ]
+}

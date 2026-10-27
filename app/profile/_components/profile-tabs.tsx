@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { requireSession } from "../data/require-session";
+import { userGetAllSessions } from "../data/user-get-all-sessions";
 import { UpdateProfileForm } from "./update-profile-form";
 import { UserSessionsCard } from "./user-sessions-tab";
-import { userGetAllSessions } from "../data/user-get-all-sessions";
-import { requireSession } from "../data/require-session";
 
 const ProfileTabs = async () => {
   const [sessions, currentSession] = await Promise.all([

@@ -1,9 +1,15 @@
 "use client";
 
-import { cn, formatRelativeTime } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { Edit2, MessagesSquare, MoreVertical, Trash2 } from "lucide-react";
 import Image from "next/image";
+import { useCallback, useState } from "react";
 import { RenderJSONtoHTML } from "@/components/editor/render-content";
-import { Edit2, MessagesSquare, Trash2, MoreVertical } from "lucide-react";
+import { ExpandableContent } from "@/components/general/expandable-content";
+import { UserImage } from "@/components/general/user-avatar";
+import { ImageZoom } from "@/components/kibo-ui/image-zoom";
+import { ReactionBar } from "@/components/reaction/reaction-bar";
+import { useThread } from "@/components/thread-sidebar/thread-context";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,31 +17,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { EditMessageForm } from "./edit-message-form";
-import { useCallback, useState } from "react";
-import { DeleteMessageDialog } from "./delete-message-dialog";
-import { client, orpc } from "@/lib/orpc";
 import { useSidebarWithSide } from "@/components/ui/sidebar";
-import { useThread } from "@/components/thread-sidebar/thread-context";
-import { InfiniteData, useQueryClient } from "@tanstack/react-query";
-import { UserImage } from "@/components/general/user-avatar";
-
-export type messageType = Awaited<
-  ReturnType<typeof client.message.list>
->["messages"][number];
-
-export type MessagePage = {
-  messages: messageType[];
-  nextCursor: string | null;
-};
-export type InfiniteMessages = InfiniteData<MessagePage>;
+import { orpc } from "@/lib/orpc";
+import { cn, formatRelativeTime } from "@/lib/utils";
+import type { MessageListItemType } from "../../schema";
+import { DeleteMessageDialog } from "./delete-message-dialog";
+import { EditMessageForm } from "./edit-message-form";
 
 export function MessageItem({
   message,
   currentUserId,
   onlineUserIds,
 }: {
-  message: messageType;
+  message: MessageListItemType;
   currentUserId: string;
   onlineUserIds: Set<string>;
 }) {
@@ -71,8 +65,8 @@ export function MessageItem({
   return (
     <div
       className={cn(
-        "flex relative group gap-3 items-start rounded-md overflow-x-hidden hover:bg-muted/70 p-3 first:mt-4",
-        open && message.id === threadId && "bg-muted/50 ring-1"
+        "flex relative group gap-3 items-start overflow-x-hidden hover:bg-muted/30 transition-colors duration-150 p-4 border-b border-border",
+        open && message.id === threadId && "bg-muted/50"
       )}
     >
       <UserImage
@@ -81,7 +75,7 @@ export function MessageItem({
         isOnline={!!message.user.id && onlineUserIds.has(message.user.id)}
         showOnline={true}
       />
-      <div className="flex flex-col gap-2 *:leading-none w-full">
+      <div className="flex w-full min-w-0 flex-col gap-2 *:leading-none">
         <div className="flex gap-2 items-center">
           <p className="font-medium line-clamp-1">{message.user.name}</p>
           <p className="text-sm text-muted-foreground line-clamp-1">
@@ -96,36 +90,40 @@ export function MessageItem({
           />
         ) : (
           <>
-            <RenderJSONtoHTML
-              content={JSON.parse(message.content)}
-              className="text-sm wrap-break-word prose dark:prose-invert leading-relaxed max-w-none w-full marker:text-primary"
-            />
+            <ExpandableContent>
+              <RenderJSONtoHTML
+                content={JSON.parse(message.content)}
+                className="text-sm wrap-break-word prose dark:prose-invert leading-relaxed max-w-none w-full marker:text-primary"
+              />
+            </ExpandableContent>
 
             {message.imageUrl && (
-              <div>
+              <ImageZoom>
                 <Image
                   src={message.imageUrl}
                   alt="uploaded image"
                   width={512}
                   height={512}
-                  className="object-cover rounded max-h-75 w-auto"
+                  className="max-h-75 w-auto max-w-full rounded object-cover"
                 />
-              </div>
+              </ImageZoom>
             )}
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={openThread}
-              className="flex items-center gap-1"
-              onMouseEnter={prefetchThread}
-              onFocus={prefetchThread}
-            >
-              <MessagesSquare className="size-4" />
-              {message._count.replies || 0}{" "}
-              {message._count.replies <= 1 ? "reply" : "replies"}
-            </Button>
+            <ReactionBar messageId={message.id} reactions={message.reactions} />
+            <div className="flex">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={openThread}
+                className="flex items-center gap-1"
+                onMouseEnter={prefetchThread}
+                onFocus={prefetchThread}
+              >
+                <MessagesSquare className="size-4" />
+                {message.repliesCount || 0}{" "}
+                {message.repliesCount <= 1 ? "reply" : "replies"}
+              </Button>
+            </div>
           </>
         )}
       </div>

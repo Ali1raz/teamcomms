@@ -1,5 +1,11 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,13 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Controller, useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-
-import { createOrganizationSchema, CreateOrganizationType } from "../schema";
-import { toast } from "sonner";
-import { ReactNode, useState } from "react";
-import { createSlug } from "@/lib/utils";
 import {
   Field,
   FieldError,
@@ -23,9 +22,13 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/lib/orpc";
+import { createSlug } from "@/lib/utils";
+import {
+  type CreateOrganizationType,
+  createOrganizationSchema,
+} from "../schema";
+import { OrganizationLogoField } from "./organization-logo-field";
 
 export function CreateOrganizationDialog({
   children,
@@ -37,6 +40,7 @@ export function CreateOrganizationDialog({
     resolver: zodResolver(createOrganizationSchema),
     defaultValues: {
       name: "",
+      logo: null,
     },
     mode: "onChange",
   });
@@ -44,6 +48,10 @@ export function CreateOrganizationDialog({
   const organizationName = useWatch({
     control: form.control,
     name: "name",
+  });
+  const organizationLogo = useWatch({
+    control: form.control,
+    name: "logo",
   });
   const slug = createSlug(organizationName ?? "");
   const queryClient = useQueryClient();
@@ -71,7 +79,13 @@ export function CreateOrganizationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) form.reset();
+      }}
+    >
       <DialogTrigger asChild>
         {children ?? <Button>Create Organization</Button>}
       </DialogTrigger>
@@ -108,6 +122,13 @@ export function CreateOrganizationDialog({
               <FieldLabel htmlFor="slug">Slug</FieldLabel>
               <Input id="slug" value={slug} readOnly />
             </Field>
+            <OrganizationLogoField
+              value={organizationLogo}
+              onChange={(logo) =>
+                form.setValue("logo", logo, { shouldValidate: true })
+              }
+              disabled={createOrganizationMutation.isPending}
+            />
           </FieldGroup>
         </form>
 

@@ -1,14 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon, Loader2, X } from "lucide-react";
 import Image from "next/image";
@@ -16,11 +7,21 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Session } from "@/lib/auth";
-import { UpdateProfileType, updateProfileSchema } from "../schema";
-import { updateProfileAction } from "../actions";
-import { tryCatch } from "@/lib/try-catch";
 import { ImageUploadDialog } from "@/app/(organization)/organizations/[organizationId]/_components/image-dialog";
+import { ImageZoom } from "@/components/kibo-ui/image-zoom";
+import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import type { Session } from "@/lib/auth";
+import { tryCatch } from "@/lib/try-catch";
+import { updateProfileAction } from "../actions";
+import { type UpdateProfileType, updateProfileSchema } from "../schema";
 
 export function UpdateProfileForm({ session }: { session: Session }) {
   const [isPending, startTransition] = useTransition();
@@ -101,12 +102,14 @@ export function UpdateProfileForm({ session }: { session: Session }) {
                       {field.value ? (
                         <div className="flex items-end gap-2">
                           <div className="relative size-32 overflow-hidden rounded-full">
-                            <Image
-                              src={field.value}
-                              alt="Profile"
-                              fill
-                              className="object-cover size-24"
-                            />
+                            <ImageZoom className="h-full">
+                              <Image
+                                src={field.value}
+                                alt="Profile"
+                                fill
+                                className="object-cover size-24"
+                              />
+                            </ImageZoom>
                           </div>
                           <Button
                             type="button"
@@ -138,7 +141,7 @@ export function UpdateProfileForm({ session }: { session: Session }) {
               />
             </FieldGroup>
 
-            <Button type="submit" disabled={isPending} className="w-full">
+            <Button type="submit" disabled={isPending} className="w-fit">
               {isPending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />

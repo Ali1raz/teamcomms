@@ -1,18 +1,18 @@
+import { InfiniteSlider } from "../motion-primitives/infinite-slider";
 import {
-  GitHub,
-  Nextjs,
   BetterAuth,
   ESLint,
   Git,
+  GitHub,
   Neon,
+  Nextjs,
   PostgreSQL,
   Prettier,
   Prisma,
+  Shadcnui,
   TailwindCSS,
   Vercel,
-  Shadcnui,
 } from "./tech";
-import { InfiniteSlider } from "../motion-primitives/infinite-slider";
 
 const logos = [
   {

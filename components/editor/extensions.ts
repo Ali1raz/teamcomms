@@ -1,12 +1,17 @@
-import { StarterKit } from "@tiptap/starter-kit";
-import TextAlign from "@tiptap/extension-text-align";
-import { all, createLowlight } from "lowlight";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import { Placeholder } from "@tiptap/extensions";
 import Blockquote from "@tiptap/extension-blockquote";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import {
+  Details,
+  DetailsContent,
+  DetailsSummary,
+} from "@tiptap/extension-details";
 import { Mention } from "@tiptap/extension-mention";
+import TextAlign from "@tiptap/extension-text-align";
+import { Placeholder } from "@tiptap/extensions";
+import { StarterKit } from "@tiptap/starter-kit";
+import { all, createLowlight } from "lowlight";
 
-const lowlight = createLowlight(all);
+export const lowlight = createLowlight(all);
 
 export const extensions = [
   StarterKit.configure({
@@ -48,6 +53,22 @@ export const extensions = [
   Blockquote.configure({
     HTMLAttributes: {
       class: "border-l-4 pl-4 italic text-muted-foreground",
+    },
+  }),
+  Details.configure({
+    persist: true,
+    HTMLAttributes: {
+      class: "message-details",
+    },
+  }),
+  DetailsSummary.configure({
+    HTMLAttributes: {
+      class: "message-details-summary",
+    },
+  }),
+  DetailsContent.configure({
+    HTMLAttributes: {
+      class: "message-details-content",
     },
   }),
 ];

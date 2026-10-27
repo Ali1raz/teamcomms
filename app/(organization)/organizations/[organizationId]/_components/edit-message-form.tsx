@@ -1,47 +1,45 @@
 "use client";
 
-import { AttachmentChip } from "./attachment-chip";
-import { Field, FieldGroup } from "@/components/ui/field";
-import { Controller, useForm } from "react-hook-form";
-import { updateMessageSchema, UpdateMessageSchemaType } from "../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Editor } from "@/components/editor/editor";
-import { Button } from "@/components/ui/button";
-import { messageType } from "./message-item";
-import { orpc } from "@/lib/orpc";
-import { ImageUploadDialog } from "./image-dialog";
-import {
-  InfiniteData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { useRealtimeTeam } from "@/components/team-realtime-provider";
 import { useCallback } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
+import { Editor } from "@/components/editor/editor";
 import type { MentionUser } from "@/components/editor/mentions";
+import { useRealtimeTeam } from "@/components/team-realtime-provider";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { useRequiredConversationScope } from "@/hooks/use-conversation-scope";
+import { conversationKey } from "@/lib/conversation";
+import { orpc } from "@/lib/orpc";
+import type { InfiniteMessages } from "@/lib/types";
+import { getShortcutModifierLabel } from "@/lib/utils";
+import {
+  type MessageListItemType,
+  type UpdateMessageSchemaType,
+  updateMessageSchema,
+} from "../../schema";
+import { AttachmentChip } from "./attachment-chip";
+import { ImageUploadDialog } from "./image-dialog";
 
 interface EditMessageFormProps {
-  message: messageType;
+  message: MessageListItemType;
   onCancel: () => void;
   onSave: () => void;
 }
-
-// Shape of a single page from the message.list procedure.
-type MessagePage = {
-  messages: messageType[];
-  nextCursor: string | null;
-};
-type InfiniteMessages = InfiniteData<MessagePage>;
 
 export function EditMessageForm({
   message,
   onCancel,
   onSave,
 }: EditMessageFormProps) {
-  const { teamId } = useParams<{ teamId: string }>();
-  const { send } = useRealtimeTeam();
+  const scope = useRequiredConversationScope();
+  const { send } = useRealtimeConversation();
+  const { teamId } = useParams();
 
   const form = useForm<UpdateMessageSchemaType>({
     resolver: zodResolver(updateMessageSchema),
@@ -75,19 +73,20 @@ export function EditMessageForm({
             (member.email?.toLowerCase().includes(normalizedQuery) ?? false)
         )
         .slice(0, 8)
-        .map((member): MentionUser => ({
-          id: member.id,
-          name: member.name,
-          email: member.email,
-          image: member.image ?? undefined,
-        }));
+        .map(
+          (member): MentionUser => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            image: member.image ?? undefined,
+          })
+        );
     },
     [membersData]
   );
 
-  // The raw key that MessageList.tsx registers its infinite query under.
-  // Must stay in sync with the `queryKey` option passed to infiniteOptions there.
-  const messageListKey = ["message.list", teamId];
+  // Must stay in sync with the key MessageList registers its infinite query under.
+  const messageListKey = conversationKey(scope);
 
   const updateMessageMutation = useMutation(
     orpc.message.update.mutationOptions({
@@ -144,11 +143,12 @@ export function EditMessageForm({
               createdAt: update.message.createdAt,
               updatedAt: update.message.updatedAt,
               teamId: update.message.teamId,
+              channelId: update.message.channelId,
               threadId: update.message.threadId,
               content: update.message.content,
               imageUrl: update.message.imageUrl ?? null,
               user: message.user,
-              _count: { replies: message._count?.replies ?? 0 },
+              repliesCount: message.repliesCount ?? 0,
             },
           },
         });
@@ -193,6 +193,7 @@ export function EditMessageForm({
                   <Editor
                     field={{ value: field.value, onChange: field.onChange }}
                     mentionsQuery={mentionsQuery}
+                    onSubmit={form.handleSubmit(onSubmit)}
                     footerLeft={
                       imageField.value ? (
                         <AttachmentChip
@@ -219,6 +220,10 @@ export function EditMessageForm({
                           {updateMessageMutation.isPending
                             ? "Updating..."
                             : "Update"}
+                          <KbdGroup className="hidden sm:flex">
+                            <Kbd>{getShortcutModifierLabel()}</Kbd>
+                            <Kbd>↵</Kbd>
+                          </KbdGroup>
                         </Button>
                         <Button
                           type="button"

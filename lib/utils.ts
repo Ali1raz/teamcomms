@@ -1,14 +1,56 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { COLOR_COMBOS } from "./app/data";
-import { renderToMarkdown } from "@tiptap/static-renderer/pm/markdown";
-import { baseExtensions } from "@/components/editor/extensions";
-import MarkdownIt from "markdown-it";
-import Dompurify from "dompurify";
 import { generateJSON } from "@tiptap/react";
+import { renderToMarkdown } from "@tiptap/static-renderer/pm/markdown";
+import Dompurify from "dompurify";
+import MarkdownIt from "markdown-it";
+import { baseExtensions } from "@/components/editor/extensions";
+import { COLOR_COMBOS } from "./app/data";
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export { cn } from "cn";
+
+export function getShortcutModifierLabel() {
+  if (typeof navigator === "undefined") {
+    return "Ctrl";
+  }
+
+  return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
+}
+
+/**
+ * Collapse a list of raw reactions into per-emoji groups with counts.
+ *
+ * `reactedByMe` is true when the current user appears among the reactions for
+ * that emoji, which the UI uses to highlight reactions the user has added.
+ */
+export function groupReactions(
+  reactions: { emoji: string; userId: string }[],
+  userId: string
+) {
+  const reactionMap = new Map<
+    string,
+    { count: number; reactedByMe: boolean }
+  >();
+
+  for (const reaction of reactions) {
+    const existing = reactionMap.get(reaction.emoji);
+
+    if (existing) {
+      reactionMap.set(reaction.emoji, {
+        count: existing.count + 1,
+        reactedByMe: existing.reactedByMe || reaction.userId === userId,
+      });
+    } else {
+      reactionMap.set(reaction.emoji, {
+        count: 1,
+        reactedByMe: reaction.userId === userId,
+      });
+    }
+  }
+
+  return Array.from(reactionMap, ([emoji, { count, reactedByMe }]) => ({
+    emoji,
+    count,
+    reactedByMe,
+  }));
 }
 
 export function getOrganizationColor(id: string) {
@@ -21,6 +63,19 @@ export function getOrganizationColor(id: string) {
   return COLOR_COMBOS[colorIndex];
 }
 
+/**
+ * Organization logos are either an uploaded URL or one of the existing color
+ * combos assigned when no file was provided. Hex values are kept for orgs
+ * created by the earlier fallback so they still render as colors.
+ */
+export function isOrganizationColor(
+  logo: string | null | undefined
+): logo is string {
+  if (!logo) return false;
+
+  return COLOR_COMBOS.includes(logo) || logo.startsWith("#");
+}
+
 export function createSlug(input: string) {
   // Derive a safe organization slug from user input and strip edge dashes.
   return input
@@ -28,11 +83,6 @@ export function createSlug(input: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-export function createAvatarUrl(seed = "ar") {
-  // Build a deterministic DiceBear avatar URL so the same seed always returns the same avatar.
-  return `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 /**
@@ -72,6 +122,13 @@ export function formatLocalDateTime(createdAt: string | number | Date) {
   return new Date(createdAt).toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
+  });
+}
+
+export function formatLocalDate(createdAt: string | number | Date) {
+  // Date-only label; pair with formatLocalDateTime for the full value on hover.
+  return new Date(createdAt).toLocaleDateString("en-US", {
+    dateStyle: "medium",
   });
 }
 

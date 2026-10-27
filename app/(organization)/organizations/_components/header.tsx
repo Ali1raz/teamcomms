@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Logo from "@/public/team-comms.png";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/general/theme-toggle";
 import UserAvatarDropdown from "@/components/general/user-avatar-dropdown";
 import { authClient } from "@/lib/auth-client";
-import Link from "next/link";
+import Logo from "@/public/team-comms.png";
 
 export function OrganizationHeader() {
   const { data: session, isPending } = authClient.useSession();

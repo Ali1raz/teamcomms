@@ -1,5 +1,13 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Trash2 } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { orpc } from "@/lib/orpc";
+import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogClose,
@@ -10,16 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import { toast } from "sonner";
-import { useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
-import { Button } from "./ui/button";
-import { cn } from "@/lib/utils";
-import { teamType } from "./update-team-dialog";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { orpc } from "@/lib/orpc";
-import { useParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import type { teamType } from "./update-team-dialog";
 
 export function DeleteTeamDialog({
   team,

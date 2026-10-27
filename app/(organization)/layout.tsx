@@ -1,7 +1,7 @@
+import type { Metadata } from "next";
 import { SITE } from "@/lib/app/site";
 import { orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {

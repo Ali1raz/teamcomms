@@ -2,6 +2,7 @@ import type { SVGProps } from "react";
 
 export const GitHub = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 1024 1024" fill="none">
+    <title>GitHub</title>
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -14,6 +15,7 @@ export const GitHub = (props: SVGProps<SVGSVGElement>) => (
 
 export const Git = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} preserveAspectRatio="xMidYMid" viewBox="0 0 256 256">
+    <title>Git</title>
     <path
       d="M251.17 116.6 139.4 4.82a16.49 16.49 0 0 0-23.31 0l-23.21 23.2 29.44 29.45a19.57 19.57 0 0 1 24.8 24.96l28.37 28.38a19.61 19.61 0 1 1-11.75 11.06L137.28 95.4v69.64a19.62 19.62 0 1 1-16.13-.57V94.2a19.61 19.61 0 0 1-10.65-25.73L81.46 39.44 4.83 116.08a16.49 16.49 0 0 0 0 23.32L116.6 251.17a16.49 16.49 0 0 0 23.32 0l111.25-111.25a16.5 16.5 0 0 0 0-23.33"
       fill="#DE4C36"
@@ -23,6 +25,7 @@ export const Git = (props: SVGProps<SVGSVGElement>) => (
 
 export const Prisma = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 256 310" preserveAspectRatio="xMidYMid">
+    <title>Prisma</title>
     <path
       fill="#fff"
       d="M254.313 235.519L148 9.749A17.063 17.063 0 00133.473.037a16.87 16.87 0 00-15.533 8.052L2.633 194.848a17.465 17.465 0 00.193 18.747L59.2 300.896a18.13 18.13 0 0020.363 7.489l163.599-48.392a17.929 17.929 0 0011.26-9.722 17.542 17.542 0 00-.101-14.76l-.008.008zm-23.802 9.683l-138.823 41.05c-4.235 1.26-8.3-2.411-7.419-6.685l49.598-237.484c.927-4.443 7.063-5.147 9.003-1.035l91.814 194.973a6.63 6.63 0 01-4.18 9.18h.007z"
@@ -32,6 +35,7 @@ export const Prisma = (props: SVGProps<SVGSVGElement>) => (
 
 export const PostgreSQL = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} xmlSpace="preserve" viewBox="0 0 432.071 445.383">
+    <title>PostgreSQL</title>
     <g
       style={{
         fillRule: "nonzero",
@@ -91,6 +95,7 @@ export const PostgreSQL = (props: SVGProps<SVGSVGElement>) => (
 
 export const Nextjs = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 180 180">
+    <title>Next.js</title>
     <mask
       height="180"
       id="nextjs_icon_dark__:r8:mask0_408_134"

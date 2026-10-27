@@ -1,11 +1,11 @@
+import { headers } from "next/headers";
+import z from "zod";
 import { MembershipRole } from "@/generated/prisma/enums";
+import { auth } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
 import { requireOrganizationMiddleware } from "../middlewares/organization";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { errorMessage } from "@/lib/error-message";
-import z from "zod";
 
 export const getCurrentUser = base
   .use(requireAuthMiddleware)
@@ -27,7 +27,7 @@ export const getCurrentUser = base
     })
   )
   .handler(async ({ errors }) => {
-    let member;
+    let member: Awaited<ReturnType<typeof auth.api.getActiveMember>>;
     try {
       member = await auth.api.getActiveMember({
         headers: await headers(),

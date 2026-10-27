@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 export function UserImage({
   image,
   name,
@@ -13,7 +13,7 @@ export function UserImage({
   isOnline?: boolean;
   showOnline?: boolean;
 }) {
-  const imageUrl = image ?? `https://avatar.vercel.sh/${name ?? "U"}`;
+  const imageUrl = image || `https://avatar.vercel.sh/${name?.trim() || "U"}`;
 
   return (
     <div className="relative">

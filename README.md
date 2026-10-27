@@ -161,6 +161,42 @@ Contributions are welcome. Please open an issue first to discuss what you'd like
 3. Commit your changes
 4. Open a Pull Request
 
+## Knowledge Graph
+
+This project uses [graphify](https://github.com/safishamsi/graphify) to maintain a queryable knowledge graph of the codebase.
+
+```bash
+# After pulling changes
+pnpm graph:update
+
+# Before starting work - orient yourself
+pnpm graph:query "How does authentication work?"
+
+# After significant changes
+pnpm graph:update
+# Or full rebuild with deep mode
+pnpm graph:build
+```
+
+**Key commands:**
+
+| Command                        | Description                            |
+| ------------------------------ | -------------------------------------- |
+| `pnpm graph:build`             | Full rebuild with deep mode            |
+| `pnpm graph:update`            | Incremental update (fast, no API cost) |
+| `pnpm graph:query "question"`  | Query the graph for focused context    |
+| `pnpm graph:cluster`           | Re-cluster and regenerate report       |
+| `pnpm graph:path "A" "B"`      | Shortest path between two nodes        |
+| `pnpm graph:explain "concept"` | Plain-language explanation of a node   |
+
+The graph outputs to `graphify-out/` (gitignored):
+
+- `graph.html` — Interactive visualization
+- `GRAPH_REPORT.md` — Audit report with god nodes, surprising connections, suggested questions
+- `graph.json` — Raw graph data for programmatic access
+
+**For AI agents:** Run `graphify query "<question>"` before reading files - it returns a scoped subgraph much smaller than grepping 200+ files.
+
 ## License
 
 [MIT](./LICENSE)

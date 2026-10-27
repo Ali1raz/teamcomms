@@ -1,14 +1,11 @@
 import { generateCompose, generateThreadSummary } from "./ai";
 import {
-  addMembersToTeam,
-  createTeam,
-  deleteTeam,
-  getTeam,
-  listTeamMembers,
-  listTeams,
-  removeMemberFromTeam,
-  updateTeam,
-} from "./team";
+  createChannel,
+  deleteChannel,
+  getChannel,
+  listChannels,
+  updateChannel,
+} from "./channel";
 import { getInvitionDEtails } from "./invitations";
 import { inviteMember } from "./members";
 import {
@@ -16,9 +13,9 @@ import {
   deleteMessage,
   listMessages,
   listThreads,
+  toggleReaction,
   updateMessage,
 } from "./message";
-import { getCurrentUser } from "./user";
 import {
   cancelOrganizationInvitation,
   createOrganization,
@@ -30,6 +27,17 @@ import {
   updateOrganization,
   updateOrganizationMemberRole,
 } from "./organization";
+import {
+  addMembersToTeam,
+  createTeam,
+  deleteTeam,
+  getTeam,
+  listTeamMembers,
+  listTeams,
+  removeMemberFromTeam,
+  updateTeam,
+} from "./team";
+import { getCurrentUser } from "./user";
 
 export const router = {
   user: {
@@ -63,6 +71,13 @@ export const router = {
       remove: removeMemberFromTeam,
     },
   },
+  channel: {
+    create: createChannel,
+    list: listChannels,
+    get: getChannel,
+    update: updateChannel,
+    delete: deleteChannel,
+  },
   message: {
     create: createMessage,
     list: listMessages,
@@ -70,6 +85,9 @@ export const router = {
     delete: deleteMessage,
     threads: {
       list: listThreads,
+    },
+    reaction: {
+      toggle: toggleReaction,
     },
   },
   ai: {

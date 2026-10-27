@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { OrganizationHeader } from "./_components/header";
-import { CreateOrganizationDialog } from "./_components/create-organization-dialog";
-import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
-import { OrganizationList } from "./_components/organization-list";
 import { orpc } from "@/lib/orpc";
+import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
+import { CreateOrganizationDialog } from "./_components/create-organization-dialog";
+import { OrganizationHeader } from "./_components/header";
+import { OrganizationList } from "./_components/organization-list";
 
 export const metadata: Metadata = {
   title: "Organizations",
@@ -14,7 +14,7 @@ export default async function Organizations() {
   await queryClient.prefetchQuery(orpc.organization.list.queryOptions());
 
   return (
-    <div className="h-screen bg-muted/20 w-full">
+    <div className="w-full">
       <HydrateClient client={queryClient}>
         <OrganizationHeader />
       </HydrateClient>

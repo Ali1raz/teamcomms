@@ -1,8 +1,8 @@
+import type { ArcjetNextRequest } from "@arcjet/next";
 import arcjet, { detectBot, sensitiveInfo, slidingWindow } from "@/lib/arcjet";
-import { base } from "../bast";
-import { User } from "@/lib/auth";
+import type { User } from "@/lib/auth";
 import { formatLocalDateTime } from "@/lib/utils";
-import { ArcjetNextRequest } from "@arcjet/next";
+import { base } from "../bast";
 
 const standardAj = () =>
   arcjet

@@ -1,11 +1,16 @@
 "use client";
-import { useEditor, EditorContent } from "@tiptap/react";
-import { baseExtensions } from "./extensions";
-import { Menubar } from "./menubar";
-import { ReactNode, useEffect, useMemo } from "react";
-import { cn } from "@/lib/utils";
 import { Mention } from "@tiptap/extension-mention";
+import { EditorContent, useEditor } from "@tiptap/react";
+import { type ReactNode, useEffect, useMemo, useRef } from "react";
+import {
+  EmojiPicker,
+  EmojiPickerContent,
+  EmojiPickerTrigger,
+} from "@/components/reui/emoji-picker";
+import { cn } from "@/lib/utils";
+import { baseExtensions } from "./extensions";
 import { MentionSuggestions, type MentionUser } from "./mentions";
+import { Menubar } from "./menubar";
 
 interface iAppProps {
   field: {
@@ -15,6 +20,7 @@ interface iAppProps {
   sendButton: ReactNode;
   footerLeft?: ReactNode;
   mentionsQuery?: (query: string) => MentionUser[] | Promise<MentionUser[]>;
+  onSubmit?: () => void;
 }
 
 export function Editor({
@@ -22,6 +28,7 @@ export function Editor({
   sendButton,
   footerLeft,
   mentionsQuery,
+  onSubmit,
 }: iAppProps) {
   const editorExtensions = useMemo(() => {
     if (!mentionsQuery) {
@@ -38,6 +45,13 @@ export function Editor({
       }),
     ];
   }, [mentionsQuery]);
+
+  const editorDomRef = useRef<HTMLElement | null>(null);
+  const onSubmitRef = useRef(onSubmit);
+
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
 
   const editor = useEditor({
     extensions: editorExtensions,
@@ -59,11 +73,24 @@ export function Editor({
     editorProps: {
       attributes: {
         class:
-          "max-w-none sm:min-h-[125px] min-w-full min-h-[70px] focus:outline-none prose prose-sm sm:prose lg:prose-lg marker:text-primary dark:prose-invert",
+          "max-w-none wrap-break-word sm:min-h-[125px] max-sm:h-[70px] focus:h-[100px] focus:outline-none prose prose-sm sm:prose lg:prose-lg marker:text-primary dark:prose-invert",
+      },
+      handleKeyDown: (_view, event) => {
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          onSubmitRef.current?.();
+          return true;
+        }
+
+        return false;
       },
     },
     immediatelyRender: false,
   });
+
+  useEffect(() => {
+    editorDomRef.current = editor?.view.dom ?? null;
+  }, [editor]);
 
   useEffect(() => {
     if (!editor || !field) {
@@ -99,12 +126,33 @@ export function Editor({
   }
 
   return (
-    <div className="relative w-full border border-input rounded-md overflow-hidden dark:bg-input/30 flex flex-col">
+    <div className="relative flex w-full min-w-0 flex-col overflow-hidden rounded-md border border-input dark:bg-input/30">
       <Menubar editor={editor} />
-      <EditorContent editor={editor} className="p-4 max-h-50 overflow-y-auto" />
-      <div className="p-4 py-2 border-t flex items-center justify-between bg-card">
+      <EditorContent
+        editor={editor}
+        className="max-h-50 overflow-y-auto overflow-x-hidden p-4"
+      />
+      <div className="p-4 py-2 border-t flex items-end justify-between bg-card">
         {footerLeft}
-        <div className={cn("justify-self-end", !footerLeft && "ml-auto")}>
+        <div
+          className={cn(
+            "flex items-center gap-2 justify-self-end",
+            !footerLeft && "ml-auto"
+          )}
+        >
+          <EmojiPicker
+            value={null}
+            onEmojiSelect={({ value }) => {
+              editor.chain().focus().insertContent(value).run();
+            }}
+          >
+            <EmojiPickerTrigger variant="ghost" size="icon-sm" />
+            <EmojiPickerContent
+              side="bottom"
+              align="end"
+              returnFocus={editorDomRef}
+            />
+          </EmojiPicker>
           {sendButton}
         </div>
       </div>
