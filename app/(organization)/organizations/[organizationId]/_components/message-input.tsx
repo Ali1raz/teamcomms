@@ -141,7 +141,7 @@ export function MessageInput({ scope }: MessageInputProps) {
           payload: {
             message: {
               ...createdMessage,
-              mentionedUserIds: createdMessage.mentionedUserIds,
+              // mentionedUserIds: createdMessage.mentionedUserIds,
               user: {
                 id: currentUser.id,
                 name: currentUser.name,
