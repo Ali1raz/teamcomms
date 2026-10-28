@@ -86,6 +86,7 @@ export const ConversationRealtimeProvider = ({
             imageUrl: raw.imageUrl ?? null,
             createdAt: raw.createdAt,
             repliesCount: raw.repliesCount ?? 0,
+            mentionedUserIds: raw.mentionedUserIds,
             reactions: [],
             user: raw.user,
           };

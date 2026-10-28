@@ -118,8 +118,10 @@ export const createMessage = base
       }
     }
 
+    const scopeTeamId = input.scope.kind === "team" ? input.scope.teamId : null;
+
     const mentionedUserIds = await validMentionIds({
-      teamId: input.scope.kind === "team" ? input.scope.teamId : null,
+      teamId: scopeTeamId,
       organizationId: context.organization.id,
       authorId: context.user.id,
       candidateIds: analyzed?.candidateMentionIds ?? [],
@@ -148,7 +150,12 @@ export const createMessage = base
         await inngest.send({
           id: `message-users-mentioned-${message.id}`, // dedupes duplicate sends
           name: "message/users.mentioned",
-          data: { messageId: message.id, mentionedUserIds },
+          data: {
+            messageId: message.id,
+            mentionedUserIds,
+            organizationId: context.organization.id,
+            teamId: scopeTeamId,
+          },
         });
       } catch (error) {
         // The message is already saved; a queue failure must not fail the send.
