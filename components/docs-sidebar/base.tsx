@@ -24,10 +24,11 @@ import { cn } from "../../lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
-  type CollapsibleContentProps,
   CollapsibleTrigger,
-  type CollapsibleTriggerProps,
 } from "../ui/collapsible";
+
+type CollapsibleTriggerProps = React.ComponentProps<typeof CollapsibleTrigger>;
+type CollapsibleContentProps = React.ComponentProps<typeof CollapsibleContent>;
 
 interface SidebarContext {
   open: boolean;

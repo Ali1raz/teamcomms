@@ -114,7 +114,8 @@ export function baseSlots({ useProps }: { useProps: () => BaseSlotsProps }) {
   function InlineSearchTrigger(props: SearchTriggerProps) {
     const { searchToggle } = useProps();
     if (searchToggle.components?.sm) return searchToggle.components.sm;
-    return <SearchTrigger {...props} {...searchToggle.sm} />;
+    const sm = searchToggle.sm ?? {};
+    return <SearchTrigger {...props} {...(sm as SearchTriggerProps)} />;
   }
 
   function InlineSearchTriggerFull(props: FullSearchTriggerProps) {
@@ -160,16 +161,26 @@ export function baseSlots({ useProps }: { useProps: () => BaseSlotsProps }) {
           navTitle: slots.navTitle ?? InlineNavTitle,
           themeSwitch:
             themeSwitchEnabled && (slots.themeSwitch ?? InlineThemeSwitch),
-          languageSelect: slots.languageSelect ?? {
+          languageSelect: (slots.languageSelect ?? {
             root: LanguageSelect,
             text: LanguageSelectText,
-          },
+          }) as
+            | {
+                root: FC<LanguageSelectProps>;
+                text: FC<LanguageSelectTextProps>;
+              }
+            | false,
           searchTrigger:
             searchToggleEnabled &&
-            (slots.searchTrigger ?? {
+            ((slots.searchTrigger ?? {
               sm: InlineSearchTrigger,
               full: InlineSearchTriggerFull,
-            }),
+            }) as
+              | {
+                  sm: FC<SearchTriggerProps>;
+                  full: FC<FullSearchTriggerProps>;
+                }
+              | false),
         },
         baseProps: {
           nav,
