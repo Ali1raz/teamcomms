@@ -138,7 +138,10 @@ export function ThreadItem({
       key={thread.id}
       className={cn(
         "first:mt-2 hover:bg-muted/30 p-3 not-last:border-b",
-        editingThreadId === thread.id && "ring-1 ring-primary bg-muted/40"
+        editingThreadId === thread.id && "ring-1 ring-primary bg-muted/40",
+        thread.id === threadId && "bg-muted/50",
+        thread.mentionedUserIds?.includes(organizationUserId ?? "") &&
+          "border-l-primary border-l-3"
       )}
     >
       <div className="relative">

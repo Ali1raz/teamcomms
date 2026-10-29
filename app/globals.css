@@ -203,6 +203,17 @@
     line-height: 1.7;
   }
 
+  .mention {
+    background-color: var(--primary);
+    border-radius: var(--radius);
+    box-decoration-break: clone;
+    color: var(--primary-foreground);
+    padding: 0.1rem 0.3rem; /* y x */
+    &::after {
+      content: "\200B";
+    }
+  }
+
   :first-child {
     margin-top: 0;
   }

@@ -36,6 +36,7 @@ export const RealtimeMessageSchema = z.object({
   content: z.string(),
   imageUrl: z.string().nullable().optional(),
   repliesCount: z.number().optional(),
+  mentionedUserIds: z.array(z.string()).optional(),
   user: z.object({
     id: z.string(),
     name: z.string(),

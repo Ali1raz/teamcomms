@@ -2,6 +2,8 @@ import z from "zod";
 import type { Message } from "@/generated/prisma/client";
 import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
 import type { ConversationScopeType } from "@/lib/conversation";
+import { inngest } from "@/lib/inngest/client";
+import { analyzeContent, validMentionIds } from "@/lib/mentions";
 import { prisma } from "@/lib/prisma";
 import { groupReactions } from "@/lib/utils";
 import {
@@ -59,14 +61,21 @@ export const createMessage = base
     tags: ["message"],
   })
   .input(createMessageSchema)
-  .output(z.custom<Message>())
+  .output(z.custom<Message & { mentionedUserIds: string[] }>())
   .handler(async ({ context, input, errors }) => {
     // Run the PII check here because the middleware layer cannot see parsed input.
+    const analyzed = analyzeContent(input.content);
+    if (!analyzed || (!analyzed.plainText && !input.imageUrl)) {
+      throw errors.BAD_REQUEST({ message: "Message content is required" });
+    }
+
     const sensitiveInfoDecision = await sensitiveInfoAj().protect(
       context.request,
       {
         userId: context.user.id,
-        sensitiveInfoValue: input.content,
+        // image-only messages have no plain text; fall back to the raw content
+        // so the PII check still runs on whatever text exists.
+        sensitiveInfoValue: analyzed.plainText ?? input.content,
       }
     );
 
@@ -109,17 +118,52 @@ export const createMessage = base
       }
     }
 
-    const message = await prisma.message.create({
-      data: {
-        content: input.content,
-        imageUrl: input.imageUrl,
-        userId: context.user.id,
-        threadId: input.threadId,
-        ...scopeWhere,
-      },
+    const scopeTeamId = input.scope.kind === "team" ? input.scope.teamId : null;
+
+    const mentionedUserIds = await validMentionIds({
+      teamId: scopeTeamId,
+      organizationId: context.organization.id,
+      authorId: context.user.id,
+      candidateIds: analyzed?.candidateMentionIds ?? [],
     });
 
-    return message;
+    const message = await prisma.$transaction(async (tx) => {
+      const created = await tx.message.create({
+        data: {
+          content: input.content,
+          imageUrl: input.imageUrl,
+          userId: context.user.id,
+          threadId: input.threadId,
+          ...scopeWhere,
+          mentions: {
+            createMany: {
+              data: mentionedUserIds.map((userId) => ({ userId })),
+            },
+          },
+        },
+      });
+      return created;
+    });
+
+    if (mentionedUserIds.length) {
+      try {
+        await inngest.send({
+          id: `message-users-mentioned-${message.id}`, // dedupes duplicate sends
+          name: "message/users.mentioned",
+          data: {
+            messageId: message.id,
+            mentionedUserIds,
+            organizationId: context.organization.id,
+            teamId: scopeTeamId,
+          },
+        });
+      } catch (error) {
+        // The message is already saved; a queue failure must not fail the send.
+        console.error("Failed to queue mention emails", error);
+      }
+    }
+
+    return { ...message, mentionedUserIds };
   });
 
 export const listMessages = base
@@ -151,6 +195,62 @@ export const listMessages = base
     }
 
     const limit = input.limit;
+
+    // When a messageId is supplied, filter down to that single message so the
+    // UI can surface a specific message (e.g. from a mention email link).
+    if (input.messageId) {
+      const message = await prisma.message.findFirst({
+        where: {
+          id: input.messageId,
+          threadId: null,
+          ...messageScopeWhere(input.scope),
+          ...organizationScopeWhere(context.organization.id),
+        },
+        select: {
+          id: true,
+          content: true,
+          imageUrl: true,
+          createdAt: true,
+          _count: { select: { replies: true } },
+          reactions: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              emoji: true,
+              userId: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+          mentions: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!message) {
+        return { messages: [], nextCursor: null };
+      }
+
+      return {
+        messages: [
+          {
+            ...message,
+            repliesCount: message._count.replies,
+            reactions: groupReactions(message.reactions, context.user.id),
+            mentionedUserIds: message.mentions.map((m) => m.userId),
+          },
+        ],
+        nextCursor: null,
+      };
+    }
 
     const messages = await prisma.message.findMany({
       where: {
@@ -193,6 +293,11 @@ export const listMessages = base
             image: true,
           },
         },
+        mentions: {
+          select: {
+            userId: true,
+          },
+        },
       },
     });
 
@@ -200,10 +305,11 @@ export const listMessages = base
       messages.length === limit ? messages[messages.length - 1].id : null;
 
     return {
-      messages: messages.map(({ _count, reactions, ...message }) => ({
+      messages: messages.map(({ _count, reactions, mentions, ...message }) => ({
         ...message,
         repliesCount: _count.replies,
         reactions: groupReactions(reactions, context.user.id),
+        mentionedUserIds: mentions.map((m) => m.userId),
       })),
       nextCursor,
     };
@@ -229,11 +335,18 @@ export const updateMessage = base
   )
   .handler(async ({ context, input, errors }) => {
     // Run the PII check here because the middleware layer cannot see parsed input.
+    const analyzed = analyzeContent(input.content);
+    if (!analyzed || (!analyzed.plainText && !input.imageUrl)) {
+      throw errors.BAD_REQUEST({ message: "Message content is required" });
+    }
+
     const sensitiveInfoDecision = await sensitiveInfoAj().protect(
       context.request,
       {
         userId: context.user.id,
-        sensitiveInfoValue: input.content,
+        // image-only messages have no plain text; fall back to the raw content
+        // so the PII check still runs on whatever text exists.
+        sensitiveInfoValue: analyzed.plainText ?? input.content,
       }
     );
 
@@ -258,6 +371,12 @@ export const updateMessage = base
       select: {
         id: true,
         userId: true,
+        teamId: true,
+        mentions: {
+          select: {
+            userId: true,
+          },
+        },
       },
     });
 
@@ -269,16 +388,52 @@ export const updateMessage = base
       throw errors.FORBIDDEN();
     }
 
-    const updatedMessage = await prisma.message.update({
-      where: {
-        id: input.messageId,
-      },
-      data: {
-        content: input.content,
-        // Preserve attachment edits from the message editor instead of silently dropping them.
-        imageUrl: input.imageUrl,
-      },
+    const mentionedUserIds = await validMentionIds({
+      teamId: message.teamId ?? null,
+      organizationId: context.organization.id,
+      authorId: context.user.id,
+      candidateIds: analyzed?.candidateMentionIds ?? [],
     });
+
+    const previousIds = new Set(message.mentions.map((m) => m.userId));
+    const newlyMentionedIds = mentionedUserIds.filter(
+      (id) => !previousIds.has(id)
+    );
+
+    const updatedMessage = await prisma.$transaction(async (tx) => {
+      const updated = await tx.message.update({
+        where: {
+          id: input.messageId,
+        },
+        data: {
+          content: input.content,
+          // Preserve attachment edits from the message editor instead of silently dropping them.
+          imageUrl: input.imageUrl,
+          mentions: {
+            deleteMany: {},
+            createMany: {
+              data: mentionedUserIds.map((userId) => ({ userId })),
+            },
+          },
+        },
+      });
+      return updated;
+    });
+
+    if (newlyMentionedIds.length) {
+      try {
+        await inngest.send({
+          id: `message-users-mentioned-${input.messageId}-${updatedMessage.updatedAt.getTime()}`,
+          name: "message/users.mentioned",
+          data: {
+            messageId: updatedMessage.id,
+            mentionedUserIds: newlyMentionedIds,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to queue mention emails", error);
+      }
+    }
 
     return {
       message: updatedMessage,
@@ -482,6 +637,11 @@ export const listThreads = base
             image: true,
           },
         },
+        mentions: {
+          select: {
+            userId: true,
+          },
+        },
         // Fetch replies in the same query, ordered oldest-first for thread display
         replies: {
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -506,6 +666,11 @@ export const listThreads = base
                 image: true,
               },
             },
+            mentions: {
+              select: {
+                userId: true,
+              },
+            },
           },
         },
       },
@@ -516,18 +681,22 @@ export const listThreads = base
     }
 
     // Destructure replies out so parent shape matches the output schema
-    const { replies, _count, reactions, ...parentFields } = parent;
+    const { replies, _count, reactions, mentions, ...parentFields } = parent;
 
     return {
       parent: {
         ...parentFields,
         repliesCount: _count.replies,
         reactions: groupReactions(reactions, context.user.id),
+        mentionedUserIds: mentions.map((m) => m.userId),
       },
-      threads: replies.map(({ _count, reactions, ...thread }) => ({
-        ...thread,
-        repliesCount: _count.replies,
-        reactions: groupReactions(reactions, context.user.id),
-      })),
+      threads: replies.map(
+        ({ _count, reactions, mentions: threadMentions, ...thread }) => ({
+          ...thread,
+          repliesCount: _count.replies,
+          reactions: groupReactions(reactions, context.user.id),
+          mentionedUserIds: threadMentions.map((m) => m.userId),
+        })
+      ),
     };
   });

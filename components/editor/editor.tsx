@@ -1,6 +1,7 @@
 "use client";
+import { Mention } from "@tiptap/extension-mention";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import {
   EmojiPicker,
   EmojiPickerContent,
@@ -8,6 +9,7 @@ import {
 } from "@/components/reui/emoji-picker";
 import { cn } from "@/lib/utils";
 import { baseExtensions } from "./extensions";
+import { MentionSuggestions, type MentionUser } from "./mentions";
 import { Menubar } from "./menubar";
 
 interface iAppProps {
@@ -17,10 +19,36 @@ interface iAppProps {
   } | null;
   sendButton: ReactNode;
   footerLeft?: ReactNode;
+  mentionsQuery?: (query: string) => MentionUser[] | Promise<MentionUser[]>;
   onSubmit?: () => void;
 }
 
-export function Editor({ field, sendButton, footerLeft, onSubmit }: iAppProps) {
+export function Editor({
+  field,
+  sendButton,
+  footerLeft,
+  mentionsQuery,
+  onSubmit,
+}: iAppProps) {
+  const editorExtensions = useMemo(() => {
+    if (!mentionsQuery) {
+      return baseExtensions;
+    }
+
+    // Swap the static base Mention extension for one wired to `mentionsQuery`
+    // so typing "@" triggers the member-suggestion dropdown instead of the
+    // no-op default configured in `baseExtensions`.
+    return [
+      ...baseExtensions.filter((extension) => extension.name !== "mention"),
+      Mention.configure({
+        HTMLAttributes: {
+          class: "mention",
+        },
+        suggestion: MentionSuggestions(mentionsQuery),
+      }),
+    ];
+  }, [mentionsQuery]);
+
   const editorDomRef = useRef<HTMLElement | null>(null);
   const onSubmitRef = useRef(onSubmit);
 
@@ -29,7 +57,7 @@ export function Editor({ field, sendButton, footerLeft, onSubmit }: iAppProps) {
   }, [onSubmit]);
 
   const editor = useEditor({
-    extensions: baseExtensions,
+    extensions: editorExtensions,
     content: (() => {
       if (!field?.value) {
         return "";

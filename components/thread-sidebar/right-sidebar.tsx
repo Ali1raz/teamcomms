@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { useQueryState } from "nuqs";
+import { parseAsString } from "nuqs/server";
 import {
   type ComponentProps,
   type CSSProperties,
@@ -55,14 +57,74 @@ export function RightSidebar({
   width = "24rem",
   ...props
 }: ComponentProps<typeof Sidebar> & { width?: string }) {
-  const { threadId, setThreadId } = useThread();
-  const { setOpen, isMobile, setOpenMobile } = useSidebarWithSide("right");
+  const { threadId: contextThreadId, setThreadId } = useThread();
+  const { open, setOpen, isMobile, setOpenMobile } =
+    useSidebarWithSide("right");
   const { organizationId } = useParams<{ organizationId: string }>();
   const scope = useConversationScope();
   const roomId = scope ? conversationRoomId(scope) : null;
   const prevRoomIdRef = useRef(roomId);
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+
+  // Read threadId (the reply) and messageId (the parent message) from URL so a
+  // mention email link can auto-open the threads sidebar on desktop/mobile.
+  const [urlThreadId] = useQueryState(
+    "threadId",
+    parseAsString.withDefault("")
+  );
+  const [urlMessageId] = useQueryState(
+    "messageId",
+    parseAsString.withDefault("")
+  );
+
+  const effectiveThreadId = urlMessageId || contextThreadId;
+
+  // Sync a URL-driven threadId into the shared context so MessageItem and
+  // the rest of the tree see the active thread.
+  useEffect(() => {
+    if (urlThreadId && contextThreadId !== urlThreadId) {
+      setThreadId(urlThreadId);
+    }
+  }, [urlThreadId, contextThreadId, setThreadId]);
+
+  // Auto-open the threads sidebar when a thread reply (threadId) and its
+  // parent message (messageId) arrive from the URL (e.g. a mention email link).
+  useEffect(() => {
+    if (urlMessageId && effectiveThreadId && !open) {
+      if (isMobile) {
+        setOpenMobile(true);
+      } else {
+        setOpen(true);
+      }
+    }
+  }, [urlMessageId, effectiveThreadId, open, isMobile, setOpen, setOpenMobile]);
+
+  // Close the sidebar and clear thread context when the URL filters are
+  // cleared (e.g. via the Clear Message Filter button in MessageList).
+  //
+  // `setOpen` changes identity whenever the right sidebar's open state changes
+  // (SidebarProvider derives it from openRight). Subscribing to it here would
+  // make this effect re-run every time the sidebar opens and immediately close
+  // it again when no URL params are present. Only react to URL filter changes
+  // and call the setters through refs so they stay current without re-subscribing.
+  const setOpenRef = useRef(setOpen);
+  const setOpenMobileRef = useRef(setOpenMobile);
+  const setThreadIdRef = useRef(setThreadId);
+  setOpenRef.current = setOpen;
+  setOpenMobileRef.current = setOpenMobile;
+  setThreadIdRef.current = setThreadId;
+
+  useEffect(() => {
+    if (!urlMessageId && !urlThreadId) {
+      setThreadIdRef.current(null);
+      if (isMobile) {
+        setOpenMobileRef.current(false);
+      } else {
+        setOpenRef.current(false);
+      }
+    }
+  }, [urlMessageId, urlThreadId, isMobile]);
 
   useEffect(() => {
     if (prevRoomIdRef.current === roomId) return;
@@ -76,12 +138,12 @@ export function RightSidebar({
   }, [roomId, isMobile, setThreadId, setOpen, setOpenMobile]);
 
   const threadsQueryOptions = orpc.message.threads.list.queryOptions({
-    input: { threadId: threadId ?? "" },
+    input: { threadId: effectiveThreadId ?? "" },
   });
 
   const { data, isLoading } = useQuery({
     ...threadsQueryOptions,
-    enabled: !!threadId,
+    enabled: !!effectiveThreadId,
   });
 
   const { data: organization } = useQuery(
@@ -109,10 +171,10 @@ export function RightSidebar({
     [onlineusers]
   );
 
-  if (!threadId || !scope) return null;
+  if (!effectiveThreadId || !scope) return null;
 
   return (
-    <RealtimeThreadPRovider threadId={threadId}>
+    <RealtimeThreadPRovider threadId={effectiveThreadId}>
       <Sidebar
         {...props}
         style={{ "--sidebar-width": width } as CSSProperties}
@@ -123,7 +185,7 @@ export function RightSidebar({
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-semibold">Replies</h1>
             <div className="flex items-center gap-2">
-              <SummarizeThreadPopover threadId={threadId} />
+              <SummarizeThreadPopover threadId={effectiveThreadId} />
               <Button
                 variant="outline"
                 size="icon"
@@ -143,14 +205,14 @@ export function RightSidebar({
         </SidebarHeader>
         {/* Single scrollable area so parent message and replies scroll together */}
         <SidebarContent className="overflow-y-auto">
-          {threadId && isLoading && (
+          {effectiveThreadId && isLoading && (
             <p className="text-sm text-muted-foreground p-4 text-center">
               Loading…
             </p>
           )}
 
-          {threadId && data && (
-            <div className="">
+          {effectiveThreadId && data && (
+            <div>
               <div className="flex items-start gap-2 p-3">
                 <UserImage
                   image={data.parent.user.image}
@@ -205,13 +267,13 @@ export function RightSidebar({
                 </MarkerContent>
               </Marker>
 
-              <div className="">
+              <div>
                 {data.threads.map((thread) => (
                   <ThreadItem
                     key={thread.id}
                     scope={scope}
                     thread={thread}
-                    threadId={threadId}
+                    threadId={effectiveThreadId}
                     editingThreadId={editingThreadId}
                     setEditingThreadId={setEditingThreadId}
                     deletingThreadId={deletingThreadId}
@@ -225,12 +287,12 @@ export function RightSidebar({
           )}
         </SidebarContent>
         <SidebarFooter className="border-t px-2 shrink-0">
-          {threadId ? (
+          {effectiveThreadId ? (
             <Suspense fallback={null}>
               <ThreadsForm
-                key={threadId}
+                key={effectiveThreadId}
                 scope={scope}
-                threadId={threadId}
+                threadId={effectiveThreadId}
                 editingThread={selectedEditingThread}
                 onCancelEdit={() => setEditingThreadId(null)}
               />

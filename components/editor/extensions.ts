@@ -5,6 +5,7 @@ import {
   DetailsContent,
   DetailsSummary,
 } from "@tiptap/extension-details";
+import { Mention } from "@tiptap/extension-mention";
 import TextAlign from "@tiptap/extension-text-align";
 import { Placeholder } from "@tiptap/extensions";
 import { StarterKit } from "@tiptap/starter-kit";
@@ -74,6 +75,11 @@ export const extensions = [
 
 export const baseExtensions = [
   ...extensions,
+  Mention.configure({
+    HTMLAttributes: {
+      class: "mention",
+    },
+  }),
   Placeholder.configure({
     placeholder: "Type a message...",
   }),

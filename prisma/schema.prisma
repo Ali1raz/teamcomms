@@ -24,6 +24,7 @@ model User {
   teammembers TeamMember[]
   messages    Message[]
   reactions   MessageReaction[]
+  mentions    Mention[]
 
   @@map("user")
 }
@@ -208,6 +209,7 @@ model Message {
   replies Message[] @relation("MessageThread")
 
   reactions MessageReaction[]
+  mentions  Mention[]
 
   @@index([teamId])
   @@index([channelId])
@@ -230,4 +232,17 @@ model MessageReaction {
   @@index([messageId])
   @@index([userId])
   @@map("messageReaction")
+}
+
+model Mention {
+  id        String   @id @default(uuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([userId])
+  @@map("mention")
 }

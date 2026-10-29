@@ -2,17 +2,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { useConversationErrorRecovery } from "@/hooks/use-conversation-error-recovery";
+import { useMentionUsers } from "@/hooks/use-mention-users";
 import type { ConversationScope } from "@/lib/conversation";
 import { conversationKey } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
@@ -49,11 +46,7 @@ export function MessageInput({ scope }: MessageInputProps) {
 
   const queryclient = useQueryClient();
 
-  // Use organization.list (already prefetched in the layout) instead of team.get
-  // to avoid a duplicate network request just for the current user's info.
-  const {
-    data: { user: currentUser },
-  } = useSuspenseQuery(orpc.organization.list.queryOptions());
+  const { users, currentUser } = useMentionUsers(scope);
 
   const createMessageMutation = useMutation(
     orpc.message.create.mutationOptions({
@@ -148,6 +141,7 @@ export function MessageInput({ scope }: MessageInputProps) {
           payload: {
             message: {
               ...createdMessage,
+              // mentionedUserIds: createdMessage.mentionedUserIds,
               user: {
                 id: currentUser.id,
                 name: currentUser.name,
@@ -194,6 +188,7 @@ export function MessageInput({ scope }: MessageInputProps) {
               <MessageComposer
                 key={editorKey}
                 field={field}
+                members={users}
                 imageUrl={imageUrl}
                 onImageChange={(url) => form.setValue("imageUrl", url)}
                 onSubmit={form.handleSubmit(onSubmit)}

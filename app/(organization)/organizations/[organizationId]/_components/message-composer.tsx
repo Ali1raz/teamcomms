@@ -1,5 +1,7 @@
 import { ImageIcon, Send } from "lucide-react";
+import { useCallback } from "react";
 import { Editor } from "@/components/editor/editor";
+import type { MentionUser } from "@/components/editor/mentions";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { getShortcutModifierLabel } from "@/lib/utils";
@@ -17,6 +19,7 @@ interface iAppProps {
   onSubmit: () => void;
   isSubmitting?: boolean;
   submitLabel?: string;
+  members?: MentionUser[];
 }
 
 export function MessageComposer({
@@ -27,10 +30,30 @@ export function MessageComposer({
   onSubmit,
   isSubmitting,
   submitLabel = "Send",
+  members,
 }: iAppProps) {
+  const mentionsQuery = useCallback(
+    async (query: string) => {
+      if (!members?.length) {
+        return [];
+      }
+
+      const normalizedQuery = query.toLowerCase();
+      return members
+        .filter(
+          (member) =>
+            member.name.toLowerCase().includes(normalizedQuery) ||
+            (member.email?.toLowerCase().includes(normalizedQuery) ?? false)
+        )
+        .slice(0, 8);
+    },
+    [members]
+  );
+
   return (
     <Editor
       field={{ value: field.value, onChange: field.onChange }}
+      mentionsQuery={mentionsQuery}
       onSubmit={onSubmit}
       sendButton={
         <Button

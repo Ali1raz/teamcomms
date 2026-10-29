@@ -1,8 +1,10 @@
 "use client";
 
 import { useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Ban, ChevronDownIcon, ChevronsDownIcon, Hash } from "lucide-react";
+import { Ban, ChevronDownIcon, ChevronsDownIcon, Hash, X } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useQueryState } from "nuqs";
+import { parseAsString } from "nuqs/server";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
@@ -20,17 +22,30 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(false);
   const [newMessages, setNewMessages] = useState<boolean>(false);
+  const [scrollToBottomPending, setScrollToBottomPending] = useState(false);
   const lastItemRef = useRef<string | undefined>(undefined);
 
   const roomId = conversationRoomId(scope);
+
+  const [messageId, setMessageId] = useQueryState(
+    "messageId",
+    parseAsString.withDefault("")
+  );
+  const [, setThreadIdUrl] = useQueryState(
+    "threadId",
+    parseAsString.withDefault("")
+  );
 
   const infiniteOptions = orpc.message.list.infiniteOptions({
     input: (pageParams: string | undefined) => ({
       scope,
       cursor: pageParams,
       limit: 30,
+      ...(messageId ? { messageId } : {}),
     }),
-    queryKey: conversationKey(scope),
+    queryKey: messageId
+      ? [...conversationKey(scope), "messageId", messageId]
+      : conversationKey(scope),
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     select: (data) => ({
@@ -186,6 +201,18 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
     }
   };
 
+  // When the message filter is cleared, the list refetches all messages. Scroll
+  // to the bottom once the reloaded messages arrive so the latest messages are
+  // visible (they appear at the bottom).
+  useEffect(() => {
+    if (scrollToBottomPending && messages.length) {
+      setScrollToBottomPending(false);
+      bottomRef.current?.scrollIntoView({ block: "end" });
+      setIsAtBottom(true);
+      setNewMessages(false);
+    }
+  }, [scrollToBottomPending, messages.length]);
+
   const { organizationId } = useParams<{ organizationId: string }>();
   const currentUser = user
     ? ({ id: user.id } satisfies RealtimeUserSchemaType)
@@ -213,6 +240,19 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
               Retry
             </Button>
           }
+        />
+      </div>
+    );
+  }
+
+  if (messageId && (!messages || messages.length === 0) && !isFetching) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <EmptyState
+          icon={Ban}
+          iconClassName="size-8 sm:size-14"
+          title="Message not found"
+          description="The message you're looking for could not be found."
         />
       </div>
     );
@@ -275,6 +315,21 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
       </div>
 
       <div className="flex gap-2 absolute bottom-4 right-4 z-20">
+        {messageId && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              setMessageId("");
+              setThreadIdUrl("");
+              setScrollToBottomPending(true);
+            }}
+            aria-label="Clear message filter"
+          >
+            <X className="size-4" />
+            Clear Message Filter
+          </Button>
+        )}
         {!isAtBottom && (
           <Button
             type="button"

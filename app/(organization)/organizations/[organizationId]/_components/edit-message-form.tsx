@@ -2,14 +2,17 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
 import { Editor } from "@/components/editor/editor";
+import type { MentionUser } from "@/components/editor/mentions";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useRequiredConversationScope } from "@/hooks/use-conversation-scope";
+import { useMentionUsers } from "@/hooks/use-mention-users";
 import { conversationKey } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
 import type { InfiniteMessages } from "@/lib/types";
@@ -36,6 +39,8 @@ export function EditMessageForm({
   const scope = useRequiredConversationScope();
   const { send } = useRealtimeConversation();
 
+  const { users } = useMentionUsers(scope);
+
   const form = useForm<UpdateMessageSchemaType>({
     resolver: zodResolver(updateMessageSchema),
     defaultValues: {
@@ -48,6 +53,33 @@ export function EditMessageForm({
   });
 
   const queryClient = useQueryClient();
+
+  const mentionsQuery = useCallback(
+    (query: string) => {
+      const membersList = users;
+      if (!membersList?.length) {
+        return [];
+      }
+
+      const normalizedQuery = query.toLowerCase();
+      return membersList
+        .filter(
+          (member) =>
+            member.name.toLowerCase().includes(normalizedQuery) ||
+            (member.email?.toLowerCase().includes(normalizedQuery) ?? false)
+        )
+        .slice(0, 8)
+        .map(
+          (member): MentionUser => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            image: member.image ?? undefined,
+          })
+        );
+    },
+    [users]
+  );
 
   // Must stay in sync with the key MessageList registers its infinite query under.
   const messageListKey = conversationKey(scope);
@@ -156,6 +188,7 @@ export function EditMessageForm({
                 <Field data-invalid={fieldState.invalid}>
                   <Editor
                     field={{ value: field.value, onChange: field.onChange }}
+                    mentionsQuery={mentionsQuery}
                     onSubmit={form.handleSubmit(onSubmit)}
                     footerLeft={
                       imageField.value ? (

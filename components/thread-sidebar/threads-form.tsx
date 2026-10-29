@@ -1,11 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,6 +11,7 @@ import {
   createMessageSchema,
 } from "@/app/(organization)/organizations/schema";
 import { useConversationErrorRecovery } from "@/hooks/use-conversation-error-recovery";
+import { useMentionUsers } from "@/hooks/use-mention-users";
 import type { ConversationScope } from "@/lib/conversation";
 import { conversationKey } from "@/lib/conversation";
 import { type client, orpc } from "@/lib/orpc";
@@ -54,9 +51,7 @@ export function ThreadsForm({
 
   const messageListKey = conversationKey(scope);
 
-  const {
-    data: { user: currentUser },
-  } = useSuspenseQuery(orpc.organization.list.queryOptions());
+  const { users, currentUser } = useMentionUsers(scope);
 
   const form = useForm<CreateMessageType>({
     resolver: zodResolver(createMessageSchema),
@@ -342,6 +337,7 @@ export function ThreadsForm({
                   <MessageComposer
                     key={composerKey}
                     field={field}
+                    members={users}
                     imageUrl={imageField.value}
                     onImageChange={(url) => imageField.onChange(url)}
                     onClearImage={() => imageField.onChange(null)}

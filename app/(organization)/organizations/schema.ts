@@ -59,6 +59,7 @@ export const listMessagesSchema = z.object({
   scope: conversationScopeSchema,
   limit: z.number().int().min(1).max(100).default(30),
   cursor: z.string().optional(),
+  messageId: z.string().optional(),
 });
 export type ListMessagesType = z.infer<typeof listMessagesSchema>;
 
@@ -109,6 +110,7 @@ export const messageListItemSchema = z.object({
   createdAt: z.date(),
   repliesCount: z.number(),
   reactions: z.array(GroupedReactionSchema),
+  mentionedUserIds: z.array(z.string()).optional(),
   user: z.object({
     id: z.string(),
     name: z.string(),
