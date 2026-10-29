@@ -98,6 +98,17 @@ dont run pnpm build or type check until mentioned,
 - No `console.log` left in committed code.
 - No placeholder code, mock data, or `TODO` stubs presented as finished work.
 
+## Inngest
+
+This project uses Inngest for durable background tasks and scheduled functions.
+
+- **Client:** `lib/inngest/client.ts`
+- **Functions:** `lib/inngest/functions.ts`
+- **Endpoint:** `app/api/inngest/route.ts`
+- **Development:** Run `pnpm inngest:dev` and ensure `INNGEST_DEV=1` is set in `.env`.
+- **Patterns:** Prefer Inngest for any task that needs retries, long delays, or cross-service coordination (e.g., provisioning, email sequences).
+- **instructions/examples**: read .agents/inngest-function.md for examples how to create and use Inngest functions.
+
 ## Comments & naming
 
 - Comment the "why", never the "what".
