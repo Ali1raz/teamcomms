@@ -66,7 +66,9 @@ export function MessageItem({
     <div
       className={cn(
         "flex relative group gap-3 items-start overflow-x-hidden hover:bg-muted/30 transition-colors duration-150 p-4 border-b border-border",
-        open && message.id === threadId && "bg-muted/50"
+        open && message.id === threadId && "bg-muted/50",
+        message.mentionedUserIds?.includes(currentUserId) &&
+          "border-l-primary border-l-3"
       )}
     >
       <UserImage
