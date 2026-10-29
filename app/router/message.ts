@@ -196,6 +196,62 @@ export const listMessages = base
 
     const limit = input.limit;
 
+    // When a messageId is supplied, filter down to that single message so the
+    // UI can surface a specific message (e.g. from a mention email link).
+    if (input.messageId) {
+      const message = await prisma.message.findFirst({
+        where: {
+          id: input.messageId,
+          threadId: null,
+          ...messageScopeWhere(input.scope),
+          ...organizationScopeWhere(context.organization.id),
+        },
+        select: {
+          id: true,
+          content: true,
+          imageUrl: true,
+          createdAt: true,
+          _count: { select: { replies: true } },
+          reactions: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              emoji: true,
+              userId: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+          mentions: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!message) {
+        return { messages: [], nextCursor: null };
+      }
+
+      return {
+        messages: [
+          {
+            ...message,
+            repliesCount: message._count.replies,
+            reactions: groupReactions(message.reactions, context.user.id),
+            mentionedUserIds: message.mentions.map((m) => m.userId),
+          },
+        ],
+        nextCursor: null,
+      };
+    }
+
     const messages = await prisma.message.findMany({
       where: {
         threadId: null,
@@ -237,6 +293,11 @@ export const listMessages = base
             image: true,
           },
         },
+        mentions: {
+          select: {
+            userId: true,
+          },
+        },
       },
     });
 
@@ -244,10 +305,11 @@ export const listMessages = base
       messages.length === limit ? messages[messages.length - 1].id : null;
 
     return {
-      messages: messages.map(({ _count, reactions, ...message }) => ({
+      messages: messages.map(({ _count, reactions, mentions, ...message }) => ({
         ...message,
         repliesCount: _count.replies,
         reactions: groupReactions(reactions, context.user.id),
+        mentionedUserIds: mentions.map((m) => m.userId),
       })),
       nextCursor,
     };
@@ -575,6 +637,11 @@ export const listThreads = base
             image: true,
           },
         },
+        mentions: {
+          select: {
+            userId: true,
+          },
+        },
         // Fetch replies in the same query, ordered oldest-first for thread display
         replies: {
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -599,6 +666,11 @@ export const listThreads = base
                 image: true,
               },
             },
+            mentions: {
+              select: {
+                userId: true,
+              },
+            },
           },
         },
       },
@@ -609,18 +681,22 @@ export const listThreads = base
     }
 
     // Destructure replies out so parent shape matches the output schema
-    const { replies, _count, reactions, ...parentFields } = parent;
+    const { replies, _count, reactions, mentions, ...parentFields } = parent;
 
     return {
       parent: {
         ...parentFields,
         repliesCount: _count.replies,
         reactions: groupReactions(reactions, context.user.id),
+        mentionedUserIds: mentions.map((m) => m.userId),
       },
-      threads: replies.map(({ _count, reactions, ...thread }) => ({
-        ...thread,
-        repliesCount: _count.replies,
-        reactions: groupReactions(reactions, context.user.id),
-      })),
+      threads: replies.map(
+        ({ _count, reactions, mentions: threadMentions, ...thread }) => ({
+          ...thread,
+          repliesCount: _count.replies,
+          reactions: groupReactions(reactions, context.user.id),
+          mentionedUserIds: threadMentions.map((m) => m.userId),
+        })
+      ),
     };
   });

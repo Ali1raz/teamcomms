@@ -2,6 +2,7 @@ import { SendEmail } from "@/app/action";
 import { provisionDefaultChannels } from "@/lib/channel-provisioning";
 import { analyzeContent } from "@/lib/mentions";
 import { prisma } from "@/lib/prisma";
+import { env } from "../env";
 import { inngest } from "./client";
 
 export const sendMentionEmails = inngest.createFunction(
@@ -11,13 +12,16 @@ export const sendMentionEmails = inngest.createFunction(
     retries: 4,
   },
   async ({ event, step }) => {
-    const { messageId, mentionedUserIds } = event.data;
+    const { messageId, mentionedUserIds, organizationId } = event.data;
 
     const loaded = await step.run("load-mention-context", async () => {
       const message = await prisma.message.findUnique({
         where: { id: messageId },
         select: {
           content: true,
+          threadId: true,
+          teamId: true,
+          channelId: true,
           user: { select: { name: true } },
           team: { select: { name: true } },
           channel: { select: { name: true } },
@@ -34,12 +38,20 @@ export const sendMentionEmails = inngest.createFunction(
         select: { id: true, email: true },
       });
 
+      const isThread = Boolean(message.threadId);
+      const conversationId = message.teamId ?? message.channelId ?? "";
+      const conversationKind = message.teamId ? "team" : "channel";
+
       return {
         authorName: message.user.name,
         conversationName:
           message.team?.name ?? message.channel?.name ?? "a conversation",
         snippet: analyzeContent(message.content)?.plainText.slice(0, 140) ?? "",
         recipients,
+        isThread,
+        conversationId,
+        conversationKind,
+        parentId: isThread ? message.threadId : null,
       };
     });
 
@@ -53,7 +65,9 @@ export const sendMentionEmails = inngest.createFunction(
           to: recipient.email,
           subject: `${loaded.authorName} mentioned you in ${loaded.conversationName}`,
           meta: {
-            description: loaded.snippet || "You were mentioned in a message.",
+            description:
+              loaded.snippet.trim() || "You were mentioned in a message.",
+            link: `${env.NEXT_PUBLIC_BETTER_AUTH_URL}/organizations/${organizationId}/${loaded.conversationKind}/${loaded.conversationId}?messageId=${loaded.isThread ? loaded.parentId : messageId}${loaded.isThread ? `&threadId=${messageId}` : ""}`,
           },
         });
         // SendEmail returns { success: false } instead of throwing, so throw here or Inngest never retries.
