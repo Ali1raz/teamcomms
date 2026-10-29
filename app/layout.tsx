@@ -110,7 +110,7 @@ export default function RootLayout({
             </Providers>
           </NuqsAdapter>
         </ThemeProvider>
-        <Toaster closeButton duration={5000} position="top-center" richColors />
+        <Toaster closeButton duration={5000} richColors />
         <Analytics />
       </body>
     </html>

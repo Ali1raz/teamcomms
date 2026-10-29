@@ -9,9 +9,11 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
+  const isMobile = useIsMobile();
 
   return (
     <Sonner
@@ -32,6 +34,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
+      position={isMobile ? "bottom-right" : "top-center"}
+      visibleToasts={2}
+      swipeDirections={isMobile ? ["bottom", "left"] : ["top", "left", "right"]}
       toastOptions={{
         classNames: {
           toast: "cn-toast",
