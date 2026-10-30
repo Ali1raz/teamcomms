@@ -1,7 +1,6 @@
 import type { ArcjetNextRequest } from "@arcjet/next";
 import arcjet, { detectBot, slidingWindow } from "@/lib/arcjet";
 import type { User } from "@/lib/auth";
-import { formatLocalDateTime } from "@/lib/utils";
 import { base } from "../bast";
 
 const standardAj = () =>
@@ -37,7 +36,7 @@ export const readsecurityMiddleware = base
     if (dec.isDenied()) {
       if (dec.reason.isRateLimit()) {
         throw errors.RATE_LIMITED({
-          message: `You are making too many requests. Please try again later on: ${formatLocalDateTime(dec.reason.resetTime as Date)}.`,
+          message: `You are making too many requests. Please try again later!`,
         });
       }
 
