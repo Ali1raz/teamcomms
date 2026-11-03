@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import z from "zod";
-import { type Prisma } from "@/generated/prisma/client";
 import { MembershipRole } from "@/generated/prisma/enums";
 import { auth } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
