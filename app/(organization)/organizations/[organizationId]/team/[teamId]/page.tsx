@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { client, orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { ConversationView } from "../../_components/conversation-view";
+import { requireOrganizationAccess } from "../../access";
 
 export async function generateMetadata(
   props: PageProps<"/organizations/[organizationId]/team/[teamId]">
@@ -24,6 +25,9 @@ export default async function TeamIdPage(
 ) {
   const { params } = props;
   const { organizationId, teamId } = await params;
+
+  const queryClient = getQueryClient();
+  await requireOrganizationAccess(queryClient, organizationId);
 
   const access = await client.team.get({ teamId });
 
@@ -44,7 +48,6 @@ export default async function TeamIdPage(
     );
   }
 
-  const queryClient = getQueryClient();
   await Promise.all([
     queryClient.prefetchQuery(
       orpc.user.mention.queryOptions({ input: { teamId } })

@@ -33,7 +33,8 @@ export function TeamFilters() {
   }, [search, debouncedSearch, filters.search, setFilters]);
 
   const isFiltered = hasActiveTeamFilters(filters);
-  const isSorted = filters.sortBy !== "name" || filters.sortOrder !== "desc";
+  const isSorted =
+    filters.sortBy !== "createdAt" || filters.sortOrder !== "desc";
 
   function reset() {
     setSearch("");

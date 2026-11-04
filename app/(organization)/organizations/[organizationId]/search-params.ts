@@ -40,7 +40,7 @@ export const loadOrganizationMemberSearchParams = createLoader(
 export const teamParsers = {
   ...paginationParsers,
   search: parseAsString.withDefault(""),
-  sortBy: parseAsStringEnum([...TEAM_SORT_FIELDS]).withDefault("name"),
+  sortBy: parseAsStringEnum([...TEAM_SORT_FIELDS]).withDefault("createdAt"),
   sortOrder: parseAsStringEnum([...SORT_ORDERS]).withDefault("desc"),
 };
 

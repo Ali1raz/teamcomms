@@ -27,7 +27,7 @@ export function OrganizationTabs({
 }) {
   const queryClient = useQueryClient();
   const [tab, setTab] = useOrganizationTab();
-  const [memberFilters] = useOrganizationMemberFilters();
+  const [memberFilters, setMemberFilters] = useOrganizationMemberFilters();
   const [teamFilters, setTeamFilters] = useTeamFilters();
   const [channelFilters, setChannelFilters] = useChannelFilters();
 
@@ -69,6 +69,7 @@ export function OrganizationTabs({
     const nextTab = value as OrganizationTab;
     void setTeamFilters(null);
     void setChannelFilters(null);
+    void setMemberFilters(null);
     void setTab(nextTab);
   }
 

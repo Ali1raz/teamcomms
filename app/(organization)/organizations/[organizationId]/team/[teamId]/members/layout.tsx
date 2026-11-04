@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
 import { client } from "@/lib/orpc";
+import { getQueryClient } from "@/lib/query/hydration";
+import { requireOrganizationAccess } from "../../../access";
 
 type Props = { params: Promise<{ organizationId: string; teamId: string }> };
 
@@ -22,6 +24,9 @@ export default async function MembersLayout({
   params,
 }: Props & { children: ReactNode }) {
   const { organizationId, teamId } = await params;
+
+  await requireOrganizationAccess(getQueryClient(), organizationId);
+
   const access = await client.team.get({ teamId });
 
   if (!access.isMember) {
