@@ -124,7 +124,10 @@ class MentionList extends Component<
   render() {
     const { items, loading } = this.props;
     return (
-      <div className="z-50 w-64 rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-md">
+      <div
+        className="z-50 w-64 rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-md"
+        data-slot="mentions-list"
+      >
         <p className="text-sm text-muted-foreground">Tag a member</p>
         {loading && !items.length ? (
           <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
@@ -136,9 +139,10 @@ class MentionList extends Component<
             <button
               type="button"
               key={item.id}
+              data-slot="mentions-item"
               onClick={() => this.selectItem(index)}
               className={cn(
-                "flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm outline-hidden",
+                "flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 index === this.state.selectedIndex
                   ? "bg-accent text-accent-foreground"
                   : ""
