@@ -100,7 +100,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <NuqsAdapter>
+          <NuqsAdapter defaultOptions={{ history: "push" }}>
             <Providers>
               <TooltipProvider>
                 <RootProvider theme={{ enabled: false }}>
