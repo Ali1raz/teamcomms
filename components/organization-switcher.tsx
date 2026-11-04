@@ -41,8 +41,8 @@ export function OrganizationSwitcher() {
   );
 
   // Always derive from state so UI updates immediately
-  const activeOrganization =
-    organizations.find((w) => w.id === activeId) ?? currentOrganization;
+  const activeMembership = organizations.find((org) => org.id === activeId);
+  const activeOrganization = activeMembership ?? currentOrganization;
 
   const handleChange = async (id: string) => {
     if (id === activeId) return;
@@ -72,14 +72,21 @@ export function OrganizationSwitcher() {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton className="w-full px-4 py-5 mt-2">
+            <SidebarMenuButton size="lg" className="mt-2">
               <OrganizationAvatar
                 organization={activeOrganization}
-                className="size-5 rounded-md"
+                className="size-8 rounded-md"
               />
-              <span className="min-w-0 flex-1 truncate font-medium">
-                {activeOrganization.name}
-              </span>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-medium">
+                  {activeOrganization.name}
+                </span>
+                {activeMembership ? (
+                  <span className="truncate text-xs capitalize text-muted-foreground">
+                    {activeMembership.role}
+                  </span>
+                ) : null}
+              </div>
               <ChevronsUpDown className="shrink-0" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
