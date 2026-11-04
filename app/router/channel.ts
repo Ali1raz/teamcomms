@@ -20,8 +20,12 @@ import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
+import { requireManagerMiddleware } from "../middlewares/manager";
 import { requireMemberMiddleware } from "../middlewares/member";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
+import {
+  requireActiveOrganizationMiddleware,
+  requireOrganizationMiddleware,
+} from "../middlewares/organization";
 
 const channelSelect = {
   id: true,
@@ -70,6 +74,7 @@ export const listChannels = base
       sortOrder: z.enum([...SORT_ORDERS]).optional(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       channels: z.array(channelListOutput),
@@ -80,12 +85,6 @@ export const listChannels = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    if (input.organizationId !== context.organization.id) {
-      throw errors.BAD_REQUEST({
-        message: "You recently switched organization",
-      });
-    }
-
     const search = input.search?.trim();
     const where: Prisma.ChannelWhereInput = {
       organizationId: context.organization.id,
@@ -185,20 +184,10 @@ export const createChannel = base
     tags: ["channel"],
   })
   .input(createChannelSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(z.object({ channel: channelOutput }))
   .handler(async ({ context, input, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can manage channels",
-      });
-    }
-
-    if (input.organizationId !== context.organization.id) {
-      throw errors.BAD_REQUEST({
-        message: "You recently switched organization",
-      });
-    }
-
     try {
       const channel = await prisma.channel.create({
         data: {
@@ -239,14 +228,10 @@ export const updateChannel = base
     tags: ["channel"],
   })
   .input(updateChannelSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(z.object({ channel: channelOutput }))
   .handler(async ({ context, input, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can manage channels",
-      });
-    }
-
     const existingChannel = await prisma.channel.findFirst({
       where: {
         id: input.channelId,
@@ -305,7 +290,14 @@ export const deleteChannel = base
     summary: "Delete a channel",
     tags: ["channel"],
   })
-  .input(z.object({ channelId: z.string() }))
+  .input(
+    z.object({
+      organizationId: z.string().min(1),
+      channelId: z.string(),
+    })
+  )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(
     z.object({
       id: z.string(),
@@ -313,12 +305,6 @@ export const deleteChannel = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can manage channels",
-      });
-    }
-
     const existingChannel = await prisma.channel.findFirst({
       where: {
         id: input.channelId,

@@ -13,6 +13,10 @@ export const base = os
     NOT_FOUND: {
       message: "The requested resource was not found.",
     },
+    ORGANIZATION_MISMATCH: {
+      status: 409,
+      message: "You switched organizations. Reload the page to continue.",
+    },
     FORBIDDEN: {
       message: "You do not have permission to access this resource.",
     },

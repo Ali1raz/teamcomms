@@ -7,6 +7,7 @@ import { orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { OrganizationHeader } from "./_components/organization-header";
 import { RealtimeProviderWrapper } from "./_components/realtime-provider-wrapper";
+import { requireOrganizationAccess } from "./access";
 
 export default async function OrganizationLayout({
   children,
@@ -17,8 +18,10 @@ export default async function OrganizationLayout({
 }) {
   const { organizationId } = await params;
   const queryClient = getQueryClient();
+
+  await requireOrganizationAccess(queryClient, organizationId);
+
   await Promise.all([
-    queryClient.prefetchQuery(orpc.organization.list.queryOptions()),
     queryClient.prefetchQuery(
       orpc.team.list.queryOptions({
         input: { organizationId: organizationId },

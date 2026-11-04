@@ -3,6 +3,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ interface MessageInputProps {
 
 export function MessageInput({ scope }: MessageInputProps) {
   const [editorKey, setEditorKey] = useState(0);
+  const { organizationId } = useParams<{ organizationId: string }>();
 
   const { send } = useRealtimeConversation();
   const recoverFromDeletedChannel = useConversationErrorRecovery(scope);
@@ -35,6 +37,7 @@ export function MessageInput({ scope }: MessageInputProps) {
   const form = useForm<CreateMessageType>({
     resolver: zodResolver(createMessageSchema),
     defaultValues: {
+      organizationId,
       content: "",
       scope,
       imageUrl: undefined,
@@ -128,7 +131,7 @@ export function MessageInput({ scope }: MessageInputProps) {
         }
 
         setEditorKey((prev) => prev + 1);
-        form.reset({ scope, content: "", imageUrl: undefined });
+        form.reset({ organizationId, scope, content: "", imageUrl: undefined });
         form.setValue("imageUrl", undefined);
 
         // Invalidate using the same key the infinite query is stored under.

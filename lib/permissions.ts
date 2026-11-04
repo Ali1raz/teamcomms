@@ -28,6 +28,16 @@ export const roles = {
   }),
 } satisfies Record<MembershipRole, ReturnType<typeof ac.newRole>>;
 
+export const MANAGER_ROLES = ["owner", "admin"] as const;
+
+export function isManagerRole(role: string | null | undefined): boolean {
+  return (
+    role !== null &&
+    role !== undefined &&
+    (MANAGER_ROLES as readonly string[]).includes(role)
+  );
+}
+
 export type Statements = typeof statement;
 
 export type PermissionMap = {

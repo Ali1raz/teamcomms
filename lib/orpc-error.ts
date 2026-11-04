@@ -1,6 +1,6 @@
 export function isOrpcErrorWithCode(
   error: unknown,
-  code: "NOT_FOUND" | "BAD_REQUEST" | "FORBIDDEN"
+  code: "NOT_FOUND" | "BAD_REQUEST" | "FORBIDDEN" | "ORGANIZATION_MISMATCH"
 ): boolean {
   return (
     typeof error === "object" &&

@@ -34,7 +34,10 @@ export function DeleteChannelDialog({
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const { channelId } = useParams<{ channelId?: string }>();
+  const { organizationId, channelId } = useParams<{
+    organizationId: string;
+    channelId?: string;
+  }>();
   const { setThreadId } = useThread();
   const {
     setOpen: setRightSidebarOpen,
@@ -125,7 +128,10 @@ export function DeleteChannelDialog({
             disabled={deleteChannelMutation.isPending}
             onClick={(event) => {
               event.preventDefault();
-              deleteChannelMutation.mutate({ channelId: channel.id });
+              deleteChannelMutation.mutate({
+                organizationId,
+                channelId: channel.id,
+              });
             }}
           >
             {deleteChannelMutation.isPending ? (

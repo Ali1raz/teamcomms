@@ -1,11 +1,28 @@
 import {
   defaultShouldDehydrateQuery,
+  MutationCache,
+  QueryCache,
   QueryClient,
 } from "@tanstack/react-query";
+import { isOrpcErrorWithCode } from "@/lib/orpc-error";
+import { buildOrganizationsRedirect } from "@/lib/urls";
 import { serializer } from "../serializer";
+
+function redirectOnOrgMismatch(error: unknown) {
+  if (!isOrpcErrorWithCode(error, "ORGANIZATION_MISMATCH")) return;
+  if (typeof window === "undefined") return;
+
+  window.location.assign(
+    buildOrganizationsRedirect(
+      window.location.pathname + window.location.search
+    )
+  );
+}
 
 export function createQueryClient() {
   return new QueryClient({
+    queryCache: new QueryCache({ onError: redirectOnOrgMismatch }),
+    mutationCache: new MutationCache({ onError: redirectOnOrgMismatch }),
     defaultOptions: {
       queries: {
         queryKeyHashFn(queryKey) {

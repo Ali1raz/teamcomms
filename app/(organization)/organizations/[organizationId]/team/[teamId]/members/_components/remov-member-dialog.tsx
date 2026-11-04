@@ -55,7 +55,7 @@ export function RemoveMemberDialog({
   );
 
   function handleConfirm() {
-    removeMemberMutation.mutate({ teamId, memberId });
+    removeMemberMutation.mutate({ organizationId, teamId, memberId });
   }
 
   return (

@@ -34,7 +34,7 @@ export default function TeamMembersPage() {
   }>();
 
   const {
-    data: { members },
+    data: { members, canManage },
     isFetching,
     refetch,
   } = useSuspenseQuery(
@@ -77,9 +77,11 @@ export default function TeamMembersPage() {
             )}
             {isFetching ? "Refreshing..." : "Refresh"}
           </Button>
-          <AddMemberToTeam teamId={teamId} organizationId={organizationId}>
-            <Button className="w-fit">Add Member</Button>
-          </AddMemberToTeam>
+          {canManage && (
+            <AddMemberToTeam teamId={teamId} organizationId={organizationId}>
+              <Button className="w-fit">Add Member</Button>
+            </AddMemberToTeam>
+          )}
         </div>
       </div>
 
@@ -107,30 +109,32 @@ export default function TeamMembersPage() {
                   <CardDescription>{member.email}</CardDescription>
                 </div>
 
-                <CardAction>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <MoreHorizontal />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <RemoveMemberDialog
-                        teamId={teamId}
-                        organizationId={organizationId}
-                        memberId={member.id}
-                        memberName={member.name}
-                      >
-                        <DropdownMenuItem
-                          onSelect={(e) => e.preventDefault()}
-                          variant="destructive"
+                {canManage && (
+                  <CardAction>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <MoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <RemoveMemberDialog
+                          teamId={teamId}
+                          organizationId={organizationId}
+                          memberId={member.id}
+                          memberName={member.name}
                         >
-                          Remove
-                        </DropdownMenuItem>
-                      </RemoveMemberDialog>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardAction>
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                            variant="destructive"
+                          >
+                            Remove
+                          </DropdownMenuItem>
+                        </RemoveMemberDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </CardAction>
+                )}
               </CardHeader>
             </Card>
           ))}

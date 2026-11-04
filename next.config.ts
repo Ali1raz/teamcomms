@@ -4,6 +4,9 @@ import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    authInterrupts: true,
+  },
   typedRoutes: true,
   images: {
     remotePatterns: [

@@ -114,6 +114,7 @@ export function AddMemberToTeam({
 
   function handleAdd() {
     addMemberMutation.mutate({
+      organizationId,
       teamId,
       memberIds: [...selected],
     });

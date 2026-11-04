@@ -1,3 +1,9 @@
+import { ORGANIZATIONS_PATH } from "@/lib/app/constants";
+
+export function buildOrganizationsRedirect(currentPath: string): string {
+  return `${ORGANIZATIONS_PATH}?redirectTo=${encodeURIComponent(currentPath)}`;
+}
+
 export function normalize(urlOrPath: string) {
   if (urlOrPath.length > 1 && urlOrPath.endsWith("/"))
     return urlOrPath.slice(0, -1);

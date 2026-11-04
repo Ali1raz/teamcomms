@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -39,9 +39,11 @@ export function CreateTeamDialog({
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { organizationId } = useParams<{ organizationId: string }>();
   const form = useForm<CreateTeamType>({
     resolver: zodResolver(createTeamSchema),
     defaultValues: {
+      organizationId,
       name: "",
     },
     mode: "onChange",
@@ -59,7 +61,7 @@ export function CreateTeamDialog({
     orpc.team.create.mutationOptions({
       onSuccess: (newTeam) => {
         toast.success(`Team ${newTeam.name} created successfully!`);
-        form.reset();
+        form.reset({ organizationId, name: "" });
         queryClient.invalidateQueries({
           queryKey: orpc.team.list.queryKey({
             input: { organizationId: newTeam.organizationId },
@@ -87,7 +89,7 @@ export function CreateTeamDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) form.reset();
+        if (!next) form.reset({ organizationId, name: "" });
       }}
     >
       <DialogTrigger asChild>

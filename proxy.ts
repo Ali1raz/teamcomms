@@ -2,6 +2,7 @@ import arcjet, { createMiddleware, detectBot } from "@arcjet/next";
 import { getSessionCookie } from "better-auth/cookies";
 import { isMarkdownPreferred, rewritePath } from "fumadocs-core/negotiation";
 import { type NextRequest, NextResponse } from "next/server";
+import { CURRENT_PATH_HEADER } from "@/lib/app/constants";
 import { env } from "@/lib/env";
 import { docsContentRoute, docsRoute } from "@/lib/shared";
 
@@ -34,6 +35,16 @@ function markdownRewrite(request: NextRequest) {
   return undefined;
 }
 
+function nextWithCurrentPath(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(
+    CURRENT_PATH_HEADER,
+    request.nextUrl.pathname + request.nextUrl.search
+  );
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
 async function authMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -57,7 +68,7 @@ async function authMiddleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return nextWithCurrentPath(request);
 }
 
 const aj = arcjet({

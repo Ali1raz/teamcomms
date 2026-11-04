@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
@@ -31,6 +32,7 @@ export function DeleteMessageDialog({
   children,
 }: DeleteMessageDialogProps) {
   const scope = useRequiredConversationScope();
+  const { organizationId } = useParams<{ organizationId: string }>();
   const queryClient = useQueryClient();
   const { send } = useRealtimeConversation();
   const [open, setOpen] = useState(false);
@@ -92,7 +94,7 @@ export function DeleteMessageDialog({
   );
 
   function handleConfirm() {
-    deleteMessageMutation.mutate({ messageId });
+    deleteMessageMutation.mutate({ organizationId, messageId });
   }
 
   return (

@@ -29,7 +29,10 @@ export function DeleteTeamDialog({
   children?: React.ReactNode;
   className?: React.ComponentProps<typeof Button>["className"];
 }) {
-  const { teamId } = useParams<{ teamId: string }>();
+  const { organizationId, teamId } = useParams<{
+    organizationId: string;
+    teamId: string;
+  }>();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -58,7 +61,7 @@ export function DeleteTeamDialog({
   );
 
   function handleConfirm() {
-    deleteTeamMutation.mutate({ teamId: team.id });
+    deleteTeamMutation.mutate({ organizationId, teamId: team.id });
   }
 
   return (

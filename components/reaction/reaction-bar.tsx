@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import type { GroupedReactionSchemaType } from "@/app/(organization)/organizations/schema";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,7 @@ function updateThreadDataReactions(
 
 export function ReactionBar({ messageId, reactions }: ReactionBarProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useParams<{ organizationId: string }>();
   const { send } = useRealtimeConversation();
   const { data: session } = authClient.useSession();
   const currentUserId = session?.user?.id ?? "";
@@ -190,7 +192,7 @@ export function ReactionBar({ messageId, reactions }: ReactionBarProps) {
   );
 
   function handleToggle(emoji: string) {
-    toggleReactionMutation.mutate({ messageId, emoji });
+    toggleReactionMutation.mutate({ organizationId, messageId, emoji });
   }
 
   return (

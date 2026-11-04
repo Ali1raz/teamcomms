@@ -4,7 +4,9 @@ import { sensitiveInfoAj } from "@/lib/arcjet-helpers";
 import type { ConversationScopeType } from "@/lib/conversation";
 import { inngest } from "@/lib/inngest/client";
 import { analyzeContent, validMentionIds } from "@/lib/mentions";
+import { isManagerRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { isTeamMember } from "@/lib/teams";
 import { groupReactions } from "@/lib/utils";
 import {
   createMessageSchema,
@@ -19,7 +21,12 @@ import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
+import { requireMemberMiddleware } from "../middlewares/member";
+import {
+  requireActiveOrganizationMiddleware,
+  requireOrganizationMiddleware,
+} from "../middlewares/organization";
+import { requireTeamAccessMiddleware } from "../middlewares/team";
 
 async function findConversationInOrganization(
   scope: ConversationScopeType,
@@ -52,6 +59,7 @@ function organizationScopeWhere(organizationId: string) {
 export const createMessage = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .use(writesecurityMiddleware)
   .route({
@@ -61,6 +69,10 @@ export const createMessage = base
     tags: ["message"],
   })
   .input(createMessageSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireTeamAccessMiddleware, (input) =>
+    input.scope.kind === "team" ? input.scope.teamId : null
+  )
   .output(z.custom<Message & { mentionedUserIds: string[] }>())
   .handler(async ({ context, input, errors }) => {
     // Run the PII check here because the middleware layer cannot see parsed input.
@@ -169,6 +181,7 @@ export const createMessage = base
 export const listMessages = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .use(readsecurityMiddleware)
   .route({
@@ -178,6 +191,9 @@ export const listMessages = base
     tags: ["message"],
   })
   .input(listMessagesSchema)
+  .use(requireTeamAccessMiddleware, (input) =>
+    input.scope.kind === "team" ? input.scope.teamId : null
+  )
   .output(
     z.object({
       messages: z.array(messageListItemSchema),
@@ -256,6 +272,7 @@ export const listMessages = base
       where: {
         threadId: null,
         ...messageScopeWhere(input.scope),
+        ...organizationScopeWhere(context.organization.id),
       },
       ...(input.cursor
         ? {
@@ -318,6 +335,7 @@ export const listMessages = base
 export const updateMessage = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .use(writesecurityMiddleware)
   .route({
@@ -327,6 +345,7 @@ export const updateMessage = base
     tags: ["message"],
   })
   .input(updateMessageSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       message: z.custom<Message>(),
@@ -388,6 +407,16 @@ export const updateMessage = base
       throw errors.FORBIDDEN();
     }
 
+    if (
+      message.teamId &&
+      !isManagerRole(context.member.role) &&
+      !(await isTeamMember(message.teamId, context.user.id))
+    ) {
+      throw errors.FORBIDDEN({
+        message: "You are not a member of this team",
+      });
+    }
+
     const mentionedUserIds = await validMentionIds({
       teamId: message.teamId ?? null,
       organizationId: context.organization.id,
@@ -444,6 +473,7 @@ export const updateMessage = base
 export const deleteMessage = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .use(writesecurityMiddleware)
   .route({
@@ -454,9 +484,11 @@ export const deleteMessage = base
   })
   .input(
     z.object({
+      organizationId: z.string().min(1),
       messageId: z.string(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       id: z.string(),
@@ -472,6 +504,7 @@ export const deleteMessage = base
       select: {
         id: true,
         userId: true,
+        teamId: true,
       },
     });
 
@@ -486,6 +519,16 @@ export const deleteMessage = base
       });
     }
 
+    if (
+      message.teamId &&
+      !isManagerRole(context.member.role) &&
+      !(await isTeamMember(message.teamId, context.user.id))
+    ) {
+      throw errors.FORBIDDEN({
+        message: "You are not a member of this team",
+      });
+    }
+
     await prisma.message.delete({
       where: { id: input.messageId },
     });
@@ -496,6 +539,7 @@ export const deleteMessage = base
 export const toggleReaction = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .use(writesecurityMiddleware)
   .route({
@@ -505,6 +549,7 @@ export const toggleReaction = base
     tags: ["message"],
   })
   .input(toggleReactionSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       messageId: z.string(),
@@ -520,11 +565,22 @@ export const toggleReaction = base
       },
       select: {
         id: true,
+        teamId: true,
       },
     });
 
     if (!message) {
       throw errors.NOT_FOUND();
+    }
+
+    if (
+      message.teamId &&
+      !isManagerRole(context.member.role) &&
+      !(await isTeamMember(message.teamId, context.user.id))
+    ) {
+      throw errors.FORBIDDEN({
+        message: "You are not a member of this team",
+      });
     }
 
     const existing = await prisma.messageReaction.findUnique({
@@ -591,6 +647,7 @@ export const toggleReaction = base
 export const listThreads = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .use(readsecurityMiddleware)
   .route({
@@ -618,6 +675,7 @@ export const listThreads = base
       },
       select: {
         id: true,
+        teamId: true,
         content: true,
         imageUrl: true,
         createdAt: true,
@@ -680,8 +738,25 @@ export const listThreads = base
       throw errors.NOT_FOUND();
     }
 
+    if (
+      parent.teamId &&
+      !isManagerRole(context.member.role) &&
+      !(await isTeamMember(parent.teamId, context.user.id))
+    ) {
+      throw errors.FORBIDDEN({
+        message: "You are not a member of this team",
+      });
+    }
+
     // Destructure replies out so parent shape matches the output schema
-    const { replies, _count, reactions, mentions, ...parentFields } = parent;
+    const {
+      replies,
+      _count,
+      reactions,
+      mentions,
+      teamId: _teamId,
+      ...parentFields
+    } = parent;
 
     return {
       parent: {

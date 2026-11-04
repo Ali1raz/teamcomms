@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { ImageZoom } from "@/components/kibo-ui/image-zoom";
 import type { ConversationScope } from "@/lib/conversation";
@@ -41,6 +42,7 @@ export function ThreadItem({
   organizationUserId: string | undefined;
 }) {
   const queryClient = useQueryClient();
+  const { organizationId } = useParams<{ organizationId: string }>();
   const { send } = useRealtimeConversation();
   const { send: sendThread } = useRealtimeThread();
 
@@ -153,6 +155,7 @@ export function ThreadItem({
             onDelete={async () => {
               setDeletingThreadId(thread.id);
               await deleteThreadMutation.mutateAsync({
+                organizationId,
                 messageId: thread.id,
               });
             }}

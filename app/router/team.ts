@@ -12,6 +12,7 @@ import {
 import { auth, type User } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { clampPage } from "@/lib/pagination";
+import { isManagerRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { updateTeamSchema } from "@/lib/schema";
 import { createSlug } from "@/lib/utils";
@@ -21,8 +22,13 @@ import { readsecurityMiddleware } from "../middlewares/arcjet/read";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
+import { requireManagerMiddleware } from "../middlewares/manager";
 import { requireMemberMiddleware } from "../middlewares/member";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
+import {
+  requireActiveOrganizationMiddleware,
+  requireOrganizationMiddleware,
+} from "../middlewares/organization";
+import { requireTeamAccessMiddleware } from "../middlewares/team";
 
 export const createTeam = base
   .use(requireAuthMiddleware)
@@ -37,6 +43,8 @@ export const createTeam = base
     tags: ["team"],
   })
   .input(createTeamSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(
     z.object({
       id: z.string(),
@@ -48,12 +56,6 @@ export const createTeam = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners in this organization can create teams",
-      });
-    }
-
     const slug = createSlug(input.name);
     let data: Awaited<ReturnType<typeof auth.api.createTeam>>;
     try {
@@ -87,6 +89,8 @@ export const updateTeam = base
     tags: ["team"],
   })
   .input(updateTeamSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(
     z.object({
       name: z.string(),
@@ -94,12 +98,6 @@ export const updateTeam = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can update team",
-      });
-    }
-
     const slug = createSlug(input.name);
     let data: Awaited<ReturnType<typeof auth.api.updateTeam>>;
     try {
@@ -146,6 +144,7 @@ export const listTeams = base
       sortOrder: z.enum([...SORT_ORDERS]).optional(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       teams: z.array(
@@ -263,6 +262,7 @@ export const listTeams = base
 export const getTeam = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(readsecurityMiddleware)
   .use(standardsecurityMiddleware)
   .route({
@@ -280,23 +280,30 @@ export const getTeam = base
     z.object({
       team: z.string(),
       currentUser: z.custom<User>(),
+      isMember: z.boolean(),
+      canManage: z.boolean(),
     })
   )
   .handler(async ({ input, context, errors }) => {
-    const team = await prisma.team.findUnique({
-      where: { id: input.teamId },
+    const team = await prisma.team.findFirst({
+      where: { id: input.teamId, organizationId: context.organization.id },
       select: {
         name: true,
+        teammembers: {
+          where: { userId: context.user.id },
+          select: { id: true },
+        },
       },
     });
 
     if (!team) {
       throw errors.NOT_FOUND({ message: "Team not found" });
     }
-
     return {
       team: team.name,
       currentUser: context.user,
+      isMember: team.teammembers.length > 0,
+      canManage: isManagerRole(context.member.role),
     };
   });
 
@@ -313,21 +320,18 @@ export const deleteTeam = base
   })
   .input(
     z.object({
+      organizationId: z.string().min(1),
       teamId: z.string(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(
     z.object({
       organizationId: z.string(),
     })
   )
   .handler(async ({ input, context, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can delete teams",
-      });
-    }
-
     try {
       await auth.api.removeTeam({
         body: {
@@ -360,17 +364,15 @@ export const addMembersToTeam = base
   })
   .input(
     z.object({
+      organizationId: z.string().min(1),
       teamId: z.string(),
       memberIds: z.array(z.string()),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(z.void())
-  .handler(async ({ input, context, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can add members to a team",
-      });
-    }
+  .handler(async ({ input, errors }) => {
     try {
       await Promise.all(
         input.memberIds.map(async (userId) => {
@@ -400,17 +402,15 @@ export const removeMemberFromTeam = base
   })
   .input(
     z.object({
+      organizationId: z.string().min(1),
       teamId: z.string(),
       memberId: z.string(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .use(requireManagerMiddleware)
   .output(z.void())
-  .handler(async ({ input, context, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can remove members from a team",
-      });
-    }
+  .handler(async ({ input, errors }) => {
     try {
       await auth.api.removeTeamMember({
         body: { teamId: input.teamId, userId: input.memberId },
@@ -426,6 +426,7 @@ export const removeMemberFromTeam = base
 export const listTeamMembers = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .route({
     method: "GET",
@@ -438,6 +439,7 @@ export const listTeamMembers = base
       teamId: z.string(),
     })
   )
+  .use(requireTeamAccessMiddleware, (input) => input.teamId)
   .output(
     z.object({
       members: z.array(
@@ -449,9 +451,19 @@ export const listTeamMembers = base
           role: z.enum([...Object.values(MembershipRole)]),
         })
       ),
+      canManage: z.boolean(),
     })
   )
   .handler(async ({ context, input, errors }) => {
+    const team = await prisma.team.findFirst({
+      where: { id: input.teamId, organizationId: context.organization.id },
+      select: { id: true },
+    });
+
+    if (!team) {
+      throw errors.NOT_FOUND({ message: "Team not found" });
+    }
+
     let rawMembers;
     try {
       rawMembers = await prisma.teamMember.findMany({
@@ -486,5 +498,8 @@ export const listTeamMembers = base
       role: m.user.members?.[0]?.role ?? "member",
     }));
 
-    return { members };
+    return {
+      members,
+      canManage: isManagerRole(context.member.role),
+    };
   });

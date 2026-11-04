@@ -7,7 +7,9 @@ import { prisma } from "@/lib/prisma";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
+import { requireMemberMiddleware } from "../middlewares/member";
 import { requireOrganizationMiddleware } from "../middlewares/organization";
+import { requireTeamAccessMiddleware } from "../middlewares/team";
 
 export const getCurrentUser = base
   .use(requireAuthMiddleware)
@@ -56,6 +58,7 @@ export const getCurrentUser = base
 export const listMentionUsers = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .use(standardsecurityMiddleware)
   .route({
     method: "GET",
@@ -70,6 +73,7 @@ export const listMentionUsers = base
       teamId: z.string().optional(),
     })
   )
+  .use(requireTeamAccessMiddleware, (input) => input.teamId ?? null)
   .output(
     z.object({
       users: z.array(

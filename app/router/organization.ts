@@ -33,8 +33,12 @@ import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
 import { requireAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/bast";
+import { requireManagerMiddleware } from "../middlewares/manager";
 import { requireMemberMiddleware } from "../middlewares/member";
-import { requireOrganizationMiddleware } from "../middlewares/organization";
+import {
+  requireActiveOrganizationMiddleware,
+  requireOrganizationMiddleware,
+} from "../middlewares/organization";
 
 export const listOrganizations = base
   .use(requireAuthMiddleware)
@@ -164,6 +168,7 @@ export const createOrganization = base
 
 export const updateOrganization = base
   .use(requireAuthMiddleware)
+  .use(requireOrganizationMiddleware)
   .use(standardsecurityMiddleware)
   .use(heavyWritesecurityMiddleware)
   .route({
@@ -177,6 +182,7 @@ export const updateOrganization = base
       organizationId: z.string(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       id: z.string(),
@@ -186,10 +192,10 @@ export const updateOrganization = base
       logo: z.string().nullable().optional(),
     })
   )
-  .handler(async ({ input, errors }) => {
+  .handler(async ({ context, input, errors }) => {
     const slug = createSlug(input.name);
     const logo =
-      input.logo?.trim() || getOrganizationColor(input.organizationId);
+      input.logo?.trim() || getOrganizationColor(context.organization.id);
 
     let data;
     try {
@@ -201,7 +207,7 @@ export const updateOrganization = base
             description: input.description ?? "",
             logo,
           },
-          organizationId: input.organizationId,
+          organizationId: context.organization.id,
         },
         headers: await headers(),
       });
@@ -247,6 +253,7 @@ export const listOrganizationMembers = base
       sortOrder: z.enum([...SORT_ORDERS]).optional(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       members: z.array(
@@ -265,15 +272,9 @@ export const listOrganizationMembers = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    if (input.organizationId !== context.organization.id) {
-      throw errors.BAD_REQUEST({
-        message: "You recently switched organization",
-      });
-    }
-
     const search = input.search?.trim();
     const where: Prisma.MemberWhereInput = {
-      organizationId: input.organizationId,
+      organizationId: context.organization.id,
       ...(input.role ? { role: input.role } : {}),
       ...(search
         ? {
@@ -362,6 +363,7 @@ export const updateOrganizationMemberRole = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
   .use(requireMemberMiddleware)
+  .use(requireManagerMiddleware)
   .use(standardsecurityMiddleware)
   .use(writesecurityMiddleware)
   .route({
@@ -374,23 +376,16 @@ export const updateOrganizationMemberRole = base
     z.object({
       userId: z.string(),
       role: z.enum([...Object.values(MembershipRole)]),
-      organizationId: z.string().optional(),
+      organizationId: z.string().min(1),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(z.void())
   .handler(async ({ context, input, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can update member roles",
-      });
-    }
-
-    const orgId = input.organizationId ?? context.organization.id;
-
     const member = await prisma.member.findFirst({
       where: {
         userId: input.userId,
-        organizationId: orgId,
+        organizationId: context.organization.id,
       },
       select: { id: true },
     });
@@ -406,7 +401,7 @@ export const updateOrganizationMemberRole = base
         body: {
           memberId: member.id,
           role: input.role,
-          organizationId: orgId,
+          organizationId: context.organization.id,
         },
         headers: await headers(),
       });
@@ -452,6 +447,8 @@ function toInvitationOrderBy(
 export const listOrganizationInvitations = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
+  .use(requireManagerMiddleware)
   .use(standardsecurityMiddleware)
   .route({
     method: "GET",
@@ -476,6 +473,7 @@ export const listOrganizationInvitations = base
       sortOrder: z.enum([...SORT_ORDERS]).default("desc"),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(
     z.object({
       invitations: z.array(
@@ -517,12 +515,6 @@ export const listOrganizationInvitations = base
     })
   )
   .handler(async ({ context, input, errors }) => {
-    if (input.organizationId !== context.organization.id) {
-      throw errors.BAD_REQUEST({
-        message: "You recently switched organization",
-      });
-    }
-
     const search = input.search?.trim();
 
     const where: Prisma.InvitationWhereInput = {
@@ -611,6 +603,8 @@ export const listOrganizationInvitations = base
 export const cancelOrganizationInvitation = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
+  .use(requireManagerMiddleware)
   .use(standardsecurityMiddleware)
   .use(writesecurityMiddleware)
   .route({
@@ -625,14 +619,9 @@ export const cancelOrganizationInvitation = base
       organizationId: z.string(),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(z.void())
-  .handler(async ({ context, input, errors }) => {
-    if (input.organizationId !== context.organization.id) {
-      throw errors.BAD_REQUEST({
-        message: "You recently switched organization",
-      });
-    }
-
+  .handler(async ({ input, errors }) => {
     try {
       await auth.api.cancelInvitation({
         body: {
@@ -651,6 +640,7 @@ export const removeOrganizationMember = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
   .use(requireMemberMiddleware)
+  .use(requireManagerMiddleware)
   .use(standardsecurityMiddleware)
   .use(writesecurityMiddleware)
   .route({
@@ -662,23 +652,16 @@ export const removeOrganizationMember = base
   .input(
     z.object({
       userId: z.string(),
-      organizationId: z.string().optional(),
+      organizationId: z.string().min(1),
     })
   )
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(z.void())
   .handler(async ({ context, input, errors }) => {
-    if (!["owner", "admin"].includes(context.member.role)) {
-      throw errors.FORBIDDEN({
-        message: "Only admins and owners can remove members",
-      });
-    }
-
-    const orgId = input.organizationId ?? context.organization.id;
-
     const member = await prisma.member.findFirst({
       where: {
         userId: input.userId,
-        organizationId: orgId,
+        organizationId: context.organization.id,
       },
       select: { id: true, role: true },
     });
@@ -699,7 +682,7 @@ export const removeOrganizationMember = base
       await auth.api.removeMember({
         body: {
           memberIdOrEmail: member.id,
-          organizationId: orgId,
+          organizationId: context.organization.id,
         },
         headers: await headers(),
       });
@@ -712,6 +695,7 @@ export const removeOrganizationMember = base
 
 export const leaveOrganization = base
   .use(requireAuthMiddleware)
+  .use(requireOrganizationMiddleware)
   .route({
     method: "POST",
     path: "/organization/leave",
@@ -719,15 +703,15 @@ export const leaveOrganization = base
     tags: ["Organization"],
   })
   .input(z.object({ organizationId: z.string() }))
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
   .output(z.void())
-  .handler(async ({ context, input, errors }) => {
-    const { user } = context;
-    const { organizationId } = input;
+  .handler(async ({ context, errors }) => {
+    const { user, organization } = context;
 
     // better-auth throws if sole owner
     try {
       await auth.api.leaveOrganization({
-        body: { organizationId },
+        body: { organizationId: organization.id },
         headers: await headers(),
       });
     } catch (error: unknown) {
@@ -740,9 +724,7 @@ export const leaveOrganization = base
     await prisma.teamMember.deleteMany({
       where: {
         userId: user.id,
-        team: { organizationId },
+        team: { organizationId: organization.id },
       },
     });
-
-    console.log("Left organization", organizationId);
   });

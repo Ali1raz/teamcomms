@@ -1,6 +1,7 @@
 import z from "zod/v3";
 
 export const updateTeamSchema = z.object({
+  organizationId: z.string().min(1, "Organization id is required"),
   name: z
     .string()
     .trim()

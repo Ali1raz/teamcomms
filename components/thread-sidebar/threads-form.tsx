@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -38,6 +39,7 @@ export function ThreadsForm({
   onCancelEdit,
 }: ThreadsFormProps) {
   const [composerVersion, setComposerVersion] = useState(0);
+  const { organizationId } = useParams<{ organizationId: string }>();
   const queryClient = useQueryClient();
 
   const { send } = useRealtimeConversation();
@@ -56,6 +58,7 @@ export function ThreadsForm({
   const form = useForm<CreateMessageType>({
     resolver: zodResolver(createMessageSchema),
     defaultValues: {
+      organizationId,
       content: editingThread?.content ?? "",
       scope,
       imageUrl: editingThread?.imageUrl ?? undefined,
@@ -70,13 +73,14 @@ export function ThreadsForm({
 
   useEffect(() => {
     form.reset({
+      organizationId,
       content: editingThread?.content ?? "",
       scope,
       imageUrl: editingThread?.imageUrl ?? undefined,
       threadId,
     });
     // Keep the composer inputs synced with whichever reply is currently focused.
-  }, [editingThread, scope, threadId, form]);
+  }, [editingThread, scope, threadId, organizationId, form]);
 
   const createThreadMutation = useMutation(
     orpc.message.create.mutationOptions({
@@ -145,6 +149,7 @@ export function ThreadsForm({
       },
       onSuccess: (data) => {
         form.reset({
+          organizationId,
           content: "",
           scope,
           imageUrl: undefined,
@@ -255,6 +260,7 @@ export function ThreadsForm({
         toast.success("Reply updated successfully");
         onCancelEdit();
         form.reset({
+          organizationId,
           content: "",
           scope,
           imageUrl: undefined,
@@ -281,6 +287,7 @@ export function ThreadsForm({
   function onSubmit(values: CreateMessageType) {
     if (editingThread) {
       updateThreadMutation.mutate({
+        organizationId,
         messageId: editingThread.id,
         content: values.content,
         imageUrl: values.imageUrl ?? null,
@@ -313,6 +320,7 @@ export function ThreadsForm({
               onClick={() => {
                 onCancelEdit();
                 form.reset({
+                  organizationId,
                   content: "",
                   scope,
                   imageUrl: undefined,

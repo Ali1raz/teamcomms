@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -40,10 +41,12 @@ export function UpdateTeamDialog({
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const { organizationId } = useParams<{ organizationId: string }>();
 
   const form = useForm<UpdateTeamType>({
     resolver: zodResolver(updateTeamSchema),
     defaultValues: {
+      organizationId,
       name: team.name,
       teamId: team.id,
     },
@@ -52,9 +55,9 @@ export function UpdateTeamDialog({
 
   useEffect(() => {
     if (open) {
-      form.reset({ name: team.name, teamId: team.id });
+      form.reset({ organizationId, name: team.name, teamId: team.id });
     }
-  }, [open, team.name, team.id, form]);
+  }, [open, team.name, team.id, organizationId, form]);
 
   const teamName = useWatch({
     control: form.control,
@@ -67,13 +70,17 @@ export function UpdateTeamDialog({
 
   const updateTeamMutation = useMutation(
     orpc.team.update.mutationOptions({
-      onSuccess: (team) => {
-        toast.success(`Team "${team.name}" has been updated.`);
+      onSuccess: (updatedTeam) => {
+        toast.success(`Team "${updatedTeam.name}" has been updated.`);
 
-        form.reset();
+        form.reset({
+          organizationId,
+          name: updatedTeam.name,
+          teamId: team.id,
+        });
         queryClient.invalidateQueries({
           queryKey: orpc.team.list.queryKey({
-            input: { organizationId: team.organizationId },
+            input: { organizationId: updatedTeam.organizationId },
           }),
         });
         setOpen(false);
@@ -95,7 +102,8 @@ export function UpdateTeamDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) form.reset({ name: team.name, teamId: team.id });
+        if (!next)
+          form.reset({ organizationId, name: team.name, teamId: team.id });
       }}
     >
       <DialogTrigger asChild>

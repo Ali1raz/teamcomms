@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import { useCallback } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ export function EditMessageForm({
   onSave,
 }: EditMessageFormProps) {
   const scope = useRequiredConversationScope();
+  const { organizationId } = useParams<{ organizationId: string }>();
   const { send } = useRealtimeConversation();
 
   const { users } = useMentionUsers(scope);
@@ -44,6 +46,7 @@ export function EditMessageForm({
   const form = useForm<UpdateMessageSchemaType>({
     resolver: zodResolver(updateMessageSchema),
     defaultValues: {
+      organizationId,
       content: message.content,
       messageId: message.id,
       // Keep the existing attachment visible while the message is being edited.

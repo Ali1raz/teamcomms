@@ -11,6 +11,7 @@ export const createOrganizationSchema = z.object({
 export type CreateOrganizationType = z.infer<typeof createOrganizationSchema>;
 
 export const createTeamSchema = z.object({
+  organizationId: z.string().min(1),
   name: z
     .string()
     .trim()
@@ -37,6 +38,7 @@ export const createChannelSchema = z.object({
 export type CreateChannelType = z.infer<typeof createChannelSchema>;
 
 export const updateChannelSchema = z.object({
+  organizationId: z.string().min(1),
   channelId: z.string(),
   name: channelNameSchema,
 });
@@ -47,6 +49,7 @@ export const createChannelFormSchema = createChannelSchema.pick({ name: true });
 export const renameChannelFormSchema = updateChannelSchema.pick({ name: true });
 
 export const createMessageSchema = z.object({
+  organizationId: z.string().min(1),
   content: z.string().trim().min(1, "Message content is required"),
   scope: conversationScopeSchema,
   imageUrl: z.url().optional(),
@@ -74,6 +77,7 @@ export const inviteMemberSchema = z.object({
 export type InviteMemberSchemaType = z.infer<typeof inviteMemberSchema>;
 
 export const updateMessageSchema = z.object({
+  organizationId: z.string().min(1),
   messageId: z.string(),
   content: z.string().trim().min(1, "content is required"),
   imageUrl: z.url().nullable().optional(),
@@ -82,6 +86,7 @@ export const updateMessageSchema = z.object({
 export type UpdateMessageSchemaType = z.infer<typeof updateMessageSchema>;
 
 export const toggleReactionSchema = z.object({
+  organizationId: z.string().min(1),
   messageId: z.string(),
   emoji: z.string().trim().min(1, "Emoji is required"),
 });

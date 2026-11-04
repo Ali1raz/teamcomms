@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { orpc } from "@/lib/orpc";
+import { unauthorized } from "next/navigation";
+import { client, orpc } from "@/lib/orpc";
+import { isManagerRole } from "@/lib/permissions";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { InvitationList } from "./_components/invitation-table";
 import {
@@ -17,6 +19,16 @@ export default async function InvitationsPage(
 ) {
   const { params, searchParams } = props;
   const { organizationId } = await params;
+
+  const organizationList = await client.organization.list();
+  const role = organizationList.organizations.find(
+    (organization) => organization.id === organizationId
+  )?.role;
+
+  if (!role || !isManagerRole(role)) {
+    unauthorized();
+  }
+
   const filters = await loadInvitationSearchParams(searchParams);
 
   const queryClient = getQueryClient();

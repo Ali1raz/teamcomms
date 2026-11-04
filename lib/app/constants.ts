@@ -1,5 +1,8 @@
 export const SORT_ORDERS = ["asc", "desc"] as const;
 
+export const ORGANIZATIONS_PATH = "/organizations";
+export const CURRENT_PATH_HEADER = "x-current-path";
+
 export type SortOrder = (typeof SORT_ORDERS)[number];
 export const SIDEBAR_MEMBER_PREVIEW_COUNT = 3;
 

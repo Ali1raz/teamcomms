@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -38,6 +39,7 @@ export function RenameChannelDialog({
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const { organizationId } = useParams<{ organizationId: string }>();
   const queryClient = useQueryClient();
 
   const form = useForm<{ name: string }>({
@@ -81,7 +83,11 @@ export function RenameChannelDialog({
   );
 
   function onSubmit(values: { name: string }) {
-    updateChannelMutation.mutate({ channelId: channel.id, name: values.name });
+    updateChannelMutation.mutate({
+      organizationId,
+      channelId: channel.id,
+      name: values.name,
+    });
   }
 
   return (
