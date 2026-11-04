@@ -178,6 +178,14 @@ pnpm graph:update
 pnpm graph:build
 ```
 
+## Deploy Inngest
+
+Add Inngest intergration in vercel and select this repo and run this command if inngest dont automatically recognize the repo:
+
+```bash
+curl -X PUT {PRODUCTION_URL}/api/inngest --fail-with-body
+```
+
 **Key commands:**
 
 | Command                        | Description                            |
