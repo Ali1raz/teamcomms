@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { client, orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { ConversationView } from "../../_components/conversation-view";
+import { requireOrganizationAccess } from "../../access";
 
 export async function generateMetadata(
   props: PageProps<"/organizations/[organizationId]/channel/[channelId]">
@@ -18,9 +19,11 @@ export async function generateMetadata(
 export default async function Page(
   props: PageProps<"/organizations/[organizationId]/channel/[channelId]">
 ) {
-  const { channelId } = await props.params;
+  const { organizationId, channelId } = await props.params;
 
   const queryClient = getQueryClient();
+  await requireOrganizationAccess(queryClient, organizationId);
+
   await Promise.all([
     // Prefetch mentionable users of the current organization (no team scope
     // for channels) so the client can read them with useSuspenseQuery.

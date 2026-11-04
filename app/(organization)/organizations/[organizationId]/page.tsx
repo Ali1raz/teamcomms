@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { client, orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { OrganizationTabs } from "./_components/organization-tabs";
+import { requireOrganizationAccess } from "./access";
 import {
   loadChannelSearchParams,
   loadOrganizationMemberSearchParams,
@@ -34,6 +35,8 @@ export default async function Page(
   const channelFilters = await loadChannelSearchParams(searchParams);
 
   const queryClient = getQueryClient();
+  await requireOrganizationAccess(queryClient, organizationId);
+
   await Promise.all([
     queryClient.prefetchQuery(orpc.organization.list.queryOptions()),
     queryClient.prefetchQuery(
