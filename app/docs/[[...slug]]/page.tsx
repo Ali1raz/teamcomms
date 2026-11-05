@@ -1,5 +1,4 @@
 import { createRelativeLink } from "fumadocs-ui/mdx";
-import { TriangleAlert } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DocsAttribution } from "@/components/docs-attribution";
@@ -9,9 +8,8 @@ import {
   DocsDescription,
   DocsPage,
   DocsTitle,
-  ViewOptionsPopover,
 } from "@/layouts/docs/page";
-import { gitConfig } from "@/lib/shared";
+import { SITE } from "@/lib/app/site";
 import { getPageImage, source } from "@/lib/source";
 
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
@@ -23,16 +21,15 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription className="mb-0">
+      <DocsTitle className="font-semibold text-4xl tracking-[-0.03em]">
+        {page.data.title}
+      </DocsTitle>
+      <DocsDescription className="max-w-[62ch] text-black/60 text-lg leading-relaxed dark:text-white/60">
         {page.data.description}
       </DocsDescription>
-      <div className="flex flex-row gap-2 items-center border-b pb-6">
-        <ViewOptionsPopover
-          githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${page.path}`}
-        />
+      <div className="border-b pb-6">
         {page.data.lastModified && (
-          <span className="ml-auto text-muted-foreground text-sm">
+          <span className="text-muted-foreground text-sm">
             Last modified: {page.data.lastModified.toLocaleDateString()}
           </span>
         )}
@@ -64,7 +61,16 @@ export async function generateMetadata(
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical: `${SITE.url}${page.url}`,
+    },
     openGraph: {
+      title: `${page.data.title} | ${SITE.name}`,
+      description: page.data.description,
+      url: page.url,
+      siteName: SITE.name,
+      type: "article",
+      locale: "en_US",
       images: getPageImage(page).url,
     },
   };

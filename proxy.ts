@@ -1,7 +1,7 @@
 import arcjet, { createMiddleware, detectBot } from "@arcjet/next";
 import { getSessionCookie } from "better-auth/cookies";
 import { isMarkdownPreferred, rewritePath } from "fumadocs-core/negotiation";
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextProxy, type NextRequest, NextResponse } from "next/server";
 import { CURRENT_PATH_HEADER } from "@/lib/app/constants";
 import { env } from "@/lib/env";
 import { docsContentRoute, docsRoute } from "@/lib/shared";
@@ -71,25 +71,53 @@ async function authMiddleware(request: NextRequest) {
   return nextWithCurrentPath(request);
 }
 
+// Bot categories allowed everywhere. AI crawlers are added separately for
+// docs so chatbots can read the Markdown docs without opening the rest of the
+// app to AI scraping.
+const defaultBotAllowList = [
+  "CATEGORY:SEARCH_ENGINE", // Google, Bing, etc
+  "CATEGORY:MONITOR", // Uptime monitoring services
+  "CATEGORY:PREVIEW", // Link previews e.g. Slack, Discord
+  "STRIPE_WEBHOOK",
+  "VERCEL_MONITOR_PREVIEW", // Vercel's bot for preview deployments
+  // See the full list at https://arcjet.com/bot-list
+] as const;
+
+const docsBotAllowList = [...defaultBotAllowList, "CATEGORY:AI"] as const;
+
+// A base client with no rules lets `withRule` clones share one decision cache.
 const aj = arcjet({
   key: env.ARCJET_KEY,
-  rules: [
-    detectBot({
-      mode: "LIVE", // will block requests. Use "DRY_RUN" to log only
-      // Block all bots except the following
-      allow: [
-        "CATEGORY:SEARCH_ENGINE", // Google, Bing, etc
-        "CATEGORY:MONITOR",
-        "CATEGORY:PREVIEW",
-        "STRIPE_WEBHOOK",
-        // See the full list at https://arcjet.com/bot-list
-        "CATEGORY:MONITOR", // Uptime monitoring services
-        "CATEGORY:PREVIEW", // Link previews e.g. Slack, Discord
-        "VERCEL_MONITOR_PREVIEW", // Vercel's bot for preview deployments
-      ],
-    }),
-  ],
+  rules: [],
 });
+
+const defaultAj = aj.withRule(
+  detectBot({
+    mode: "LIVE", // will block requests. Use "DRY_RUN" to log only
+    allow: [...defaultBotAllowList],
+  })
+);
+
+const docsAj = aj.withRule(
+  detectBot({
+    mode: "LIVE",
+    allow: [...docsBotAllowList],
+  })
+);
+
+// Docs pages and the Markdown representations used by LLM clients.
+const docsBotRoutes = [
+  docsRoute,
+  docsContentRoute,
+  "/llms.txt",
+  "/llms-full.txt",
+];
+
+function isDocsRoute(pathname: string) {
+  return docsBotRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
 
 export const config = {
   matcher: [
@@ -97,7 +125,18 @@ export const config = {
   ],
 };
 
-// Pass any existing middleware with the optional existingMiddleware prop
-export const proxy = createMiddleware(aj, async (request: NextRequest) => {
+const existingMiddleware = async (request: NextRequest) => {
   return markdownRewrite(request) ?? authMiddleware(request);
-});
+};
+
+// Pass any existing middleware with the optional existingMiddleware prop
+const defaultProxy = createMiddleware(defaultAj, existingMiddleware);
+const docsProxy = createMiddleware(docsAj, existingMiddleware);
+
+export const proxy: NextProxy = (request, event) => {
+  const middleware = isDocsRoute(request.nextUrl.pathname)
+    ? docsProxy
+    : defaultProxy;
+
+  return middleware(request, event);
+};
