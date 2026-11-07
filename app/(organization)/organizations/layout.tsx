@@ -6,6 +6,9 @@ export const metadata: Metadata = {
     template: `%s | ${SITE.name}`,
     default: SITE.name,
   },
+  // Authenticated app pages stay out of search results. The homepage lives
+  // outside this segment and is intentionally indexable.
+  robots: { index: false, follow: false },
 };
 
 export default function OrganizationLayout({
