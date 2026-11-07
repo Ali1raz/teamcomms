@@ -71,8 +71,8 @@ async function authMiddleware(request: NextRequest) {
   return nextWithCurrentPath(request);
 }
 
-// Bot categories allowed everywhere. AI crawlers are added separately for
-// docs so chatbots can read the Markdown docs without opening the rest of the
+// Bot categories allowed everywhere. AI crawlers are added separately for the
+// homepage and docs so AI agents can read them without opening the rest of the
 // app to AI scraping.
 const defaultBotAllowList = [
   "CATEGORY:SEARCH_ENGINE", // Google, Bing, etc
@@ -83,7 +83,7 @@ const defaultBotAllowList = [
   // See the full list at https://arcjet.com/bot-list
 ] as const;
 
-const docsBotAllowList = [...defaultBotAllowList, "CATEGORY:AI"] as const;
+const aiBotAllowList = [...defaultBotAllowList, "CATEGORY:AI"] as const;
 
 // A base client with no rules lets `withRule` clones share one decision cache.
 const aj = arcjet({
@@ -98,23 +98,27 @@ const defaultAj = aj.withRule(
   })
 );
 
-const docsAj = aj.withRule(
+const aiAj = aj.withRule(
   detectBot({
     mode: "LIVE",
-    allow: [...docsBotAllowList],
+    allow: [...aiBotAllowList],
   })
 );
 
-// Docs pages and the Markdown representations used by LLM clients.
-const docsBotRoutes = [
+// The homepage, crawl metadata, and docs pages (including the Markdown
+// representations used by LLM clients) are open to AI crawlers.
+const aiBotRoutes = [
+  "/",
+  "/robots.txt",
+  "/sitemap.xml",
   docsRoute,
   docsContentRoute,
   "/llms.txt",
   "/llms-full.txt",
 ];
 
-function isDocsRoute(pathname: string) {
-  return docsBotRoutes.some(
+function isAiBotRoute(pathname: string) {
+  return aiBotRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 }
@@ -131,11 +135,11 @@ const existingMiddleware = async (request: NextRequest) => {
 
 // Pass any existing middleware with the optional existingMiddleware prop
 const defaultProxy = createMiddleware(defaultAj, existingMiddleware);
-const docsProxy = createMiddleware(docsAj, existingMiddleware);
+const aiProxy = createMiddleware(aiAj, existingMiddleware);
 
 export const proxy: NextProxy = (request, event) => {
-  const middleware = isDocsRoute(request.nextUrl.pathname)
-    ? docsProxy
+  const middleware = isAiBotRoute(request.nextUrl.pathname)
+    ? aiProxy
     : defaultProxy;
 
   return middleware(request, event);

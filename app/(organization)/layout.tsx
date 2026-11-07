@@ -8,7 +8,6 @@ export const metadata: Metadata = {
     template: `%s | ${SITE.name}`,
     default: SITE.name,
   },
-  robots: { index: false, follow: false },
 };
 
 export default async function Layout({
