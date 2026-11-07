@@ -104,57 +104,54 @@ export const createMessage = base
       });
     }
 
-    const conversation = await findConversationInOrganization(
-      input.scope,
-      context.organization.id
-    );
+    const scopeWhere = messageScopeWhere(input.scope);
+    const scopeTeamId = input.scope.kind === "team" ? input.scope.teamId : null;
+
+    // These reads are independent of each other, so run them concurrently
+    // instead of paying three sequential round trips before the write.
+    const [conversation, parentMessage, mentionedUserIds] = await Promise.all([
+      findConversationInOrganization(input.scope, context.organization.id),
+      input.threadId
+        ? prisma.message.findFirst({
+            where: {
+              id: input.threadId,
+              threadId: null,
+              ...scopeWhere,
+            },
+            select: { id: true },
+          })
+        : null,
+      validMentionIds({
+        teamId: scopeTeamId,
+        organizationId: context.organization.id,
+        authorId: context.user.id,
+        candidateIds: analyzed?.candidateMentionIds ?? [],
+      }),
+    ]);
 
     if (!conversation) {
       throw errors.NOT_FOUND({ message: "Conversation not found" });
     }
 
-    const scopeWhere = messageScopeWhere(input.scope);
-
-    if (input.threadId) {
-      const parentMessage = await prisma.message.findFirst({
-        where: {
-          id: input.threadId,
-          threadId: null,
-          ...scopeWhere,
-        },
-        select: { id: true },
-      });
-
-      if (!parentMessage) {
-        throw errors.BAD_REQUEST({ message: "Parent message not found" });
-      }
+    if (input.threadId && !parentMessage) {
+      throw errors.BAD_REQUEST({ message: "Parent message not found" });
     }
 
-    const scopeTeamId = input.scope.kind === "team" ? input.scope.teamId : null;
-
-    const mentionedUserIds = await validMentionIds({
-      teamId: scopeTeamId,
-      organizationId: context.organization.id,
-      authorId: context.user.id,
-      candidateIds: analyzed?.candidateMentionIds ?? [],
-    });
-
-    const message = await prisma.$transaction(async (tx) => {
-      const created = await tx.message.create({
-        data: {
-          content: input.content,
-          imageUrl: input.imageUrl,
-          userId: context.user.id,
-          threadId: input.threadId,
-          ...scopeWhere,
-          mentions: {
-            createMany: {
-              data: mentionedUserIds.map((userId) => ({ userId })),
-            },
+    // A single nested write is already atomic, so no interactive transaction
+    // is needed here; it would only hold a connection longer.
+    const message = await prisma.message.create({
+      data: {
+        content: input.content,
+        imageUrl: input.imageUrl,
+        userId: context.user.id,
+        threadId: input.threadId,
+        ...scopeWhere,
+        mentions: {
+          createMany: {
+            data: mentionedUserIds.map((userId) => ({ userId })),
           },
         },
-      });
-      return created;
+      },
     });
 
     if (mentionedUserIds.length) {
