@@ -95,7 +95,7 @@ export function OrganizationTabs({
         onValueChange={handleTabChange}
         className="gap-4 sm:mt-4"
       >
-        <TabsList variant="line" className="w-full">
+        <TabsList variant="line" className="sm:**:px-6 **:px-4">
           <TabsTrigger
             value="teams"
             onPointerEnter={() => prefetchTab("teams")}

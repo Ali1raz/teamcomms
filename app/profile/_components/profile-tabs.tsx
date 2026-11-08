@@ -12,20 +12,10 @@ const ProfileTabs = async () => {
 
   return (
     <div className="w-full max-w-5xl mb-8">
-      <Tabs defaultValue={"update-profile"} className="gap-8">
-        <TabsList className="rounded flex sm:**:px-8 **:px-4">
-          <TabsTrigger
-            value={"update-profile"}
-            className="cursor-pointer relative z-10 rounded"
-          >
-            Profile
-          </TabsTrigger>
-          <TabsTrigger
-            value={"sessions"}
-            className=" cursor-pointer relative z-10 rounded"
-          >
-            Sessions
-          </TabsTrigger>
+      <Tabs defaultValue={"update-profile"} className="gap-4">
+        <TabsList variant="line" className="sm:**:px-6 **:px-4">
+          <TabsTrigger value={"update-profile"}>Profile</TabsTrigger>
+          <TabsTrigger value={"sessions"}>Sessions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="update-profile">
