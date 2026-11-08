@@ -1,0 +1,86 @@
+---
+title: Message Architecture
+description: How messages move through the TeamComms client, server, database, and realtime layer
+---
+
+This page documents the message lifecycle for contributors working on the conversation experience.
+
+## Architecture
+
+The message flow spans the conversation UI, the typed oRPC route, Prisma persistence, Inngest mention notifications, and the PartyKit realtime room.
+
+<Mermaid
+  chart={String.raw`
+flowchart LR
+  subgraph Browser["Browser"]
+    View["ConversationView"] --> Input["MessageInput"]
+    Input --> Composer["MessageComposer + Editor"]
+    Composer --> Optimistic["React Query optimistic cache"]
+    Optimistic --> List["MessageList / MessageItem"]
+    Input --> Mutation["ORPC create message mutation"]
+  end
+
+  subgraph Server["Server"]
+    Mutation --> Route["message.create route"]
+    Route --> Security["Auth, membership, access, and PII checks"]
+    Security --> Save["Prisma transaction"]
+    Save --> Database[("Message + mentions")]
+    Save --> Mentions["Inngest mention notification"]
+  end
+
+  subgraph Realtime["Realtime"]
+    Save --> Broadcast["PartyKit conversation room"]
+    Broadcast --> OtherClients["Other team members' clients"]
+    OtherClients --> List
+  end
+
+  Optimistic --> Mutation
+  Save --> Confirm["Created message response"]
+  Confirm --> Input
+`}
+/>
+
+## Send lifecycle
+
+<Mermaid
+  chart={String.raw`
+sequenceDiagram
+  actor Member
+  participant Composer as MessageComposer
+  participant Cache as React Query cache
+  participant API as message.create
+  participant DB as Prisma
+  participant Room as Realtime room
+  participant Team as Other clients
+
+  Member->>Composer: Write text, mentions, or attach an image
+  Member->>Composer: Select Send or press the shortcut
+  Composer->>Cache: Add an optimistic message
+  Composer->>API: Submit validated message input
+  API->>API: Check access, content, and sensitive information
+  API->>DB: Save message and valid mentions in a transaction
+  DB-->>API: Return persisted message
+  API-->>Composer: Return server ID and timestamp
+  Composer->>Cache: Replace optimistic item and invalidate query
+  Composer->>Room: Broadcast message:created
+  Room-->>Team: Deliver event to connected clients
+  Team->>Cache: Add the message to each conversation
+`}
+/>
+
+## Related code
+
+- `ConversationView` in `app/(organization)/organizations/[organizationId]/_components/conversation-view.tsx` — Composes the message list and input.
+- `MessageInput` in `app/(organization)/organizations/[organizationId]/_components/message-input.tsx` — Owns form state, optimistic updates, mutation handling, and realtime sends.
+- `MessageComposer` in `app/(organization)/organizations/[organizationId]/_components/message-composer.tsx` — Connects the editor, mentions, attachments, and send controls.
+- `MessageList` in `app/(organization)/organizations/[organizationId]/_components/MessageList.tsx` — Loads paginated messages and renders conversation state.
+- `MessageItem` in `app/(organization)/organizations/[organizationId]/_components/message-item.tsx` — Renders message content, reactions, actions, and thread entry points.
+- `message.create` in `app/router/message.ts` — Validates access and content before persisting messages and mentions.
+- `ConversationRealtimeProvider` in `components/conversation-realtime-provider.tsx` — Applies realtime events to message and thread caches.
+- `conversationKey` in `lib/conversation.ts` — Provides the shared query key and realtime room identity for a conversation.
+
+## Related documentation
+
+- [Send a message](/docs/for-humans/messages/sending-messages) — End-user instructions.
+- [Edit or delete a message](/docs/for-humans/messages/editing-and-deleting-messages)
+- [React to a message](/docs/for-humans/messages/reacting-to-messages)

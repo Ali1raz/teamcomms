@@ -47,10 +47,17 @@ NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
 NODEMAILER_USER=your_email@gmail.com
 NODEMAILER_APP_PASSWORD=your_app_password
 
-# GitHub OAuth (optional)
+
+NEXT_PUBLIC_PARTYKIT_HOST=http://localhost:8787
+INTERNAL_SECRET=dev-internal-secret
+
+# OAuth
 
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # Security
 
@@ -65,12 +72,16 @@ UPLOADTHING_SECRET_KEY=your_uploadthing_secret_key
 # AI (via OpenRouter)
 
 OPENROUTER_API_KEY=your_openrouter_api_key
+
+INNGEST_DEV=1
 ```
 
 ### 4. Set up the database
 
+This updates database and generates types:
+
 ```bash
-pnpm db:migrate
+pnpm db:sync
 ```
 
 Optionally seed some starter data:
@@ -85,6 +96,14 @@ Start the Next.js app:
 
 ```bash
 pnpm dev
+```
+
+To run inngest server:
+
+> update port for this command where your dev server is running:
+
+```bash
+pnpm inngest:dev
 ```
 
 Realtime runs on Cloudflare Workers (PartyServer), so log in to Wrangler and start the worker alongside Next.js:
@@ -124,6 +143,7 @@ pnpm db:seed
 
 - [Directory Structure](/docs/for-developers/directory-structure) — high-level map of the project folders.
 - [Knowledge Graph](/docs/for-developers/knowledge-graph) — query the codebase with graphify.
+- [Message Architecture](/docs/for-developers/message-architecture) — message UI, persistence, and realtime flow.
 
 ## Contributing
 
