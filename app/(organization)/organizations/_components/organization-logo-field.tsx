@@ -33,7 +33,7 @@ export function OrganizationLogoField({
             {organizationId ? (
               <OrganizationAvatar
                 organization={{ id: organizationId, name: "", logo: value }}
-                className="size-24"
+                className="size-24 rounded-md"
               />
             ) : null}
             <ImageUploadDialog onUploadComplete={onChange}>
