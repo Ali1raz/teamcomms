@@ -54,3 +54,8 @@ worker-configuration.d.ts
 
 # graphify
 graphify-out/
+
+# Root-level markdown is working notes and agent instructions, not corpus
+# documentation. Only the README describes the project.
+/*.md
+!/README.md
