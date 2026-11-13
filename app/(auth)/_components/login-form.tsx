@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { GitHub, Google } from "@/components/general/tech";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,13 @@ export function LoginForm({
   const [isGooglePending, startGoogleTransition] = useTransition();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("from") ?? "/";
-  const lastMethod = authClient.getLastUsedLoginMethod();
+  // Read the last-used login method only after mount: it comes from a cookie,
+  // so reading it during render would differ between server and client and
+  // cause a hydration mismatch.
+  const [lastMethod, setLastMethod] = useState<string | null>(null);
+  useEffect(() => {
+    setLastMethod(authClient.getLastUsedLoginMethod());
+  }, []);
 
   function loginWithGitHub() {
     startGithubTransition(async () => {

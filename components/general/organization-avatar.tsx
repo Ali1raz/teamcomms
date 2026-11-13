@@ -23,7 +23,7 @@ export function OrganizationAvatar({
     return (
       <div
         aria-hidden="true"
-        className={cn("shrink-0 rounded-full", !isHex && color, className)}
+        className={cn("shrink-0 rounded-md", !isHex && color, className)}
         style={isHex ? { backgroundColor: color } : undefined}
       />
     );
@@ -32,7 +32,7 @@ export function OrganizationAvatar({
   return (
     <div
       className={cn(
-        "relative shrink-0 overflow-hidden rounded-full bg-muted",
+        "relative shrink-0 overflow-hidden rounded-md bg-muted",
         className
       )}
     >

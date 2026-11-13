@@ -1,0 +1,99 @@
+---
+title: Forms
+description: describes how to create/use form and form elements.
+---
+
+## Forms
+
+Teamcomms uses form and form elements from shadcn.
+
+## Steps
+
+Follow this pattern:
+
+### Install prerequisities
+
+### Define form schema
+
+This schema will be used in client side for forms and server side for procedures/server actions on server side.
+
+```ts
+// app/profile/schema.ts
+import z from "zod";
+
+export const updateProfileSchema = z.object({
+  name: z
+    .string()
+    .min(3, { message: "Name must be 3 chars long." })
+    .max(20, { message: "Name must be less than 20 chars." }),
+  imageKey: z.string().optional(),
+});
+export type UpdateProfileType = z.infer<typeof updateProfileSchema>;
+```
+
+### Initialize form
+
+```tsx
+// app/profile/_components/update-profile-form.tsx
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const form = useForm<UpdateProfileType>({
+  resolver: zodResolver(updateProfileSchema),
+  defaultValues: {
+    name: session?.user?.name || "",
+    imageKey:
+      session?.user?.image && !session.user.image.includes("avatar.vercel.sh")
+        ? session.user.image
+        : "",
+  },
+  mode: "onChange",
+});
+```
+
+### Defile onShubmit function
+
+```tsx
+// app/profile/_components/update-profile-form.tsx
+function onSubmit(values: UpdateProfileType) {
+  startTransition(async () => {
+    const { data: result, error } = await tryCatch(); // trycatch hook
+    // add server action to update profile inside trycatch
+    if (error) {
+      // show errors from server action
+    }
+    if (result.status === "success") {
+      // do something
+    }
+  });
+}
+```
+
+### Create UI:
+
+```tsx
+<form onSubmit={form.handleSubmit(onSubmit)}>
+  <FieldGroup>
+    {/* imported from shadcn field component */}
+    <Controller
+      name="name"
+      control={form.control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+          <Input
+            {...field}
+            id={field.name}
+            placeholder="Your name"
+            aria-invalid={fieldState.invalid && fieldState.isTouched}
+          />
+          <FieldDescription>
+            This is your display name. Choose a readable name.
+          </FieldDescription>
+          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+        </Field>
+      )}
+    />
+  </FieldGroup>
+</form>
+```
