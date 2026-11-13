@@ -12,7 +12,7 @@ export const sendMentionEmails = inngest.createFunction(
     retries: 4,
   },
   async ({ event, step }) => {
-    const { messageId, mentionedUserIds, organizationId } = event.data;
+    const { messageId, mentionedUserIds } = event.data;
 
     const loaded = await step.run("load-mention-context", async () => {
       const message = await prisma.message.findUnique({
@@ -23,17 +23,27 @@ export const sendMentionEmails = inngest.createFunction(
           teamId: true,
           channelId: true,
           user: { select: { name: true } },
-          team: { select: { name: true } },
-          channel: { select: { name: true } },
+          team: { select: { name: true, organizationId: true } },
+          channel: { select: { name: true, organizationId: true } },
         },
       });
       if (!message) return null;
 
-      // Re-check the DB so a mention removed by a quick edit isn't emailed.
+      // Derive the organization from the message itself so events queued by an
+      // edit (which don't carry it) still resolve the right scope.
+      const organizationId =
+        message.team?.organizationId ?? message.channel?.organizationId;
+      if (!organizationId) return null;
+
+      // Re-check the DB so a mention removed by a quick edit isn't emailed,
+      // and so recipients who lost team/org membership don't get the mail.
       const recipients = await prisma.user.findMany({
         where: {
           id: { in: mentionedUserIds },
           mentions: { some: { messageId } },
+          ...(message.teamId
+            ? { teammembers: { some: { teamId: message.teamId } } }
+            : { members: { some: { organizationId } } }),
         },
         select: { id: true, email: true },
       });
@@ -47,6 +57,7 @@ export const sendMentionEmails = inngest.createFunction(
         conversationName:
           message.team?.name ?? message.channel?.name ?? "a conversation",
         snippet: analyzeContent(message.content)?.plainText.slice(0, 140) ?? "",
+        organizationId,
         recipients,
         isThread,
         conversationId,
@@ -60,14 +71,16 @@ export const sendMentionEmails = inngest.createFunction(
     }
 
     for (const recipient of loaded.recipients) {
-      await step.run("send-mention-email", async () => {
+      // Per-recipient step ids stay stable across retries and unique per user,
+      // so one failed send retries without re-sending to everyone else.
+      await step.run(`send-mention-email-${recipient.id}`, async () => {
         const result = await SendEmail({
           to: recipient.email,
           subject: `${loaded.authorName} mentioned you in ${loaded.conversationName}`,
           meta: {
             description:
               loaded.snippet.trim() || "You were mentioned in a message.",
-            link: `${env.NEXT_PUBLIC_BETTER_AUTH_URL}/organizations/${organizationId}/${loaded.conversationKind}/${loaded.conversationId}?messageId=${loaded.isThread ? loaded.parentId : messageId}${loaded.isThread ? `&threadId=${messageId}` : ""}`,
+            link: `${env.NEXT_PUBLIC_BETTER_AUTH_URL}/organizations/${loaded.organizationId}/${loaded.conversationKind}/${loaded.conversationId}?messageId=${loaded.isThread ? loaded.parentId : messageId}${loaded.isThread ? `&threadId=${messageId}` : ""}`,
           },
         });
         // SendEmail returns { success: false } instead of throwing, so throw here or Inngest never retries.
