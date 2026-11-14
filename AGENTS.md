@@ -1,3 +1,5 @@
+ask questions from user using ask-user-question tool.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
@@ -73,7 +75,7 @@ Before adding any enum, union type, or constant set:
 2. If one exists, import and use it.
 3. If it almost fits, extend the existing one in place. Don't create a parallel copy.
 4. Only create a new enum if nothing exists, and say so in your summary.
-5. Don't extract functions that are only used inside one file, use inline instead.
+5. Don't create new functions that are only used inside one file, use inline instead.
 
 ### Bad
 
@@ -118,6 +120,10 @@ This project uses Inngest for durable background tasks and scheduled functions.
 - Match the naming and file conventions already in the repo.
 
 dont summarize changes until mentioned explicitly
+
+## ui-sdk
+
+Before using ui-sdk, follow the ui-sdk skill if it's installed, and read `node_modules/@ui-sdk/react/docs/llms.txt`. To build a new component, also search `node_modules/@ui-sdk/react/docs/core.md` by heading, and read `rendering.md` next to it.
 
 ```ts
 // ❌ Bad: silences the error instead of fixing it

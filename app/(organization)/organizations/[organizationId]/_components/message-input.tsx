@@ -3,6 +3,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createLocalStorage } from "@ui-sdk/core";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -133,6 +134,13 @@ export function MessageInput({ scope }: MessageInputProps) {
         setEditorKey((prev) => prev + 1);
         form.reset({ organizationId, scope, content: "", imageUrl: undefined });
         form.setValue("imageUrl", undefined);
+        try {
+          createLocalStorage(
+            `draft:message:${organizationId}:${scope.kind}:${scope.kind === "team" ? scope.teamId : scope.channelId}`
+          ).remove();
+        } catch {
+          // ignore storage errors
+        }
 
         // Invalidate using the same key the infinite query is stored under.
         queryclient.invalidateQueries({
@@ -196,6 +204,7 @@ export function MessageInput({ scope }: MessageInputProps) {
                 onImageChange={(url) => form.setValue("imageUrl", url)}
                 onSubmit={form.handleSubmit(onSubmit)}
                 isSubmitting={createMessageMutation.isPending}
+                draftKey={`draft:message:${organizationId}:${scope.kind}:${scope.kind === "team" ? scope.teamId : scope.channelId}`}
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>

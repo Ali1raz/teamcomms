@@ -4,6 +4,7 @@ import { Editor } from "@/components/editor/editor";
 import type { MentionUser } from "@/components/editor/mentions";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { useDraft } from "@/hooks/use-draft";
 import { getShortcutModifierLabel } from "@/lib/utils";
 import { AttachmentChip } from "./attachment-chip";
 import { ImageUploadDialog } from "./image-dialog";
@@ -20,6 +21,7 @@ interface iAppProps {
   isSubmitting?: boolean;
   submitLabel?: string;
   members?: MentionUser[];
+  draftKey?: string;
 }
 
 export function MessageComposer({
@@ -31,6 +33,7 @@ export function MessageComposer({
   isSubmitting,
   submitLabel = "Send",
   members,
+  draftKey,
 }: iAppProps) {
   const mentionsQuery = useCallback(
     async (query: string) => {
@@ -49,6 +52,9 @@ export function MessageComposer({
     },
     [members]
   );
+
+  // Persist the in-progress draft in localStorage, keyed per conversation/thread.
+  useDraft(draftKey, field.value, field.onChange);
 
   return (
     <Editor
