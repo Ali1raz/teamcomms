@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { CreateOrganizationDialog } from "./_components/create-organization-dialog";
 import { OrganizationHeader } from "./_components/header";
-import { OrganizationList } from "./_components/organization-list";
+import { OrganizationRedirectCard } from "./_components/organization-redirect-card";
+import { OrganizationSwitcherCard } from "./_components/organization-switcher-card";
 
 export const metadata: Metadata = {
   title: "Organizations",
@@ -25,7 +27,10 @@ export default async function Organizations() {
         </div>
 
         <HydrateClient client={queryClient}>
-          <OrganizationList />
+          <Suspense fallback={null}>
+            <OrganizationRedirectCard />
+          </Suspense>
+          <OrganizationSwitcherCard />
         </HydrateClient>
       </div>
     </div>

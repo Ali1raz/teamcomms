@@ -12,11 +12,10 @@ function redirectOnOrgMismatch(error: unknown) {
   if (!isOrpcErrorWithCode(error, "ORGANIZATION_MISMATCH")) return;
   if (typeof window === "undefined") return;
 
-  window.location.assign(
-    buildOrganizationsRedirect(
-      window.location.pathname + window.location.search
-    )
-  );
+  const path = window.location.pathname + window.location.search;
+  const match = window.location.pathname.match(/^\/organizations\/([^/]+)/);
+  const organizationId = match?.[1] ?? "";
+  window.location.assign(buildOrganizationsRedirect(organizationId, path));
 }
 
 export function createQueryClient() {

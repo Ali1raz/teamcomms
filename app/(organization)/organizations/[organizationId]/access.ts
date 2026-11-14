@@ -36,7 +36,7 @@ export async function requireOrganizationAccess(
       requestHeaders.get(CURRENT_PATH_HEADER) ??
       `/organizations/${organizationId}`;
 
-    redirect(buildOrganizationsRedirect(currentPath) as Route);
+    redirect(buildOrganizationsRedirect(organizationId, currentPath) as Route);
   }
 
   return organizationList;
