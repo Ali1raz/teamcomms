@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { CreateOrganizationDialog } from "./_components/create-organization-dialog";
@@ -26,7 +27,9 @@ export default async function Organizations() {
         </div>
 
         <HydrateClient client={queryClient}>
-          <OrganizationRedirectCard />
+          <Suspense fallback={null}>
+            <OrganizationRedirectCard />
+          </Suspense>
           <OrganizationSwitcherCard />
         </HydrateClient>
       </div>
