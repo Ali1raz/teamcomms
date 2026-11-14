@@ -1,7 +1,12 @@
 import { ORGANIZATIONS_PATH } from "@/lib/app/constants";
 
-export function buildOrganizationsRedirect(currentPath: string): string {
-  return `${ORGANIZATIONS_PATH}?redirectTo=${encodeURIComponent(currentPath)}`;
+export function buildOrganizationsRedirect(
+  organizationId: string,
+  next: string
+): string {
+  return `${ORGANIZATIONS_PATH}?organizationId=${encodeURIComponent(
+    organizationId
+  )}&next=${encodeURIComponent(next)}`;
 }
 
 export function normalize(urlOrPath: string) {

@@ -3,6 +3,7 @@ import { orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
 import { CreateOrganizationDialog } from "./_components/create-organization-dialog";
 import { OrganizationHeader } from "./_components/header";
+import { OrganizationRedirectCard } from "./_components/organization-redirect-card";
 import { OrganizationSwitcherCard } from "./_components/organization-switcher-card";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default async function Organizations() {
         </div>
 
         <HydrateClient client={queryClient}>
+          <OrganizationRedirectCard />
           <OrganizationSwitcherCard />
         </HydrateClient>
       </div>

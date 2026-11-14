@@ -1,8 +1,7 @@
 "use client";
 
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, Ban, Check, Loader2, RefreshCcw } from "lucide-react";
-import Link from "next/link";
+import { ArrowRight, Ban, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -15,7 +14,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
