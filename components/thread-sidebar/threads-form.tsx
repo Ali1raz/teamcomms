@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createLocalStorage } from "@ui-sdk/core";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -156,6 +157,13 @@ export function ThreadsForm({
           threadId,
         });
         setComposerVersion((prev) => prev + 1);
+        try {
+          createLocalStorage(
+            `draft:reply:${organizationId}:${threadId}`
+          ).remove();
+        } catch {
+          // ignore storage errors
+        }
         queryClient.invalidateQueries({
           queryKey: threadsQueryOptions.queryKey,
         });
@@ -258,6 +266,13 @@ export function ThreadsForm({
         });
 
         toast.success("Reply updated successfully");
+        try {
+          createLocalStorage(
+            `draft:reply:${organizationId}:${threadId}`
+          ).remove();
+        } catch {
+          // ignore storage errors
+        }
         onCancelEdit();
         form.reset({
           organizationId,
@@ -352,6 +367,11 @@ export function ThreadsForm({
                     onSubmit={form.handleSubmit(onSubmit)}
                     isSubmitting={isSubmitting}
                     submitLabel={editingThread ? "Update" : "Send"}
+                    draftKey={
+                      editingThread
+                        ? undefined
+                        : `draft:reply:${organizationId}:${threadId}`
+                    }
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
