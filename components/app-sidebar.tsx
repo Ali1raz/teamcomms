@@ -45,6 +45,7 @@ import { CreateTeamDialog } from "./create-tem-dialog";
 import { DeleteTeamDialog } from "./delete-team-dialog";
 import { MemberRoleBadge } from "./general/member-role-badge";
 import { UserImage } from "./general/user-avatar";
+import { NavUser } from "./nav-user";
 import { Button } from "./ui/button";
 import {
   Collapsible,
@@ -138,7 +139,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         {/* Channels */}
-        <SidebarGroup className="border-b">
+        <SidebarGroup>
           <SidebarMenu>
             <Collapsible asChild defaultOpen className="group/collapsible">
               <SidebarMenuItem>
@@ -166,7 +167,7 @@ export function AppSidebar({
                 )}
 
                 <CollapsibleContent>
-                  <ScrollArea className="h-56">
+                  <ScrollArea>
                     <SidebarMenuSub>
                       {channelsQuery.isPending && (
                         <>
@@ -358,10 +359,10 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t bg-muted/40 p-0">
+      <SidebarFooter className="p-0">
         <SidebarGroup>
           <SidebarMenu>
-            <Collapsible asChild defaultOpen className="group/collapsible">
+            <Collapsible asChild className="group/collapsible">
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton>
@@ -430,6 +431,11 @@ export function AppSidebar({
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <NavUser />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarFooter>
@@ -438,7 +444,7 @@ export function AppSidebar({
   );
 }
 
-function MemberActionsDropdown({
+export function MemberActionsDropdown({
   user,
   organizationId,
   className,
