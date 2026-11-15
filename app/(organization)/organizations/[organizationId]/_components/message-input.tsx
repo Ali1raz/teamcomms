@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createLocalStorage } from "@ui-sdk/core";
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
@@ -28,7 +27,6 @@ interface MessageInputProps {
 }
 
 export function MessageInput({ scope }: MessageInputProps) {
-  const [editorKey, setEditorKey] = useState(0);
   const { organizationId } = useParams<{ organizationId: string }>();
 
   const { send } = useRealtimeConversation();
@@ -131,7 +129,6 @@ export function MessageInput({ scope }: MessageInputProps) {
           });
         }
 
-        setEditorKey((prev) => prev + 1);
         form.reset({ organizationId, scope, content: "", imageUrl: undefined });
         form.setValue("imageUrl", undefined);
         try {
@@ -197,7 +194,6 @@ export function MessageInput({ scope }: MessageInputProps) {
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <MessageComposer
-                key={editorKey}
                 field={field}
                 members={users}
                 imageUrl={imageUrl}

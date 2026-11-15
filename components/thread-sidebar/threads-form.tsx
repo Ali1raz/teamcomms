@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createLocalStorage } from "@ui-sdk/core";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { MessageComposer } from "@/app/(organization)/organizations/[organizationId]/_components/message-composer";
@@ -39,7 +39,6 @@ export function ThreadsForm({
   editingThread,
   onCancelEdit,
 }: ThreadsFormProps) {
-  const [composerVersion, setComposerVersion] = useState(0);
   const { organizationId } = useParams<{ organizationId: string }>();
   const queryClient = useQueryClient();
 
@@ -67,10 +66,6 @@ export function ThreadsForm({
     },
     mode: "onChange",
   });
-
-  const composerKey = editingThread
-    ? `edit-${editingThread.id}`
-    : `create-${composerVersion}`;
 
   useEffect(() => {
     form.reset({
@@ -156,7 +151,6 @@ export function ThreadsForm({
           imageUrl: undefined,
           threadId,
         });
-        setComposerVersion((prev) => prev + 1);
         try {
           createLocalStorage(
             `draft:reply:${organizationId}:${threadId}`
@@ -358,7 +352,7 @@ export function ThreadsForm({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <MessageComposer
-                    key={composerKey}
+                    key={editingThread ? `edit-${editingThread.id}` : "create"}
                     field={field}
                     members={users}
                     imageUrl={imageField.value}

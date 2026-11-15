@@ -121,7 +121,7 @@ export function Editor({
       return;
     }
 
-    editor.commands.setContent(nextContent);
+    editor.commands.setContent(nextContent, { emitUpdate: false });
   }, [editor, field]);
 
   if (!editor) {
