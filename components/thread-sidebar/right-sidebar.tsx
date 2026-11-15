@@ -146,19 +146,14 @@ export function RightSidebar({
     enabled: !!effectiveThreadId,
   });
 
-  const { data: organization } = useQuery(
-    orpc.organization.list.queryOptions()
-  );
   const selectedEditingThread = data
     ? (data.threads.find((thread) => thread.id === editingThreadId) ?? null)
     : null;
 
-  const { data: organizationdata } = useQuery(
-    orpc.organization.list.queryOptions()
-  );
+  const { data: currentUserData } = useQuery(orpc.user.get.queryOptions());
 
-  const currentUser = organizationdata?.user
-    ? ({ id: organizationdata.user.id } satisfies RealtimeUserSchemaType)
+  const currentUser = currentUserData
+    ? ({ id: currentUserData.id } satisfies RealtimeUserSchemaType)
     : null;
 
   const { onlineusers } = usePresence({
@@ -279,7 +274,7 @@ export function RightSidebar({
                     deletingThreadId={deletingThreadId}
                     setDeletingThreadId={setDeletingThreadId}
                     onlineUserIds={onlineUserIds}
-                    organizationUserId={organization?.user.id}
+                    organizationUserId={currentUserData?.id}
                   />
                 ))}
               </div>
