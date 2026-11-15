@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
-import { client } from "@/lib/orpc";
+import { client, orpc } from "@/lib/orpc";
 import { getQueryClient } from "@/lib/query/hydration";
 import { requireOrganizationAccess } from "../../../access";
 
@@ -24,12 +24,18 @@ export default async function MembersLayout({
   params,
 }: Props & { children: ReactNode }) {
   const { organizationId, teamId } = await params;
+  const queryClient = getQueryClient();
 
-  await requireOrganizationAccess(getQueryClient(), organizationId);
+  await requireOrganizationAccess(queryClient, organizationId);
+  await queryClient.prefetchQuery(
+    orpc.team.members.list.queryOptions({
+      input: { teamId },
+    })
+  );
 
-  const access = await client.team.get({ teamId });
+  const access = await client.team.get({ teamId }).catch(() => null);
 
-  if (!access.isMember) {
+  if (!access || !access.isMember) {
     return (
       <EmptyState
         icon={Users}

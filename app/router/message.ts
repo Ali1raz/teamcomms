@@ -6,7 +6,6 @@ import { inngest } from "@/lib/inngest/client";
 import { analyzeContent, validMentionIds } from "@/lib/mentions";
 import { isManagerRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { isTeamMember } from "@/lib/teams";
 import { groupReactions } from "@/lib/utils";
 import {
   createMessageSchema,
@@ -404,16 +403,6 @@ export const updateMessage = base
       throw errors.FORBIDDEN();
     }
 
-    if (
-      message.teamId &&
-      !isManagerRole(context.member.role) &&
-      !(await isTeamMember(message.teamId, context.user.id))
-    ) {
-      throw errors.FORBIDDEN({
-        message: "You are not a member of this team",
-      });
-    }
-
     const mentionedUserIds = await validMentionIds({
       teamId: message.teamId ?? null,
       organizationId: context.organization.id,
@@ -516,16 +505,6 @@ export const deleteMessage = base
       });
     }
 
-    if (
-      message.teamId &&
-      !isManagerRole(context.member.role) &&
-      !(await isTeamMember(message.teamId, context.user.id))
-    ) {
-      throw errors.FORBIDDEN({
-        message: "You are not a member of this team",
-      });
-    }
-
     await prisma.message.delete({
       where: { id: input.messageId },
     });
@@ -568,16 +547,6 @@ export const toggleReaction = base
 
     if (!message) {
       throw errors.NOT_FOUND();
-    }
-
-    if (
-      message.teamId &&
-      !isManagerRole(context.member.role) &&
-      !(await isTeamMember(message.teamId, context.user.id))
-    ) {
-      throw errors.FORBIDDEN({
-        message: "You are not a member of this team",
-      });
     }
 
     const existing = await prisma.messageReaction.findUnique({
@@ -733,16 +702,6 @@ export const listThreads = base
 
     if (!parent) {
       throw errors.NOT_FOUND();
-    }
-
-    if (
-      parent.teamId &&
-      !isManagerRole(context.member.role) &&
-      !(await isTeamMember(parent.teamId, context.user.id))
-    ) {
-      throw errors.FORBIDDEN({
-        message: "You are not a member of this team",
-      });
     }
 
     // Destructure replies out so parent shape matches the output schema

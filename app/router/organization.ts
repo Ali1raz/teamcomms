@@ -60,43 +60,39 @@ export const listOrganizations = base
           description: z.string().nullable().optional(),
           logo: z.string().nullable().optional(),
           role: z.enum([...Object.values(MembershipRole)]),
-          totalMembers: z.number(),
-          totalTeams: z.number(),
         })
       ),
-      user: z.custom<User>(),
-      currentOrganization: z.custom<FullOrg | null>(),
+      currentOrganization: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          slug: z.string(),
+          description: z.string().nullable().optional(),
+          logo: z.string().nullable().optional(),
+        })
+        .nullable()
+        .optional(),
     })
   )
   .handler(async ({ context }) => {
-    const [data, currentOrganization, memberRoles, counts] = await Promise.all([
+    const [data, currentOrganization, memberRoles] = await Promise.all([
       auth.api.listOrganizations({ headers: await headers() }),
-      // A session can outlive the organization it was last active in. Treat
-      // that as no active organization instead of failing the whole list.
-      auth.api
-        .getFullOrganization({ headers: await headers() })
-        .catch(() => null),
+      prisma.organization.findFirst({
+        where: { id: context.session?.activeOrganizationId || undefined },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          logo: true,
+        },
+      }),
       prisma.member.findMany({
         where: { userId: context.user.id },
         select: { organizationId: true, role: true },
       }),
-      prisma.organization.findMany({
-        where: {
-          members: { some: { userId: context.user.id } },
-        },
-        select: {
-          id: true,
-          _count: {
-            select: {
-              members: true,
-              teams: true,
-            },
-          },
-        },
-      }),
     ]);
 
-    const countMap = new Map(counts.map((o) => [o.id, o._count]));
     const roleMap = new Map(memberRoles.map((m) => [m.organizationId, m.role]));
 
     return {
@@ -107,10 +103,7 @@ export const listOrganizations = base
         description: org.description ?? null,
         logo: org.logo,
         role: roleMap.get(org.id) ?? "member",
-        totalMembers: countMap.get(org.id)?.members ?? 0,
-        totalTeams: countMap.get(org.id)?.teams ?? 0,
       })),
-      user: context.user,
       currentOrganization: currentOrganization,
     };
   });

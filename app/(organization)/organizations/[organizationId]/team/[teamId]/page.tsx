@@ -29,9 +29,9 @@ export default async function TeamIdPage(
   const queryClient = getQueryClient();
   await requireOrganizationAccess(queryClient, organizationId);
 
-  const access = await client.team.get({ teamId });
+  const access = await client.team.get({ teamId }).catch(() => null);
 
-  if (!access.isMember) {
+  if (!access || !access.isMember) {
     return (
       <EmptyState
         icon={Users}
