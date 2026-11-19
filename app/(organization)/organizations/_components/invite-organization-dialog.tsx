@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ChevronDownIcon, InfoIcon, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
@@ -60,10 +60,13 @@ export function InviteOrganizationDialog({
   children?: ReactNode;
   organizationId: string;
   organizationName: string | undefined;
-  teams: Awaited<ReturnType<typeof client.team.list>>["teams"];
+  teams?: Awaited<ReturnType<typeof client.team.list>>["teams"];
   teamId?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { data: teamsData } = useQuery(
+    orpc.team.list.queryOptions({ input: { organizationId } })
+  );
 
   const form = useForm<InviteMemberSchemaType>({
     resolver: zodResolver(inviteMemberSchema),
@@ -252,7 +255,7 @@ export function InviteOrganizationDialog({
                     <SelectContent>
                       <SelectGroup>
                         <SelectLabel>Select a team</SelectLabel>
-                        {teams.map((team) => (
+                        {teamsData?.teams?.map((team) => (
                           <SelectItem key={team.id} value={team.id}>
                             {team.name}
                           </SelectItem>

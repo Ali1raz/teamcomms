@@ -43,7 +43,7 @@ export function TeamTableActionsDropdown({
         </AddMemberToTeam>
         <DropdownMenuItem asChild>
           <Link
-            href={`/organizations/${organizationId}/team/${team.id}/members`}
+            href={`/organizations/${organizationId}/team/${team.id}?tab=members`}
           >
             Manage members
           </Link>

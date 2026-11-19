@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useRealtimeConversation } from "@/components/conversation-realtime-provider";
 import { Editor } from "@/components/editor/editor";
 import type { MentionUser } from "@/components/editor/mentions";
+import { AttachmentChip } from "@/components/general/attachment-chip";
+import { ImageUploadDialog } from "@/components/general/image-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
@@ -22,9 +24,7 @@ import {
   type MessageListItemType,
   type UpdateMessageSchemaType,
   updateMessageSchema,
-} from "../../schema";
-import { AttachmentChip } from "./attachment-chip";
-import { ImageUploadDialog } from "./image-dialog";
+} from "../../../schema";
 
 interface EditMessageFormProps {
   message: MessageListItemType;

@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Loader2, MoreHorizontal, RefreshCcw } from "lucide-react";
-import { useParams } from "next/navigation";
 import { useMemo } from "react";
 import { AddMemberToTeam } from "@/components/add-member-to-team";
 import { MemberRoleBadge } from "@/components/general/member-role-badge";
@@ -25,14 +24,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePresence } from "@/hooks/use-presence";
 import { orpc } from "@/lib/orpc";
 import type { RealtimeUserSchemaType } from "@/realtime/schema";
-import { RemoveMemberDialog } from "./_components/remov-member-dialog";
+import { RemoveMemberDialog } from "./remove-member-dialog";
 
-export default function TeamMembersPage() {
-  const { teamId, organizationId } = useParams<{
-    teamId: string;
-    organizationId: string;
-  }>();
-
+export function TeamMembersTab({
+  organizationId,
+  teamId,
+}: {
+  organizationId: string;
+  teamId: string;
+}) {
   const {
     data: { members, canManage },
     isFetching,

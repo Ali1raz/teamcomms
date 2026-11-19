@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { RemoveMemberDialog } from "@/components/remove-member-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,32 +11,38 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UpdateMemberRoleDialog } from "@/components/update-member-role-dialog";
-import type { MemberRow } from "./member-columns";
+import type { ClientOutputs } from "@/lib/orpc";
+import { cn } from "@/lib/utils";
 
-export function MemberTableActionsDropdown({
+type Member =
+  ClientOutputs["organization"]["members"]["list"]["members"][number];
+
+export function MemberActionsDropdown({
   member,
   organizationId,
+  className,
 }: {
-  member: MemberRow;
+  member: Member;
   organizationId: string;
+  className?: React.ComponentProps<typeof Button>["className"];
 }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <MoreHorizontal className="size-4" />
-          <span className="sr-only">More</span>
+        <Button className={cn(className)} variant="outline" size="sm">
+          <MoreVertical />
+          <span className="sr-only">Actions for {member.name}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent>
         <UpdateMemberRoleDialog
           userId={member.id}
           currentRole={member.role}
           organizationId={organizationId}
           memberName={member.name}
         >
-          <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
-            Update role
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            Update Role
           </DropdownMenuItem>
         </UpdateMemberRoleDialog>
         <DropdownMenuSeparator />
@@ -47,7 +53,7 @@ export function MemberTableActionsDropdown({
           memberEmail={member.email}
         >
           <DropdownMenuItem
-            onSelect={(event) => event.preventDefault()}
+            onSelect={(e) => e.preventDefault()}
             variant="destructive"
           >
             Remove

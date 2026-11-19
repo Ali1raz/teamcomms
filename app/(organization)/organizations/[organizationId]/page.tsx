@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { client, orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
+import { OrganizationHeader } from "./_components/organization-header";
 import { OrganizationTabs } from "./_components/organization-tabs";
 import { requireOrganizationAccess } from "./access";
 import {
@@ -38,7 +39,6 @@ export default async function Page(
   await requireOrganizationAccess(queryClient, organizationId);
 
   await Promise.all([
-    queryClient.prefetchQuery(orpc.organization.list.queryOptions()),
     queryClient.prefetchQuery(
       orpc.team.list.queryOptions({
         input: toTeamQueryInput(organizationId, teamFilters),
@@ -58,6 +58,7 @@ export default async function Page(
 
   return (
     <HydrateClient client={queryClient}>
+      <OrganizationHeader />
       <OrganizationTabs organizationId={organizationId} />
     </HydrateClient>
   );

@@ -9,7 +9,7 @@ export function ConversationView({ scope }: { scope: ConversationScope }) {
         <MessageList scope={scope} />
       </div>
 
-      <div className="shrink-0 bg-background p-2 pb-3 pt-0">
+      <div className="shrink-0 bg-background p-2 pt-0">
         <MessageInput scope={scope} />
       </div>
     </section>

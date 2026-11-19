@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Ban, ChevronDownIcon, ChevronsDownIcon, Hash, X } from "lucide-react";
+import { Ban, ChevronDownIcon, ChevronsDownIcon, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { parseAsString } from "nuqs/server";
@@ -24,6 +24,9 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
   const [newMessages, setNewMessages] = useState<boolean>(false);
   const [scrollToBottomPending, setScrollToBottomPending] = useState(false);
   const lastItemRef = useRef<string | undefined>(undefined);
+  const { organizationId } = useParams<{
+    organizationId: string;
+  }>();
 
   const roomId = conversationRoomId(scope);
 
@@ -213,7 +216,6 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
     }
   }, [scrollToBottomPending, messages.length]);
 
-  const { organizationId } = useParams<{ organizationId: string }>();
   const currentUser = user
     ? ({ id: user.id } satisfies RealtimeUserSchemaType)
     : null;
@@ -262,14 +264,10 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
     return (
       <div className="flex h-full items-center justify-center p-4">
         <EmptyState
-          icon={scope.kind === "channel" ? Hash : Ban}
+          icon={Ban}
           iconClassName="size-8 sm:size-14"
           title="No messages"
-          description={
-            scope.kind === "channel"
-              ? "There are no messages in this channel yet. Start the conversation by sending a new message!"
-              : "There are no messages in this team yet. Start the conversation by sending a new message!"
-          }
+          description={"Start the conversation by sending a new message!"}
         />
       </div>
     );

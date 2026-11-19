@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { ImageUploadDialog } from "@/app/(organization)/organizations/[organizationId]/_components/image-dialog";
+import { ImageUploadDialog } from "@/components/general/image-dialog";
 import { ImageZoom } from "@/components/kibo-ui/image-zoom";
 import { Button } from "@/components/ui/button";
 import {

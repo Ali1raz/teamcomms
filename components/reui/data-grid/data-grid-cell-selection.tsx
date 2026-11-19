@@ -2225,7 +2225,6 @@ function DataGridCellSelection<TData extends object>({
     // effect re-runs only when the table itself is replaced. apiRef is only
     // read and written here: keeping it out of the deps means an inline ref
     // object cannot tear the listeners down every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, keyboard, clipboard, table.store]);
 
   // The editor overlay covers the cell but not the fill handle's

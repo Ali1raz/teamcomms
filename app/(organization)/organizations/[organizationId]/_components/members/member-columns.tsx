@@ -3,11 +3,11 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { MemberRoleBadge } from "@/components/general/member-role-badge";
 import { UserImage } from "@/components/general/user-avatar";
+import { MemberActionsDropdown } from "@/components/member-actions-dropdown";
 import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ClientOutputs } from "@/lib/orpc";
-import { MemberTableActionsDropdown } from "./member-table-actions-dropdown";
 
 export type MemberRow =
   ClientOutputs["organization"]["members"]["list"]["members"][number];
@@ -74,7 +74,7 @@ export function getMemberColumns({
       enableHiding: false,
       cell: ({ row }) =>
         canManageOrganization && row.original.id !== currentUserId ? (
-          <MemberTableActionsDropdown
+          <MemberActionsDropdown
             member={row.original}
             organizationId={organizationId}
           />

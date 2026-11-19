@@ -5,7 +5,6 @@ import { ThreadProvider } from "@/components/thread-sidebar/thread-context";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
-import { OrganizationHeader } from "./_components/organization-header";
 import { RealtimeProviderWrapper } from "./_components/realtime-provider-wrapper";
 import { requireOrganizationAccess } from "./access";
 
@@ -43,13 +42,8 @@ export default async function OrganizationLayout({
           <AppSidebar organizationId={organizationId} />
         </HydrateClient>
         <RealtimeProviderWrapper>
-          <SidebarInset className="flex h-dvh flex-col overflow-hidden">
-            <HydrateClient client={queryClient}>
-              <OrganizationHeader />
-            </HydrateClient>
-            <main className="overflow-scroll flex flex-1 flex-col min-h-0">
-              {children}
-            </main>
+          <SidebarInset className="flex h-dvh flex-col overflow-hidden my-0">
+            {children}
           </SidebarInset>
           <RightSidebar
             collapsible="offcanvas"
