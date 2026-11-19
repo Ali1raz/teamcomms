@@ -1,13 +1,13 @@
 import { InfiniteSlider } from "../motion-primitives/infinite-slider";
 import {
   BetterAuth,
-  ESLint,
+  Biomejs,
   Git,
   GitHub,
+  Inngest,
   Neon,
   Nextjs,
   PostgreSQL,
-  Prettier,
   Prisma,
   Shadcnui,
   TailwindCSS,
@@ -28,10 +28,6 @@ const logos = [
     icon: <BetterAuth className="invert dark:invert-0" />,
   },
   {
-    label: "ESLint",
-    icon: <ESLint className="invert dark:invert-0" />,
-  },
-  {
     label: "Git",
     icon: <Git />,
   },
@@ -44,8 +40,8 @@ const logos = [
     icon: <PostgreSQL />,
   },
   {
-    label: "Prettier",
-    icon: <Prettier />,
+    label: "Biome",
+    icon: <Biomejs />,
   },
   {
     label: "Prisma",
@@ -62,6 +58,10 @@ const logos = [
   {
     label: "shadcn/ui",
     icon: <Shadcnui className="invert dark:invert-0" />,
+  },
+  {
+    label: "Inngest",
+    icon: <Inngest className="invert dark:invert-0" />,
   },
 ];
 export function LogoCloud() {
