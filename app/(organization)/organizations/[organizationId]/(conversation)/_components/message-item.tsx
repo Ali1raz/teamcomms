@@ -20,7 +20,7 @@ import {
 import { useSidebarWithSide } from "@/components/ui/sidebar";
 import { orpc } from "@/lib/orpc";
 import { cn, formatRelativeTime } from "@/lib/utils";
-import type { MessageListItemType } from "../../schema";
+import type { MessageListItemType } from "../../../schema";
 import { DeleteMessageDialog } from "./delete-message-dialog";
 import { EditMessageForm } from "./edit-message-form";
 

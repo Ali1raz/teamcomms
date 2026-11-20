@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { MessageComposer } from "@/app/(organization)/organizations/[organizationId]/_components/message-composer";
+import { MessageComposer } from "@/app/(organization)/organizations/[organizationId]/(conversation)/_components/message-composer";
 import {
   type CreateMessageType,
   createMessageSchema,

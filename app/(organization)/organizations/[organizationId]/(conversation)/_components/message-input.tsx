@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/incompatible-library */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,10 +15,10 @@ import { conversationKey } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
 import type { InfiniteMessages } from "@/lib/types";
 import {
-  type CreateMessageType,
+  CreateMessageType,
   createMessageSchema,
-  type MessageListItemType,
-} from "../../schema";
+  MessageListItemType,
+} from "../../../schema";
 import { MessageComposer } from "./message-composer";
 
 interface MessageInputProps {

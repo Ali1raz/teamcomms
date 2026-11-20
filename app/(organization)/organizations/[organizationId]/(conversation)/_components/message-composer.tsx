@@ -2,12 +2,12 @@ import { ImageIcon, Send } from "lucide-react";
 import { useCallback } from "react";
 import { Editor } from "@/components/editor/editor";
 import type { MentionUser } from "@/components/editor/mentions";
+import { AttachmentChip } from "@/components/general/attachment-chip";
+import { ImageUploadDialog } from "@/components/general/image-dialog";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useDraft } from "@/hooks/use-draft";
 import { getShortcutModifierLabel } from "@/lib/utils";
-import { AttachmentChip } from "./attachment-chip";
-import { ImageUploadDialog } from "./image-dialog";
 
 interface iAppProps {
   field: {

@@ -15,8 +15,8 @@ import { InviteOrganizationDialog } from "@/app/(organization)/organizations/_co
 import { CreateChannelDialog } from "@/components/channels/create-channel-dialog";
 import { DeleteChannelDialog } from "@/components/channels/delete-channel-dialog";
 import { RenameChannelDialog } from "@/components/channels/rename-channel-dialog";
+import { MemberActionsDropdown } from "@/components/member-actions-dropdown";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
-import { RemoveMemberDialog } from "@/components/remove-member-dialog";
 import {
   Sidebar,
   SidebarContent,
@@ -33,11 +33,9 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { UpdateMemberRoleDialog } from "@/components/update-member-role-dialog";
 import { useOrganizationRole } from "@/hooks/use-organization-role";
 import { usePresence } from "@/hooks/use-presence";
 import { SIDEBAR_MEMBER_PREVIEW_COUNT } from "@/lib/app/constants";
-import type { ClientOutputs } from "@/lib/orpc";
 import { orpc } from "@/lib/orpc";
 import { cn } from "@/lib/utils";
 import { AddMemberToTeam } from "./add-member-to-team";
@@ -61,9 +59,6 @@ import {
 } from "./ui/dropdown-menu";
 import { ScrollArea } from "./ui/scroll-area";
 import { UpdateTeamDialog } from "./update-team-dialog";
-
-type MembersListOutput = ClientOutputs["organization"]["members"]["list"];
-type MemberType = MembersListOutput["members"][number];
 
 export function AppSidebar({
   organizationId,
@@ -332,7 +327,7 @@ export function AppSidebar({
                               </AddMemberToTeam>
                               <DropdownMenuItem asChild>
                                 <Link
-                                  href={`/organizations/${organizationId}/team/${ch.id}/members`}
+                                  href={`/organizations/${organizationId}/team/${ch.id}?tab=members`}
                                 >
                                   Manage Members
                                 </Link>
@@ -402,7 +397,7 @@ export function AppSidebar({
                               {member.id !== user?.id &&
                                 canManageOrganization && (
                                   <MemberActionsDropdown
-                                    user={member}
+                                    member={member}
                                     organizationId={organizationId}
                                     className="ml-auto px-1"
                                   />
@@ -441,52 +436,5 @@ export function AppSidebar({
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  );
-}
-
-export function MemberActionsDropdown({
-  user,
-  organizationId,
-  className,
-}: {
-  user: MemberType;
-  organizationId: string;
-  className?: React.ComponentProps<typeof Button>["className"];
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button className={cn(className)} variant="outline" size="sm">
-          <MoreVertical />
-          <span className="sr-only">Actions for {user.name}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <UpdateMemberRoleDialog
-          userId={user.id}
-          currentRole={user.role}
-          organizationId={organizationId}
-          memberName={user.name}
-        >
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            Update Role
-          </DropdownMenuItem>
-        </UpdateMemberRoleDialog>
-        <DropdownMenuSeparator />
-        <RemoveMemberDialog
-          memberId={user.id}
-          organizationId={organizationId}
-          memberName={user.name}
-          memberEmail={user.email}
-        >
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            variant="destructive"
-          >
-            Remove
-          </DropdownMenuItem>
-        </RemoveMemberDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

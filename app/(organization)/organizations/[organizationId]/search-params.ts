@@ -11,6 +11,8 @@ import { normalizePage } from "@/lib/pagination";
 import { paginationParsers } from "@/lib/search-params/pagination";
 import {
   CHANNEL_SORT_FIELDS,
+  CONVERSATION_TABS,
+  DEFAULT_CONVERSATION_TAB,
   DEFAULT_ORGANIZATION_TAB,
   MEMBER_SORT_FIELDS,
   ORGANIZATION_TABS,
@@ -20,6 +22,64 @@ import {
 export const organizationTabParser = parseAsStringEnum([
   ...ORGANIZATION_TABS,
 ]).withDefault(DEFAULT_ORGANIZATION_TAB);
+
+export const conversationTabParser = parseAsStringEnum([
+  ...CONVERSATION_TABS,
+]).withDefault(DEFAULT_CONVERSATION_TAB);
+
+export const teamMemberParsers = {
+  ...paginationParsers,
+  search: parseAsString.withDefault(""),
+  role: parseAsStringEnum([...Object.values(MembershipRole)]),
+  sortBy: parseAsStringEnum([...MEMBER_SORT_FIELDS]).withDefault("name"),
+  sortOrder: parseAsStringEnum([...SORT_ORDERS]).withDefault("desc"),
+};
+
+export type TeamMemberSearchParams = inferParserType<typeof teamMemberParsers>;
+
+export const teamMemberUrlKeys = {
+  search: "memberSearch",
+  role: "memberRole",
+  sortBy: "memberSortBy",
+  sortOrder: "memberSortOrder",
+  page: "memberPage",
+  perPage: "memberPerPage",
+} as const;
+
+export const loadTeamMemberSearchParams = createLoader(teamMemberParsers, {
+  urlKeys: teamMemberUrlKeys,
+});
+
+export function useTeamMemberFilters(options: Options = {}) {
+  return useQueryStates(teamMemberParsers, {
+    shallow: false,
+    urlKeys: teamMemberUrlKeys,
+    ...options,
+  });
+}
+
+export function toTeamMemberQueryInput(
+  teamId: string,
+  params: TeamMemberSearchParams
+) {
+  return {
+    teamId,
+    page: normalizePage(params.page),
+    perPage: params.perPage,
+    search: params.search || undefined,
+    role: params.role ?? undefined,
+    sortBy: params.sortBy,
+    sortOrder: params.sortOrder,
+  };
+}
+
+export function hasActiveTeamMemberFilters(params: TeamMemberSearchParams) {
+  return Boolean(params.search || params.role);
+}
+
+export function useConversationTab() {
+  return useQueryState("tab", conversationTabParser);
+}
 
 export const organizationMemberParsers = {
   ...paginationParsers,

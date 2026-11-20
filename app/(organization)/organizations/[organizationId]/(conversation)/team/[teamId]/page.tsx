@@ -5,8 +5,8 @@ import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
 import { client, orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
-import { ConversationView } from "../../_components/conversation-view";
-import { requireOrganizationAccess } from "../../access";
+import { requireOrganizationAccess } from "../../../access";
+import { ConversationShell } from "../../_components/conversation-shell";
 
 export async function generateMetadata(
   props: PageProps<"/organizations/[organizationId]/team/[teamId]">
@@ -53,11 +53,16 @@ export default async function TeamIdPage(
       orpc.user.mention.queryOptions({ input: { teamId } })
     ),
     queryClient.prefetchQuery(orpc.user.get.queryOptions()),
+    queryClient.prefetchQuery(orpc.organization.list.queryOptions()),
   ]);
 
   return (
     <HydrateClient client={queryClient}>
-      <ConversationView scope={{ kind: "team", teamId }} />
+      <ConversationShell
+        organizationId={organizationId}
+        teamId={teamId}
+        conversationName={access.team}
+      />
     </HydrateClient>
   );
 }

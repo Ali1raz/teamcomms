@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import z from "zod";
-import { TEAM_SORT_FIELDS } from "@/app/(organization)/organizations/[organizationId]/constants";
 import { type Prisma } from "@/generated/prisma/client";
 import { MembershipRole } from "@/generated/prisma/enums";
 import {
@@ -16,6 +15,10 @@ import { isManagerRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { updateTeamSchema } from "@/lib/schema";
 import { createSlug } from "@/lib/utils";
+import {
+  MEMBER_SORT_FIELDS,
+  TEAM_SORT_FIELDS,
+} from "../(organization)/organizations/[organizationId]/constants";
 import { createTeamSchema } from "../(organization)/organizations/schema";
 import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
 import { readsecurityMiddleware } from "../middlewares/arcjet/read";
@@ -438,6 +441,12 @@ export const listTeamMembers = base
   .input(
     z.object({
       teamId: z.string(),
+      page: z.number().int().min(1).optional(),
+      perPage: z.number().int().min(1).max(MAX_PER_PAGE).optional(),
+      search: z.string().optional(),
+      role: z.enum([...Object.values(MembershipRole)]).optional(),
+      sortBy: z.enum([...MEMBER_SORT_FIELDS]).optional(),
+      sortOrder: z.enum([...SORT_ORDERS]).optional(),
     })
   )
   .use(requireTeamAccessMiddleware, (input) => input.teamId)
@@ -452,6 +461,10 @@ export const listTeamMembers = base
           role: z.enum([...Object.values(MembershipRole)]),
         })
       ),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
       canManage: z.boolean(),
     })
   )
@@ -465,10 +478,52 @@ export const listTeamMembers = base
       throw errors.NOT_FOUND({ message: "Team not found" });
     }
 
-    let rawMembers;
+    const search = input.search?.trim();
+    const sortBy = input.sortBy ?? "name";
+    const sortOrder = input.sortOrder ?? "desc";
+
+    const paginate = input.page !== undefined || input.perPage !== undefined;
+    const perPage = paginate ? (input.perPage ?? DEFAULT_PER_PAGE) : undefined;
+
     try {
-      rawMembers = await prisma.teamMember.findMany({
-        where: { teamId: input.teamId },
+      const where = {
+        teamId: input.teamId,
+        user: {
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: "insensitive" as const } },
+                  { email: { contains: search, mode: "insensitive" as const } },
+                ],
+              }
+            : {}),
+          ...(input.role
+            ? {
+                members: {
+                  some: {
+                    organizationId: context.organization.id,
+                    role: input.role,
+                  },
+                },
+              }
+            : {}),
+        },
+      };
+
+      const total = paginate
+        ? await prisma.teamMember.count({ where })
+        : undefined;
+      const pageCount =
+        total !== undefined && perPage !== undefined
+          ? Math.max(Math.ceil(total / perPage), 1)
+          : 1;
+      const page =
+        perPage !== undefined
+          ? clampPage(input.page ?? DEFAULT_PAGE, pageCount)
+          : DEFAULT_PAGE;
+
+      const rawMembers = await prisma.teamMember.findMany({
+        where,
         select: {
           user: {
             select: {
@@ -485,22 +540,38 @@ export const listTeamMembers = base
           },
         },
       });
+
+      const members = rawMembers.map((m) => ({
+        id: m.user.id,
+        name: m.user.name,
+        email: m.user.email,
+        image: m.user.image ?? null,
+        role: m.user.members?.[0]?.role ?? "member",
+      }));
+
+      members.sort((a, b) => {
+        const dir = sortOrder === "asc" ? 1 : -1;
+        if (sortBy === "email") return a.email.localeCompare(b.email) * dir;
+        if (sortBy === "role") return a.role.localeCompare(b.role) * dir;
+        return a.name.localeCompare(b.name) * dir;
+      });
+
+      const pagedMembers =
+        perPage !== undefined
+          ? members.slice((page - 1) * perPage, page * perPage)
+          : members;
+
+      return {
+        members: pagedMembers,
+        total: total ?? members.length,
+        page,
+        perPage: perPage ?? (members.length || 1),
+        pageCount,
+        canManage: isManagerRole(context.member.role),
+      };
     } catch (error) {
       throw errors.BAD_REQUEST({
         message: errorMessage(error, "Failed to list team members"),
       });
     }
-
-    const members = rawMembers.map((m) => ({
-      id: m.user.id,
-      name: m.user.name,
-      email: m.user.email,
-      image: m.user.image ?? null,
-      role: m.user.members?.[0]?.role ?? "member",
-    }));
-
-    return {
-      members,
-      canManage: isManagerRole(context.member.role),
-    };
   });

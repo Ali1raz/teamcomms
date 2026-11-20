@@ -4,8 +4,8 @@ import { OrganizationAvatar } from "@/components/general/organization-avatar";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { isOrganizationColor } from "@/lib/utils";
-import { AttachmentChip } from "../[organizationId]/_components/attachment-chip";
-import { ImageUploadDialog } from "../[organizationId]/_components/image-dialog";
+import { AttachmentChip } from "../../../../components/general/attachment-chip";
+import { ImageUploadDialog } from "../../../../components/general/image-dialog";
 
 export function OrganizationLogoField({
   organizationId,

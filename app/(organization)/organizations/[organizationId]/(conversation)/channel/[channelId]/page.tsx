@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { client, orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
-import { ConversationView } from "../../_components/conversation-view";
-import { requireOrganizationAccess } from "../../access";
+import { requireOrganizationAccess } from "../../../access";
+import { ConversationShell } from "../../_components/conversation-shell";
 
 export async function generateMetadata(
   props: PageProps<"/organizations/[organizationId]/channel/[channelId]">
@@ -24,16 +24,23 @@ export default async function Page(
   const queryClient = getQueryClient();
   await requireOrganizationAccess(queryClient, organizationId);
 
+  const { channel } = await client.channel.get({ channelId }).catch(() => ({
+    channel: { name: "Channel" },
+  }));
+
   await Promise.all([
-    // Prefetch mentionable users of the current organization (no team scope
-    // for channels) so the client can read them with useSuspenseQuery.
     queryClient.prefetchQuery(orpc.user.mention.queryOptions({ input: {} })),
     queryClient.prefetchQuery(orpc.user.get.queryOptions()),
+    queryClient.prefetchQuery(orpc.organization.list.queryOptions()),
   ]);
 
   return (
     <HydrateClient client={queryClient}>
-      <ConversationView scope={{ kind: "channel", channelId }} />
+      <ConversationShell
+        organizationId={organizationId}
+        channelId={channelId}
+        conversationName={channel.name}
+      />
     </HydrateClient>
   );
 }

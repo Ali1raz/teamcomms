@@ -813,16 +813,12 @@ function DataGridTableVirtual<TData extends object>({
   // virtualizer's cached sizes by hand.
   useEffect(() => {
     if (columnVirtualizationActive) columnVirtualizer.measure();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     columnVirtualizationActive,
     columnVirtualizer,
     columnSizing,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     table.state.columnVisibility,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     table.state.columnOrder,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     table.state.columnPinning,
   ]);
 
@@ -1057,7 +1053,6 @@ function DataGridTableVirtual<TData extends object>({
   // wrapper (any table state change recreates it), the layout props, and
   // the column window. A scroll frame changes none of them, so the whole
   // sortable-header subtree is reused instead of rebuilt per frame.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const headerNode = useMemo(
     () =>
       renderHeader && (

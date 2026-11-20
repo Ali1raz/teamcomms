@@ -33,6 +33,12 @@ export function toMemberSortField(value: string): MemberSortField | null {
     : null;
 }
 
+export const CONVERSATION_TABS = ["messages", "members", "settings"] as const;
+
+export type ConversationTab = (typeof CONVERSATION_TABS)[number];
+
+export const DEFAULT_CONVERSATION_TAB: ConversationTab = "messages";
+
 export const TEAM_SORT_FIELDS = ["name", "createdAt"] as const;
 
 export type TeamSortField = (typeof TEAM_SORT_FIELDS)[number];
