@@ -1,6 +1,6 @@
 import type { FullOrg, User } from "@/lib/auth";
 import { isManagerRole } from "@/lib/permissions";
-import { isTeamMember } from "@/lib/teams";
+import { prisma } from "@/lib/prisma";
 import { base } from "./bast";
 
 export const requireTeamAccessMiddleware = base
@@ -22,3 +22,12 @@ export const requireTeamAccessMiddleware = base
 
     return next();
   });
+
+async function isTeamMember(teamId: string, userId: string) {
+  const row = await prisma.teamMember.findUnique({
+    where: { teamId_userId: { teamId, userId } },
+    select: { id: true },
+  });
+
+  return Boolean(row);
+}

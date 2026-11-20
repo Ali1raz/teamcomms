@@ -41,10 +41,9 @@ export function TeamMembersTab({
     orpc.team.members.list.queryOptions({ input: { teamId } })
   );
 
-  const { data } = useQuery(orpc.organization.list.queryOptions());
-
-  const currentUser = data?.user
-    ? ({ id: data.user.id } satisfies RealtimeUserSchemaType)
+  const { data: user } = useQuery(orpc.user.get.queryOptions());
+  const currentUser = user
+    ? ({ id: user.id } satisfies RealtimeUserSchemaType)
     : null;
 
   const { onlineusers } = usePresence({

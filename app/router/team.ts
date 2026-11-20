@@ -131,6 +131,7 @@ export const updateTeam = base
 export const listTeams = base
   .use(requireAuthMiddleware)
   .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
   .route({
     method: "GET",
     path: "/team",
@@ -176,7 +177,7 @@ export const listTeams = base
   .handler(async ({ context, input, errors }) => {
     const search = input.search?.trim();
     const where: Prisma.TeamWhereInput = {
-      organizationId: input.organizationId,
+      organizationId: context.organization.id,
       teammembers: {
         some: {
           userId: context.user.id,

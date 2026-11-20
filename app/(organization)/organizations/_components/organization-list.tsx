@@ -146,8 +146,7 @@ export function OrganizationList() {
                     </h1>
                   </CardTitle>
                   <CardDescription>
-                    <p>Total Members: {ws.totalMembers}</p>
-                    <p>Total Teams: {ws.totalTeams}</p>
+                    {ws.description ?? "Organization"}
                   </CardDescription>
                 </div>
               </CardHeader>

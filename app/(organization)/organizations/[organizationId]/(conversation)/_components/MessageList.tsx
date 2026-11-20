@@ -76,9 +76,7 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
     refetchOnWindowFocus: false,
   });
 
-  const {
-    data: { user },
-  } = useSuspenseQuery(orpc.organization.list.queryOptions());
+  const { data: user } = useSuspenseQuery(orpc.user.get.queryOptions());
 
   const isNearBottom = useCallback(
     (el: HTMLDivElement) =>

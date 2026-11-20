@@ -33,6 +33,7 @@ export function useDraft(
 
   const valueRef = useRef(value);
   valueRef.current = value;
+  const clearedRef = useRef(false);
   const keyRef = useRef(draftKey);
   keyRef.current = draftKey;
 
@@ -41,6 +42,7 @@ export function useDraft(
       const k = keyRef.current;
       const v = valueRef.current;
       if (!k || typeof window === "undefined") return;
+      if (clearedRef.current) return;
       if (!v || !v.trim() || !hasDraftContent(v)) return;
       try {
         createLocalStorage(k).set(v);
@@ -52,6 +54,11 @@ export function useDraft(
   }, []);
 
   useEffect(() => {
+    if (!value || !value.trim() || !hasDraftContent(value)) {
+      clearedRef.current = true;
+    } else {
+      clearedRef.current = false;
+    }
     if (prevKeyRef.current !== draftKey) {
       prevKeyRef.current = draftKey;
       restoredRef.current = false;
