@@ -8,11 +8,13 @@ import { parseAsString } from "nuqs/server";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/general/empty-state";
 import { Button } from "@/components/ui/button";
+import { Marker, MarkerContent } from "@/components/ui/marker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePresence } from "@/hooks/use-presence";
 import type { ConversationScope } from "@/lib/conversation";
 import { conversationKey, conversationRoomId } from "@/lib/conversation";
 import { orpc } from "@/lib/orpc";
+import { formatLocalDate } from "@/lib/utils";
 import type { RealtimeUserSchemaType } from "@/realtime/schema";
 import { MessageItem } from "./message-item";
 
@@ -23,6 +25,7 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
   const [isAtBottom, setIsAtBottom] = useState(false);
   const [newMessages, setNewMessages] = useState<boolean>(false);
   const [scrollToBottomPending, setScrollToBottomPending] = useState(false);
+  const [localDate, setLocalDate] = useState(() => new Date());
   const lastItemRef = useRef<string | undefined>(undefined);
 
   const roomId = conversationRoomId(scope);
@@ -105,6 +108,63 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
   const messages = useMemo(() => {
     return data?.pages.flatMap((page) => page.messages) ?? [];
   }, [data]);
+
+  useEffect(() => {
+    // Refresh calendar labels at the viewer's next local midnight, including
+    // across daylight-saving transitions.
+    let timeoutId: number;
+
+    const scheduleMidnightRefresh = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+
+      timeoutId = window.setTimeout(() => {
+        setLocalDate(new Date());
+        scheduleMidnightRefresh();
+      }, nextMidnight.getTime() - now.getTime());
+    };
+
+    scheduleMidnightRefresh();
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  const messageGroups = useMemo(() => {
+    const calendarKey = (date: Date) =>
+      `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+    const todayKey = calendarKey(localDate);
+    const yesterday = new Date(localDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = calendarKey(yesterday);
+
+    const groups: Array<{
+      key: string;
+      label: string;
+      messages: typeof messages;
+    }> = [];
+
+    for (const message of messages) {
+      const messageDate = new Date(message.createdAt);
+      const key = calendarKey(messageDate);
+
+      let label = formatLocalDate(message.createdAt);
+      if (key === todayKey) {
+        label = "Today";
+      } else if (key === yesterdayKey) {
+        label = "Yesterday";
+      }
+
+      const previousGroup = groups.at(-1);
+      if (previousGroup?.key === key) {
+        previousGroup.messages.push(message);
+      } else {
+        groups.push({ key, label, messages: [message] });
+      }
+    }
+
+    return groups;
+  }, [messages, localDate]);
 
   // A new conversation owns a fresh scroll state.
   // biome-ignore lint/correctness/useExhaustiveDependencies: roomId intentionally triggers a reset, it is not read in the effect.
@@ -301,13 +361,23 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
   return (
     <div className="relative h-full">
       <div ref={ref} onScroll={handleScroll} className="h-full overflow-y-auto">
-        {messages?.map((msg) => (
-          <MessageItem
-            key={msg.id}
-            message={msg}
-            currentUserId={user.id}
-            onlineUserIds={onlineUserIds}
-          />
+        {messageGroups.map((group) => (
+          <div key={group.key}>
+            <Marker className="px-4 sticky top-0 z-10 flex justify-center my-3">
+              <MarkerContent className="bg-accent/80 text-accent-foreground border-border rounded-full px-2">
+                {group.label} - {group.messages.length} messages
+              </MarkerContent>
+            </Marker>
+
+            {group.messages.map((msg) => (
+              <MessageItem
+                key={msg.id}
+                message={msg}
+                currentUserId={user.id}
+                onlineUserIds={onlineUserIds}
+              />
+            ))}
+          </div>
         ))}
         <div ref={bottomRef} />
       </div>
