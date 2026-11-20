@@ -55,9 +55,7 @@ export function ConversationShell({
   const currentTabLabel =
     tabItems.find((item) => item.value === tab)?.label ?? "Messages";
 
-  const { data: orgData } = useQuery(orpc.organization.list.queryOptions());
-
-  const user = orgData?.user;
+  const { data: user } = useQuery(orpc.user.get.queryOptions());
 
   function prefetchTab(nextTab: ConversationTab) {
     if (nextTab === "members" && isTeam && teamId) {
