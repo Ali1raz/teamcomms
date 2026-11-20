@@ -5,7 +5,7 @@ import { MessageInput } from "./message-input";
 export function ConversationView({ scope }: { scope: ConversationScope }) {
   return (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="my-4 min-h-0 flex-1">
+      <div className="min-h-0 flex-1">
         <MessageList scope={scope} />
       </div>
 

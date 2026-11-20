@@ -1,8 +1,18 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/general/theme-toggle";
 import UserAvatarDropdown from "@/components/general/user-avatar-dropdown";
+import { Button } from "@/components/ui/button";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +47,14 @@ export function ConversationShell({
   const [memberFilters, setMemberFilters] = useTeamMemberFilters();
   const canManage = useOrganizationRole() !== "member";
 
+  const tabItems = [
+    { value: "messages", label: "Messages" },
+    ...(isTeam ? [{ value: "members", label: "Members" }] : []),
+    ...(canManage ? [{ value: "settings", label: "Settings" }] : []),
+  ];
+  const currentTabLabel =
+    tabItems.find((item) => item.value === tab)?.label ?? "Messages";
+
   const { data: orgData } = useQuery(orpc.organization.list.queryOptions());
 
   const user = orgData?.user;
@@ -67,7 +85,7 @@ export function ConversationShell({
       onValueChange={handleTabChange}
       className="flex flex-1 flex-col min-h-0"
     >
-      <header className="flex h-16 shrink-0 flex-col gap-2 p-4 sticky top-0 z-10 bg-background/40 backdrop-blur-sm">
+      <header className="flex shrink-0 flex-col gap-2 px-4 pb-0 pt-2 border-b sticky top-0 z-10 bg-background/40 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Separator
@@ -94,7 +112,36 @@ export function ConversationShell({
           </div>
         </div>
 
-        <TabsList variant="line" className="sm:**:px-6 **:px-4">
+        <div className="sm:hidden">
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>{currentTabLabel}</NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="w-56">
+                    {tabItems.map((item) => (
+                      <li key={item.value}>
+                        <NavigationMenuLink
+                          className={
+                            item.value === tab
+                              ? "flex w-full items-center bg-muted"
+                              : "flex w-full items-center hover:bg-muted"
+                          }
+                        >
+                          <button onClick={() => handleTabChange(item.value)}>
+                            {item.label}
+                          </button>
+                        </NavigationMenuLink>
+                      </li>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+
+        <TabsList variant="line" className="hidden sm:flex sm:**:px-6 **:px-4">
           <TabsTrigger
             value="messages"
             onPointerEnter={() => prefetchTab("messages")}

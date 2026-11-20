@@ -100,21 +100,19 @@ export function ConversationDetailsForm({
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-col gap-4 max-w-md"
+      className="flex flex-col gap-4"
     >
-      <FieldGroup className="flex flex-col gap-4">
-        <div>
-          <FieldLabel htmlFor="name">Name</FieldLabel>
-          <Input
-            {...form.register("name")}
-            id="name"
-            disabled={isPending}
-            aria-invalid={!!form.formState.errors.name}
-          />
-          {form.formState.errors.name && (
-            <FieldError errors={[form.formState.errors.name]} />
-          )}
-        </div>
+      <FieldGroup className="flex gap-2 max-w-xl">
+        <FieldLabel htmlFor="name">Name</FieldLabel>
+        <Input
+          {...form.register("name")}
+          id="name"
+          disabled={isPending}
+          aria-invalid={!!form.formState.errors.name}
+        />
+        {form.formState.errors.name && (
+          <FieldError errors={[form.formState.errors.name]} />
+        )}
       </FieldGroup>
       <Button type="submit" disabled={isPending} className="w-fit">
         {isPending ? (
