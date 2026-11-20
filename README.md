@@ -17,19 +17,20 @@
 
 ## Tech Stack
 
-| Layer         | Technology                         |
-| ------------- | ---------------------------------- |
-| Framework     | Next.js 16 (App Router)            |
-| Language      | TypeScript                         |
-| Database      | PostgreSQL + Prisma ORM            |
-| Auth          | better-auth (organizations plugin) |
-| API           | oRPC + TanStack Query              |
-| AI            | Vercel AI SDK + OpenRouter         |
-| Rich Text     | Tiptap editor                      |
-| File Uploads  | UploadThing                        |
-| Rate Limiting | Arcjet                             |
-| UI            | shadcn/ui + Tailwind CSS v4        |
-| Animations    | Motion                             |
+| Layer           | Technology                         |
+| --------------- | ---------------------------------- |
+| Framework       | Next.js 16 (App Router)            |
+| Language        | TypeScript                         |
+| Database        | PostgreSQL + Prisma ORM            |
+| Auth            | better-auth (organizations plugin) |
+| API             | oRPC + TanStack Query              |
+| AI              | Vercel AI SDK + OpenRouter         |
+| Rich Text       | Tiptap editor                      |
+| File Uploads    | UploadThing                        |
+| Rate Limiting   | Arcjet                             |
+| UI              | shadcn/ui + Tailwind CSS v4        |
+| Animations      | Motion                             |
+| Background Jobs | Inngest                            |
 
 ## Getting Started
 
