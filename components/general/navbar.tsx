@@ -13,12 +13,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useSignOut } from "@/hooks/use-signout";
-import { authClient } from "@/lib/auth-client";
+import { User } from "@/lib/auth";
 import Logo from "@/public/team-comms.png";
-import { Skeleton } from "../ui/skeleton";
 import { ThemeToggle } from "./theme-toggle";
 
-const Navbar = () => {
+const Navbar = ({ user }: { user?: User }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
@@ -52,7 +51,6 @@ const Navbar = () => {
     };
   }, [isOpen]);
 
-  const { data, isPending } = authClient.useSession();
   const handleSignOut = useSignOut();
 
   return (
@@ -89,29 +87,26 @@ const Navbar = () => {
           </div>
 
           <section className="hidden flex-row items-center gap-2 lg:flex">
-            {isPending ? (
-              <Skeleton className="w-20 h-10 bg-muted rounded-sm" />
-            ) : (
-              <div className="flex flex-row gap-2">
-                {data?.session ? (
-                  <>
-                    <Link href="/organizations" className={buttonVariants()}>
-                      Dasboard
-                    </Link>
-                    <Button variant="outline" onClick={handleSignOut}>
-                      <LogOut /> Logout
-                    </Button>
-                  </>
-                ) : (
-                  <Link
-                    className={buttonVariants({ variant: "default" })}
-                    href="/login"
-                  >
-                    Log In
+            <div className="flex flex-row gap-2">
+              {user ? (
+                <>
+                  <Link href="/organizations" className={buttonVariants()}>
+                    Dasboard
                   </Link>
-                )}
-              </div>
-            )}
+                  <Button variant="outline" onClick={handleSignOut}>
+                    <LogOut /> Logout
+                  </Button>
+                </>
+              ) : (
+                <Link
+                  className={buttonVariants({ variant: "default" })}
+                  href="/login"
+                >
+                  Log In
+                </Link>
+              )}
+            </div>
+
             <ThemeToggle />
           </section>
 
@@ -164,9 +159,7 @@ const Navbar = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: 0.05 }}
                 >
-                  {isPending ? (
-                    <Skeleton className="w-full h-10 bg-muted rounded-sm" />
-                  ) : data?.session ? (
+                  {user ? (
                     <Link
                       href={"/organizations"}
                       className="flex flex-row items-center justify-between rounded px-4 py-3 font-medium transition-colors hover:bg-muted"
@@ -202,7 +195,7 @@ const Navbar = () => {
                   transition={{ duration: 0.2, delay: 0.25 }}
                   className="flex flex-row items-center justify-between gap-2"
                 >
-                  {data?.session ? (
+                  {user ? (
                     <Button variant="outline" onClick={handleSignOut}>
                       <LogOut /> Logout
                     </Button>

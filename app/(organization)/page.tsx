@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Companies from "@/components/general/companies";
 import { FaqsSection } from "@/components/general/faqs-section";
 import Footer from "@/components/general/footer";
 import Hero from "@/components/general/hero";
 import Navbar from "@/components/general/navbar";
 import { SITE } from "@/lib/app/site";
+import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: SITE.name,
   description: SITE.description,
 };
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -27,11 +33,11 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="relative px-4 py-6 mx-auto w-full overflow-hidden">
-        <Navbar />
+        <Navbar user={session?.user} />
 
         <div className="flex flex-col gap-24 mt-32 mx-auto w-full">
           <div className="flex flex-col gap-12">
-            <Hero />
+            <Hero user={session?.user} />
 
             <FaqsSection />
 
