@@ -5,14 +5,11 @@ import { type Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
+import { User } from "@/lib/auth";
 import DashboardImage from "@/public/image.png";
 import DashboardImageLight from "@/public/image-light.png";
-import { Skeleton } from "../ui/skeleton";
 
-const Hero = () => {
-  const { data, isPending } = authClient.useSession();
-
+const Hero = ({ user }: { user?: User }) => {
   return (
     <motion.div
       className="flex flex-col gap-16 items-center justify-center py-2 lg:pt-8"
@@ -32,9 +29,7 @@ const Hero = () => {
           </p>
 
           <div className="flex gap-2">
-            {isPending ? (
-              <Skeleton className="w-24 h-10 bg-muted" />
-            ) : data ? (
+            {user ? (
               <Link
                 className={buttonVariants({
                   className: "w-fit",
