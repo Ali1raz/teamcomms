@@ -373,6 +373,7 @@ export function MessageList({ scope }: { scope: ConversationScope }) {
                 message={msg}
                 currentUserId={user.id}
                 onlineUserIds={onlineUserIds}
+                organizationId={organizationId}
               />
             ))}
           </div>

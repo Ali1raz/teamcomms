@@ -2,6 +2,7 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
+  Bookmark,
   ChevronRight,
   Hash,
   MoreVertical,
@@ -107,13 +108,13 @@ export function AppSidebar({
 
   return (
     <Sidebar {...props}>
-      <SidebarHeader className="space-y-4">
+      <SidebarHeader className="space-y-2">
         <OrganizationSwitcher />
         <SidebarMenu className="flex items-center gap-2 w-full flex-row">
           {canManageOrganization && (
             <SidebarMenuItem className="flex-1 min-w-0">
               <SidebarMenuButton asChild>
-                <CreateTeamDialog className="w-full" />
+                <CreateTeamDialog />
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
@@ -133,6 +134,18 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href={`/organizations/${organizationId}/saved`}>
+                  <Bookmark className="size-4" />
+                  <span>Saved</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
         {/* Channels */}
         <SidebarGroup>
           <SidebarMenu>
@@ -141,7 +154,7 @@ export function AppSidebar({
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton>
                     Channels
-                    <ChevronRight className="ml-auto transition-transform duration-100 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="transition-transform duration-200 ease-out group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
 
@@ -267,7 +280,7 @@ export function AppSidebar({
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton>
                     Teams
-                    <ChevronRight className="ml-auto transition-transform duration-100 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="transition-transform duration-200 ease-out group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
@@ -362,7 +375,7 @@ export function AppSidebar({
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton>
                     Members
-                    <ChevronRight className="ml-auto transition-transform duration-100 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="transition-transform duration-200 ease-out group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>

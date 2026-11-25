@@ -12,7 +12,9 @@ import {
   listMessagesSchema,
   messageListItemSchema,
   RawReactionSchema,
+  saveMessageSchema,
   toggleReactionSchema,
+  unsaveMessageSchema,
   updateMessageSchema,
 } from "../(organization)/organizations/schema";
 import { readsecurityMiddleware } from "../middlewares/arcjet/read";
@@ -311,6 +313,10 @@ export const listMessages = base
             userId: true,
           },
         },
+        savedBy: {
+          where: { userId: context.user.id },
+          select: { id: true },
+        },
       },
     });
 
@@ -318,12 +324,15 @@ export const listMessages = base
       messages.length === limit ? messages[messages.length - 1].id : null;
 
     return {
-      messages: messages.map(({ _count, reactions, mentions, ...message }) => ({
-        ...message,
-        repliesCount: _count.replies,
-        reactions: groupReactions(reactions, context.user.id),
-        mentionedUserIds: mentions.map((m) => m.userId),
-      })),
+      messages: messages.map(
+        ({ _count, reactions, mentions, savedBy, ...message }) => ({
+          ...message,
+          repliesCount: _count.replies,
+          reactions: groupReactions(reactions, context.user.id),
+          mentionedUserIds: mentions.map((m) => m.userId),
+          savedByMe: savedBy.length > 0,
+        })
+      ),
       nextCursor,
     };
   });
@@ -730,4 +739,77 @@ export const listThreads = base
         })
       ),
     };
+  });
+
+export const saveMessage = base
+  .use(requireAuthMiddleware)
+  .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
+  .use(standardsecurityMiddleware)
+  .use(writesecurityMiddleware)
+  .route({
+    method: "POST",
+    path: "/messages/save",
+    summary: "save a message",
+    tags: ["message"],
+  })
+  .input(saveMessageSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .output(z.object({ saved: z.boolean() }))
+  .handler(async ({ context, input, errors }) => {
+    const message = await prisma.message.findFirst({
+      where: { id: input.messageId },
+      select: {
+        id: true,
+        team: { select: { organizationId: true } },
+        channel: { select: { organizationId: true } },
+      },
+    });
+
+    const orgId =
+      message?.team?.organizationId ?? message?.channel?.organizationId;
+    if (!message || orgId !== context.organization.id) {
+      throw errors.NOT_FOUND({ message: "Message not found" });
+    }
+
+    await prisma.savedMessage.upsert({
+      where: {
+        userId_messageId: {
+          userId: context.user.id,
+          messageId: input.messageId,
+        },
+      },
+      create: {
+        userId: context.user.id,
+        messageId: input.messageId,
+      },
+      update: {},
+    });
+
+    return { saved: true };
+  });
+
+export const unsaveMessage = base
+  .use(requireAuthMiddleware)
+  .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
+  .use(standardsecurityMiddleware)
+  .use(writesecurityMiddleware)
+  .route({
+    method: "POST",
+    path: "/messages/unsave",
+    summary: "unsave a message",
+    tags: ["message"],
+  })
+  .input(unsaveMessageSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .output(z.object({ saved: z.boolean() }))
+  .handler(async ({ context, input }) => {
+    await prisma.savedMessage.deleteMany({
+      where: {
+        userId: context.user.id,
+        messageId: input.messageId,
+      },
+    });
+    return { saved: false };
   });

@@ -1,5 +1,4 @@
 "use client";
-import { Mention } from "@tiptap/extension-mention";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import {
@@ -8,7 +7,7 @@ import {
   EmojiPickerTrigger,
 } from "@/components/reui/emoji-picker";
 import { cn } from "@/lib/utils";
-import { baseExtensions } from "./extensions";
+import { baseExtensions, MentionWithImage } from "./extensions";
 import { MentionSuggestions, type MentionUser } from "./mentions";
 import { Menubar } from "./menubar";
 
@@ -40,9 +39,10 @@ export function Editor({
     // no-op default configured in `baseExtensions`.
     return [
       ...baseExtensions.filter((extension) => extension.name !== "mention"),
-      Mention.configure({
+      MentionWithImage.configure({
         HTMLAttributes: {
           class: "mention",
+          "data-type": "mention",
         },
         suggestion: MentionSuggestions(mentionsQuery),
       }),
@@ -133,7 +133,7 @@ export function Editor({
       <Menubar editor={editor} />
       <EditorContent
         editor={editor}
-        className="max-h-50 overflow-y-auto overflow-x-hidden p-4"
+        className="tiptap max-h-50 overflow-y-auto overflow-x-hidden p-4"
       />
       <div className="p-4 py-2 border-t flex items-end justify-between bg-card">
         {footerLeft}

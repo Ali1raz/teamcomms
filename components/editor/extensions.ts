@@ -8,6 +8,7 @@ import {
 import { Mention } from "@tiptap/extension-mention";
 import TextAlign from "@tiptap/extension-text-align";
 import { Placeholder } from "@tiptap/extensions";
+import type { DOMOutputSpec } from "@tiptap/pm/model";
 import { StarterKit } from "@tiptap/starter-kit";
 import { all, createLowlight } from "lowlight";
 
@@ -73,11 +74,68 @@ export const extensions = [
   }),
 ];
 
+export const MentionWithImage = Mention.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      image: {
+        default: null,
+        parseHTML: (element) =>
+          element.getAttribute("data-image") ??
+          element.querySelector("img")?.getAttribute("src") ??
+          null,
+        renderHTML: (attributes) => {
+          if (!attributes.image) return {};
+          return { "data-image": attributes.image };
+        },
+      },
+    };
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    const label = node.attrs.label ?? node.attrs.id;
+    const image = node.attrs.image;
+    const char =
+      node.attrs.mentionSuggestionChar &&
+      node.attrs.mentionSuggestionChar !== "@"
+        ? node.attrs.mentionSuggestionChar
+        : "@";
+    const children: DOMOutputSpec[] = [];
+    if (image) {
+      children.push([
+        "img",
+        {
+          src: image,
+          alt: label ?? "",
+          class: "mention-avatar",
+          width: 14,
+          height: 14,
+        },
+      ]);
+    }
+    children.push([
+      "span",
+      { class: "mention-label" },
+      `${char}${label ?? node.attrs.id}`,
+    ]);
+
+    return [
+      "span",
+      {
+        "data-type": this.name,
+        ...this.options.HTMLAttributes,
+        ...HTMLAttributes,
+      },
+      ...children,
+    ];
+  },
+});
+
 export const baseExtensions = [
   ...extensions,
-  Mention.configure({
+  MentionWithImage.configure({
     HTMLAttributes: {
       class: "mention",
+      "data-type": "mention",
     },
   }),
   Placeholder.configure({

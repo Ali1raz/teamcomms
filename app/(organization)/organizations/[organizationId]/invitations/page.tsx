@@ -3,6 +3,7 @@ import { unauthorized } from "next/navigation";
 import { orpc } from "@/lib/orpc";
 import { isManagerRole } from "@/lib/permissions";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
+import { OrganizationHeader } from "../_components/organization-header";
 import { requireOrganizationAccess } from "../access";
 import { InvitationList } from "./_components/invitation-table";
 import {
@@ -43,10 +44,11 @@ export default async function InvitationsPage(
   );
 
   return (
-    <div className="p-4 sm:px-6 w-full max-w-6xl">
-      <HydrateClient client={queryClient}>
+    <HydrateClient client={queryClient}>
+      <OrganizationHeader />
+      <div className="p-4 sm:px-6 w-full max-w-6xl">
         <InvitationList organizationId={organizationId} />
-      </HydrateClient>
-    </div>
+      </div>
+    </HydrateClient>
   );
 }

@@ -1,4 +1,5 @@
 allowBuilds:
+  "protobufjs": true
   "@prisma/engines": true
   esbuild: true
   msgpackr-extract: true
@@ -6,3 +7,7 @@ allowBuilds:
   prisma: true
   sharp: true
   workerd: true
+overrides:
+  shiki: 3.23.0
+patchedDependencies:
+  "@fumadocs/base-ui@16.17.7": patches/@fumadocs__base-ui@16.17.7.patch

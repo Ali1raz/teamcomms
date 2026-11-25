@@ -2,6 +2,7 @@ import z from "zod";
 import { MembershipRole } from "@/generated/prisma/enums";
 import { conversationScopeSchema } from "@/lib/conversation";
 import { createSlug } from "@/lib/utils";
+import { SAVED_MESSAGE_SORT_FIELDS } from "./[organizationId]/saved/constants";
 
 export const createOrganizationSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required"),
@@ -116,6 +117,7 @@ export const messageListItemSchema = z.object({
   repliesCount: z.number(),
   reactions: z.array(GroupedReactionSchema),
   mentionedUserIds: z.array(z.string()).optional(),
+  savedByMe: z.boolean().optional(),
   user: z.object({
     id: z.string(),
     name: z.string(),
@@ -125,6 +127,41 @@ export const messageListItemSchema = z.object({
 });
 
 export type MessageListItemType = z.infer<typeof messageListItemSchema>;
+
+export const listSavedMessagesSchema = z.object({
+  organizationId: z.string().min(1),
+  page: z.number().int().min(1).default(1),
+  perPage: z.number().int().min(1).max(100).default(20),
+  search: z.string().optional(),
+  sortBy: z.enum([...SAVED_MESSAGE_SORT_FIELDS]).default("savedAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export type ListSavedMessagesType = z.infer<typeof listSavedMessagesSchema>;
+
+export const saveMessageSchema = z.object({
+  organizationId: z.string().min(1),
+  messageId: z.string().min(1),
+});
+
+export type SaveMessageType = z.infer<typeof saveMessageSchema>;
+
+export const unsaveMessageSchema = saveMessageSchema;
+export type UnsaveMessageType = z.infer<typeof unsaveMessageSchema>;
+
+export const savedMessageItemSchema = z.object({
+  id: z.string(),
+  savedAt: z.date(),
+  message: messageListItemSchema.extend({
+    conversation: z.object({
+      kind: z.enum(["team", "channel"]),
+      id: z.string(),
+      name: z.string(),
+    }),
+  }),
+});
+
+export type SavedMessageItemType = z.infer<typeof savedMessageItemSchema>;
 
 export const updateOrganizationSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required"),

@@ -1,10 +1,8 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { ThemeToggle } from "@/components/general/theme-toggle";
 import UserAvatarDropdown from "@/components/general/user-avatar-dropdown";
-import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -114,12 +112,15 @@ export function ConversationShell({
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger>{currentTabLabel}</NavigationMenuTrigger>
+                <NavigationMenuTrigger className="focus:bg-transparent">
+                  {currentTabLabel}
+                </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="w-56">
                     {tabItems.map((item) => (
                       <li key={item.value}>
                         <NavigationMenuLink
+                          asChild
                           className={
                             item.value === tab
                               ? "flex w-full items-center bg-muted"
