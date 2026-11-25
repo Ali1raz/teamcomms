@@ -161,14 +161,14 @@ export function SavedMessageList({
                         messageId: item.message.id,
                       })
                     }
-                    // disabled={unsaveMutation.isPending}
+                    disabled={unsaveMutation.isPending}
                     aria-label="Unsave message"
                   >
-                    {/*{unsaveMutation.isPending ? (
+                    {unsaveMutation.isPending ? (
                       <Loader2 className="size-4 animate-spin" />
-                    ) : (*/}
-                    <Bookmark className="size-4 fill-current" />
-                    {/*)}*/}
+                    ) : (
+                      <Bookmark className="size-4 fill-current" />
+                    )}
                   </Button>
                 </div>
                 <div className="text-sm">

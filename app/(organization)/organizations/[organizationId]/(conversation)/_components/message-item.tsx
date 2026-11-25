@@ -9,7 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { RenderJSONtoHTML } from "@/components/editor/render-content";
 import { ExpandableContent } from "@/components/general/expandable-content";
@@ -44,6 +44,10 @@ export function MessageItem({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(message.savedByMe ?? false);
+
+  useEffect(() => {
+    setSaved(message.savedByMe ?? false);
+  }, [message.savedByMe]);
 
   const queryClient = useQueryClient();
 

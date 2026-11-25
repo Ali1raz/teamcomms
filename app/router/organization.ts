@@ -771,7 +771,10 @@ export const listOrganizationSavedMessages = base
 
       const rows = await prisma.savedMessage.findMany({
         where,
-        orderBy: { createdAt: input.sortOrder },
+        orderBy:
+          input.sortBy === "createdAt"
+            ? { message: { createdAt: input.sortOrder } }
+            : { createdAt: input.sortOrder },
         skip: (safePage - 1) * input.perPage,
         take: input.perPage,
         include: {
@@ -790,21 +793,8 @@ export const listOrganizationSavedMessages = base
         },
       });
 
-      // sortBy savedAt vs createdAt both map to savedMessage/message createdAt; keep simple.
-      const sorted = [...rows].sort((a, b) => {
-        const av =
-          input.sortBy === "createdAt"
-            ? a.message.createdAt.getTime()
-            : a.createdAt.getTime();
-        const bv =
-          input.sortBy === "createdAt"
-            ? b.message.createdAt.getTime()
-            : b.createdAt.getTime();
-        return input.sortOrder === "asc" ? av - bv : bv - av;
-      });
-
       return {
-        messages: sorted.map((row) => ({
+        messages: rows.map((row) => ({
           id: row.id,
           savedAt: row.createdAt,
           message: {
