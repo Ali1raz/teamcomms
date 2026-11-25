@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { unauthorized } from "next/navigation";
 import { orpc } from "@/lib/orpc";
 import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
+import { OrganizationHeader } from "../_components/organization-header";
 import { requireOrganizationAccess } from "../access";
 import { SavedMessageList } from "./_components/saved-message-list";
 import {
@@ -32,10 +33,11 @@ export default async function SavedMessagesPage(
   );
 
   return (
-    <div className="p-4 sm:px-6 w-full max-w-5xl h-full overflow-y-auto">
-      <HydrateClient client={queryClient}>
+    <HydrateClient client={queryClient}>
+      <OrganizationHeader />
+      <div className="p-4 sm:px-6 w-full max-w-5xl h-full overflow-y-auto">
         <SavedMessageList organizationId={organizationId} />
-      </HydrateClient>
-    </div>
+      </div>
+    </HydrateClient>
   );
 }
