@@ -23,12 +23,15 @@ import { auth, type FullOrg, type User } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { clampPage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { createSlug, getOrganizationColor } from "@/lib/utils";
+import { createSlug, getOrganizationColor, groupReactions } from "@/lib/utils";
 import {
   createOrganizationSchema,
+  listSavedMessagesSchema,
+  savedMessageItemSchema,
   updateOrganizationSchema,
 } from "../(organization)/organizations/schema";
 import { heavyWritesecurityMiddleware } from "../middlewares/arcjet/heavy-write-middleware";
+import { readsecurityMiddleware } from "../middlewares/arcjet/read";
 import { standardsecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writesecurityMiddleware } from "../middlewares/arcjet/write";
 import { requireAuthMiddleware } from "../middlewares/auth";
@@ -720,4 +723,121 @@ export const leaveOrganization = base
         team: { organizationId: organization.id },
       },
     });
+  });
+
+export const listOrganizationSavedMessages = base
+  .use(requireAuthMiddleware)
+  .use(requireOrganizationMiddleware)
+  .use(requireMemberMiddleware)
+  .use(standardsecurityMiddleware)
+  .use(readsecurityMiddleware)
+  .route({
+    method: "GET",
+    path: "/organization/:organizationId/saved-messages",
+    summary: "List saved messages for a user in an organization",
+    tags: ["Organization"],
+  })
+  .input(listSavedMessagesSchema)
+  .use(requireActiveOrganizationMiddleware, (input) => input.organizationId)
+  .output(
+    z.object({
+      messages: z.array(savedMessageItemSchema),
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+      pageCount: z.number(),
+    })
+  )
+  .handler(async ({ context, input, errors }) => {
+    const search = input.search?.trim();
+
+    try {
+      const where = {
+        userId: context.user.id,
+        message: {
+          ...(search
+            ? { content: { contains: search, mode: "insensitive" as const } }
+            : {}),
+          OR: [
+            { team: { organizationId: context.organization.id } },
+            { channel: { organizationId: context.organization.id } },
+          ],
+        },
+      };
+
+      const total = await prisma.savedMessage.count({ where });
+      const pageCount = Math.max(Math.ceil(total / input.perPage), 1);
+      const safePage = Math.min(Math.max(input.page, 1), pageCount);
+
+      const rows = await prisma.savedMessage.findMany({
+        where,
+        orderBy: { createdAt: input.sortOrder },
+        skip: (safePage - 1) * input.perPage,
+        take: input.perPage,
+        include: {
+          message: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true, image: true },
+              },
+              team: { select: { id: true, name: true } },
+              channel: { select: { id: true, name: true } },
+              reactions: true,
+              mentions: true,
+              _count: { select: { replies: true } },
+            },
+          },
+        },
+      });
+
+      // sortBy savedAt vs createdAt both map to savedMessage/message createdAt; keep simple.
+      const sorted = [...rows].sort((a, b) => {
+        const av =
+          input.sortBy === "createdAt"
+            ? a.message.createdAt.getTime()
+            : a.createdAt.getTime();
+        const bv =
+          input.sortBy === "createdAt"
+            ? b.message.createdAt.getTime()
+            : b.createdAt.getTime();
+        return input.sortOrder === "asc" ? av - bv : bv - av;
+      });
+
+      return {
+        messages: sorted.map((row) => ({
+          id: row.id,
+          savedAt: row.createdAt,
+          message: {
+            id: row.message.id,
+            content: row.message.content,
+            imageUrl: row.message.imageUrl,
+            createdAt: row.message.createdAt,
+            repliesCount: row.message._count.replies,
+            reactions: groupReactions(row.message.reactions, context.user.id),
+            mentionedUserIds: row.message.mentions.map((m) => m.userId),
+            savedByMe: true,
+            user: row.message.user,
+            conversation: row.message.team
+              ? {
+                  kind: "team" as const,
+                  id: row.message.team.id,
+                  name: row.message.team.name,
+                }
+              : {
+                  kind: "channel" as const,
+                  id: row.message.channel!.id,
+                  name: row.message.channel!.name,
+                },
+          },
+        })),
+        total,
+        page: safePage,
+        perPage: input.perPage,
+        pageCount,
+      };
+    } catch (error: unknown) {
+      throw errors.INTERNAL_SERVER_ERROR({
+        message: errorMessage(error, "Failed to list saved messages"),
+      });
+    }
   });

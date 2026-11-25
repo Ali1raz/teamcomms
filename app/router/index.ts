@@ -13,7 +13,9 @@ import {
   deleteMessage,
   listMessages,
   listThreads,
+  saveMessage,
   toggleReaction,
+  unsaveMessage,
   updateMessage,
 } from "./message";
 import {
@@ -22,6 +24,7 @@ import {
   leaveOrganization,
   listOrganizationInvitations,
   listOrganizationMembers,
+  listOrganizationSavedMessages,
   listOrganizations,
   removeOrganizationMember,
   updateOrganization,
@@ -59,6 +62,9 @@ export const router = {
       list: listOrganizationInvitations,
       cancel: cancelOrganizationInvitation,
     },
+    savedMessages: {
+      list: listOrganizationSavedMessages,
+    },
   },
   team: {
     create: createTeam,
@@ -84,6 +90,8 @@ export const router = {
     list: listMessages,
     update: updateMessage,
     delete: deleteMessage,
+    save: saveMessage,
+    unsave: unsaveMessage,
     threads: {
       list: listThreads,
     },

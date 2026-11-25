@@ -1,9 +1,16 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { Edit2, MessagesSquare, MoreVertical, Trash2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Bookmark,
+  Edit2,
+  MessagesSquare,
+  MoreVertical,
+  Trash2,
+} from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { RenderJSONtoHTML } from "@/components/editor/render-content";
 import { ExpandableContent } from "@/components/general/expandable-content";
 import { UserImage } from "@/components/general/user-avatar";
@@ -28,12 +35,52 @@ export function MessageItem({
   message,
   currentUserId,
   onlineUserIds,
+  organizationId,
 }: {
   message: MessageListItemType;
   currentUserId: string;
   onlineUserIds: Set<string>;
+  organizationId: string;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [saved, setSaved] = useState(message.savedByMe ?? false);
+
+  const queryClient = useQueryClient();
+
+  const saveMutation = useMutation(
+    orpc.message.save.mutationOptions({
+      onMutate: () => setSaved(true),
+      onError: () => {
+        setSaved(false);
+        toast.error("Failed to save message");
+      },
+      onSuccess: () => {
+        toast.success("Message saved");
+        queryClient.invalidateQueries({
+          queryKey: orpc.organization.savedMessages.list.queryKey({
+            input: { organizationId },
+          }),
+        });
+      },
+    })
+  );
+  const unsaveMutation = useMutation(
+    orpc.message.unsave.mutationOptions({
+      onMutate: () => setSaved(false),
+      onError: () => {
+        setSaved(true);
+        toast.error("Failed to unsave message");
+      },
+      onSuccess: () => {
+        toast.success("Message unsaved");
+        queryClient.invalidateQueries({
+          queryKey: orpc.organization.savedMessages.list.queryKey({
+            input: { organizationId },
+          }),
+        });
+      },
+    })
+  );
 
   // Access thread context and right sidebar so the replies button can open the
   // thread panel in the same way the MessagesSquare action button does.
@@ -51,24 +98,23 @@ export function MessageItem({
     }
   }
 
-  const queryClinet = useQueryClient();
-
   const prefetchThread = useCallback(() => {
     const options = orpc.message.threads.list.queryOptions({
       input: { threadId: message.id },
     });
-    queryClinet
+    queryClient
       .prefetchQuery({ ...options, staleTime: 60_000 })
       .catch(() => {});
-  }, [queryClinet, message.id]);
+  }, [queryClient, message.id]);
 
   return (
     <div
       className={cn(
         "flex relative group gap-3 items-start overflow-x-hidden hover:bg-muted/30 transition-colors duration-150 p-4 border-b border-border",
-        open && message.id === threadId && "bg-muted/50",
+        open && message.id === threadId && "bg-info/6 hover:bg-info/8",
         message.mentionedUserIds?.includes(currentUserId) &&
-          "border-l-primary border-l-3"
+          "border-l-primary border-l-3",
+        saved && "border-l-warning! border-l-3"
       )}
     >
       <UserImage
@@ -111,7 +157,35 @@ export function MessageItem({
               </ImageZoom>
             )}
 
-            <ReactionBar messageId={message.id} reactions={message.reactions} />
+            <div className="flex items-center gap-2">
+              <ReactionBar
+                messageId={message.id}
+                reactions={message.reactions}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-1"
+                disabled={saveMutation.isPending || unsaveMutation.isPending}
+                onClick={() => {
+                  if (saved) {
+                    unsaveMutation.mutate({
+                      organizationId,
+                      messageId: message.id,
+                    });
+                  } else {
+                    saveMutation.mutate({
+                      organizationId,
+                      messageId: message.id,
+                    });
+                  }
+                }}
+                aria-label={saved ? "Unsave message" : "Save message"}
+              >
+                <Bookmark className={cn("size-4", saved && "fill-current")} />
+              </Button>
+            </div>
             <div className="flex">
               <Button
                 type="button"

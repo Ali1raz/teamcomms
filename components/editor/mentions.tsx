@@ -1,6 +1,6 @@
 "use client";
 
-import { type MentionNodeAttrs } from "@tiptap/extension-mention";
+import { type MentionNodeAttrs as BaseMentionNodeAttrs } from "@tiptap/extension-mention";
 import { type EditorView } from "@tiptap/pm/view";
 import { ReactRenderer } from "@tiptap/react";
 import {
@@ -12,6 +12,8 @@ import { Loader2 } from "lucide-react";
 import { Component } from "react";
 import { UserImage } from "@/components/general/user-avatar";
 import { cn } from "@/lib/utils";
+
+type MentionNodeAttrs = BaseMentionNodeAttrs & { image?: string | null };
 
 /**
  * Cleanly dismisses an active suggestion (e.g. mention) by dispatching the
@@ -117,6 +119,7 @@ class MentionList extends Component<
       this.props.command({
         id: item.id,
         label: item.name,
+        image: item.image,
       });
     }
   }
